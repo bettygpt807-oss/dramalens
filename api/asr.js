@@ -12,25 +12,33 @@ module.exports = async function handler(req, res) {
   try {
     const { action, taskId, audioBuffer } = await parseMultipart(req);
 
-    if (action === 'submit') {
-      const boundary = '----DL' + Date.now();
-      const part1 = Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="audio"; filename="audio.wav"\r\nContent-Type: audio/wav\r\n\r\n`);
-      const part2 = Buffer.from(`\r\n--${boundary}--\r\n`);
-      const body = Buffer.concat([part1, audioBuffer, part2]);
+if (action === 'submit') {
+  const audioBase64 = audioBuffer.toString('base64');
+  const reqBody = JSON.stringify({
+    audio: {
+      format: 'wav',
+      data: audioBase64,
+    },
+    request: {
+      model_name: 'bigasr',
+      language: 'en-US',
+    }
+  });
 
-      const result = await httpsPost('openspeech.bytedance.com', '/api/v1/auc/submit', {
-        'Authorization': `Bearer;${token}`,
-        'X-Api-App-Key': appId,
-        'X-Api-Request-Id': 'dl-' + Date.now(),
-        'Content-Type': `multipart/form-data; boundary=${boundary}`,
-        'Content-Length': body.length,
-      }, body);
+  const result = await httpsPost('openspeech.bytedance.com', '/api/v1/auc/submit', {
+    'Authorization': `Bearer;${token}`,
+    'X-Api-App-Key': appId,
+    'X-Api-Request-Id': 'dl-' + Date.now(),
+    'Content-Type': 'application/json',
+    'Content-Length': Buffer.byteLength(reqBody),
+  }, Buffer.from(reqBody));
 
-      console.log('ASR submit response:', result);
-try {
-  return res.status(200).json(JSON.parse(result));
-} catch(e) {
-  return res.status(200).json({ raw: result, parseError: e.message });
+  console.log('ASR submit response:', result);
+  try {
+    return res.status(200).json(JSON.parse(result));
+  } catch(e) {
+    return res.status(200).json({ raw: result, parseError: e.message });
+  }
 }
 
     } else if (action === 'query') {
