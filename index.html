@@ -1,0 +1,1917 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DramaLens · 剧本拆解工具</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@300;400;500&family=Noto+Serif+SC:wght@300;400;600;700&family=Noto+Sans+SC:wght@300;400;500;600&display=swap');
+
+:root {
+  /* ── DramaMind 墨绿色系 ── */
+  --green-deep:   #0F2D1A;
+  --green-dark:   #1A4A2A;
+  --green-main:   #1E5C3A;
+  --green-mid:    #2A6B45;
+  --green-soft:   #2A3A2F;
+  --green-muted:  #3D5C47;
+  --green-light:  #4A7A5A;
+  --green-pale:   #E8F2EC;
+  --green-ghost:  #F0F7F3;
+
+  --gold:         #B8944A;
+  --gold-light:   #D4AA60;
+  --gold-pale:    #F5EDD8;
+
+  --ink:          #0F1A14;
+  --ink-soft:     #2A3A2F;
+  --ink-muted:    #4A6055;
+  --text-body:    #2C3E35;
+  --text-light:   #6B8070;
+  --text-ghost:   #9DB5A5;
+
+  --surface:      #FFFFFF;
+  --surface-2:    #F7FAF8;
+  --surface-3:    #EFF5F1;
+  --border:       rgba(30,92,58,0.15);
+  --border-soft:  rgba(30,92,58,0.08);
+
+  --red:          #C0392B;
+  --success:      #27AE60;
+
+  --shadow-sm:    0 1px 4px rgba(15,45,26,0.08);
+  --shadow-md:    0 4px 20px rgba(15,45,26,0.12);
+  --shadow-lg:    0 12px 40px rgba(15,45,26,0.16);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: var(--surface-2);
+  color: var(--ink);
+  font-family: 'Noto Sans SC', sans-serif;
+  min-height: 100vh;
+}
+
+/* ══════════════════════════════
+   SURVEY MODAL
+══════════════════════════════ */
+#surveyModal {
+  position: fixed; inset: 0;
+  background: rgba(15,29,20,0.6);
+  z-index: 600;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(6px);
+}
+#surveyModal.open { display: flex; }
+.survey-box {
+  width: 560px;
+  background: var(--surface);
+  border-radius: 16px;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.survey-header {
+  padding: 24px 28px 16px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.survey-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 5px;
+}
+.survey-sub {
+  font-size: 12.5px;
+  color: var(--text-light);
+  line-height: 1.6;
+}
+.survey-iframe-wrap {
+  height: 460px;
+  overflow: hidden;
+  background: var(--surface-2);
+}
+.survey-iframe-wrap iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+}
+.survey-footer {
+  padding: 14px 28px;
+  border-top: 1px solid var(--border-soft);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.survey-done-hint {
+  font-size: 12px;
+  color: var(--text-ghost);
+}
+.survey-start-btn {
+  background: var(--green-main);
+  color: white;
+  border: none;
+  padding: 9px 22px;
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 9px;
+  transition: all 0.2s;
+  display: none;
+}
+.survey-start-btn.show { display: block; }
+.survey-start-btn:hover { background: var(--green-dark); }
+#settingsModal {
+  position: fixed; inset: 0;
+  background: rgba(15,29,20,0.55);
+  z-index: 500;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(6px);
+}
+#settingsModal.open { display: flex; }
+
+.modal-box {
+  width: 540px;
+  max-height: 88vh;
+  overflow-y: auto;
+  background: var(--surface);
+  border-radius: 16px;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border);
+}
+.modal-box::-webkit-scrollbar { width: 4px; }
+.modal-box::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.modal-header {
+  padding: 24px 28px 18px;
+  border-bottom: 1px solid var(--border-soft);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  position: sticky; top: 0;
+  background: var(--surface);
+  border-radius: 16px 16px 0 0;
+  z-index: 1;
+}
+.modal-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.modal-close {
+  margin-left: auto;
+  width: 28px; height: 28px;
+  border: 1px solid var(--border);
+  background: transparent;
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text-light);
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+}
+.modal-close:hover { background: var(--surface-3); color: var(--red); }
+
+.modal-body { padding: 24px 28px; display: flex; flex-direction: column; gap: 24px; }
+
+.cfg-section { display: flex; flex-direction: column; gap: 14px; }
+.cfg-section-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--green-main);
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.cfg-hint {
+  background: var(--green-ghost);
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: var(--text-body);
+}
+.cfg-hint a { color: var(--green-main); font-weight: 500; text-decoration: none; }
+.cfg-hint a:hover { text-decoration: underline; }
+
+.cfg-field { display: flex; flex-direction: column; gap: 6px; }
+.cfg-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-soft);
+  display: flex; align-items: center; gap: 6px;
+}
+.cfg-tag {
+  font-size: 10px;
+  background: var(--green-pale);
+  color: var(--green-main);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+.cfg-input {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 13px;
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  color: var(--ink);
+  outline: none;
+  transition: all 0.2s;
+  width: 100%;
+}
+.cfg-input:focus {
+  border-color: var(--green-main);
+  background: white;
+  box-shadow: 0 0 0 3px rgba(30,92,58,0.08);
+}
+.cfg-input::placeholder { color: var(--text-ghost); }
+select.cfg-input { cursor: pointer; }
+
+.modal-footer {
+  padding: 18px 28px 24px;
+  border-top: 1px solid var(--border-soft);
+  display: flex; align-items: center; gap: 12px;
+}
+.btn-save {
+  background: var(--green-main);
+  color: white;
+  border: none;
+  padding: 10px 24px;
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 9px;
+  transition: all 0.2s;
+}
+.btn-save:hover { background: var(--green-dark); transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+.save-ok {
+  font-size: 12px;
+  color: var(--success);
+  opacity: 0;
+  transition: opacity 0.3s;
+  display: flex; align-items: center; gap: 4px;
+}
+.save-ok.show { opacity: 1; }
+
+/* ══════════════════════════════
+   HEADER
+══════════════════════════════ */
+header {
+  height: 56px;
+  background: var(--green-deep);
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  gap: 16px;
+  position: sticky; top: 0; z-index: 100;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.logo {
+  font-family: 'Playfair Display', serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: white;
+  letter-spacing: -0.3px;
+  display: flex; align-items: center; gap: 8px;
+}
+.logo-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--gold);
+}
+.logo span { color: var(--gold); font-style: italic; }
+
+.header-divider {
+  width: 1px; height: 20px;
+  background: rgba(255,255,255,0.12);
+}
+
+.header-tagline {
+  font-size: 11px;
+  color: rgba(255,255,255,0.45);
+  letter-spacing: 0.06em;
+  font-weight: 300;
+}
+
+.header-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-chip {
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 11px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 20px;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: rgba(255,255,255,0.55);
+}
+.status-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.3);
+  transition: all 0.3s;
+}
+.status-dot.active { background: #4ADE80; box-shadow: 0 0 6px #4ADE80; }
+.status-dot.loading { background: var(--gold); animation: pulse 1s infinite; }
+.status-dot.error { background: #F87171; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+.btn-hdr {
+  height: 30px;
+  padding: 0 14px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 8px;
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 11px;
+  font-weight: 400;
+  color: rgba(255,255,255,0.75);
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex; align-items: center; gap: 5px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.btn-hdr:hover {
+  background: rgba(255,255,255,0.14);
+  color: white;
+  border-color: rgba(255,255,255,0.2);
+}
+
+/* ══════════════════════════════
+   MAIN LAYOUT
+══════════════════════════════ */
+.app {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  min-height: calc(100vh - 56px);
+}
+
+/* ── LEFT SIDEBAR ── */
+.sidebar {
+  background: var(--surface);
+  border-right: 1px solid var(--border-soft);
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.sidebar-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-ghost);
+  padding: 0 4px;
+  margin-bottom: 8px;
+}
+
+/* Input toggle */
+.input-toggle {
+  display: flex;
+  background: var(--surface-2);
+  border-radius: 10px;
+  padding: 3px;
+  gap: 2px;
+  border: 1px solid var(--border-soft);
+}
+.toggle-btn {
+  flex: 1;
+  padding: 7px 10px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 12px;
+  color: var(--text-light);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 400;
+}
+.toggle-btn.active {
+  background: white;
+  color: var(--green-main);
+  font-weight: 500;
+  box-shadow: var(--shadow-sm);
+}
+
+/* Upload zone */
+.upload-zone {
+  border: 1.5px dashed var(--border);
+  border-radius: 12px;
+  padding: 24px 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: var(--surface-2);
+  position: relative;
+}
+.upload-zone:hover, .upload-zone.drag-over {
+  border-color: var(--green-main);
+  background: var(--green-ghost);
+}
+.upload-zone input { position:absolute; inset:0; opacity:0; cursor:pointer; }
+.upload-icon { font-size: 26px; margin-bottom: 8px; display: block; opacity: 0.5; }
+.upload-label { font-size: 12.5px; color: var(--text-body); line-height: 1.6; }
+.upload-label strong { color: var(--green-main); font-weight: 500; }
+.upload-formats {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  color: var(--text-ghost);
+  margin-top: 6px;
+  letter-spacing: 0.04em;
+}
+
+/* URL input */
+.url-area { display: flex; flex-direction: column; gap: 8px; }
+.url-input {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 13px;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--ink);
+  outline: none;
+  transition: all 0.2s;
+  width: 100%;
+}
+.url-input:focus { border-color: var(--green-main); background: white; box-shadow: 0 0 0 3px rgba(30,92,58,0.06); }
+.url-input::placeholder { color: var(--text-ghost); }
+.url-hint {
+  font-size: 11px;
+  color: var(--text-ghost);
+  line-height: 1.6;
+  padding: 0 2px;
+}
+
+/* File chip */
+.file-chip {
+  display: none;
+  background: var(--green-ghost);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  gap: 9px;
+  align-items: center;
+}
+.file-chip.show { display: flex; }
+.file-chip-icon { font-size: 16px; flex-shrink: 0; }
+.file-chip-info { flex: 1; min-width: 0; }
+.file-chip-name { font-size: 12px; font-weight: 500; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.file-chip-meta { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--text-light); margin-top: 2px; }
+.file-chip-clear { background: none; border: none; color: var(--text-ghost); cursor: pointer; font-size: 14px; transition: color 0.15s; flex-shrink: 0; }
+.file-chip-clear:hover { color: var(--red); }
+
+/* Config status */
+.cfg-status {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 13px;
+  border-radius: 10px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.cfg-status.warn {
+  background: rgba(192,57,43,0.06);
+  border: 1px solid rgba(192,57,43,0.18);
+  color: var(--red);
+}
+.cfg-status.warn:hover { background: rgba(192,57,43,0.1); }
+.cfg-status.ok {
+  background: var(--green-ghost);
+  border: 1px solid var(--border);
+  color: var(--green-main);
+  cursor: default;
+}
+
+/* Progress */
+.progress-wrap { display: none; flex-direction: column; gap: 10px; }
+.progress-wrap.show { display: flex; }
+.progress-bar-bg { height: 3px; background: var(--surface-3); border-radius: 3px; overflow: hidden; }
+.progress-bar { height: 100%; background: var(--green-main); width: 0%; transition: width 0.5s ease; border-radius: 3px; }
+.p-step {
+  display: flex; align-items: center; gap: 9px;
+  font-size: 12px; color: var(--text-ghost);
+  transition: all 0.3s;
+}
+.p-step.active { color: var(--ink); font-weight: 500; }
+.p-step.done { color: var(--green-main); }
+.p-icon {
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid currentColor;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 8px;
+  font-family: 'DM Mono', monospace;
+  flex-shrink: 0;
+  transition: all 0.3s;
+}
+.p-step.active .p-icon { background: var(--green-main); color: white; border-color: var(--green-main); animation: pulse 1s infinite; }
+.p-step.done .p-icon { background: var(--green-main); color: white; border-color: var(--green-main); animation: none; }
+
+/* Analyze button */
+.btn-analyze {
+  background: var(--green-main);
+  color: white;
+  border: none;
+  padding: 13px 20px;
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 12px;
+  transition: all 0.2s;
+  width: 100%;
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  box-shadow: 0 2px 12px rgba(30,92,58,0.25);
+}
+.btn-analyze:hover:not(:disabled) {
+  background: var(--green-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px rgba(30,92,58,0.35);
+}
+.btn-analyze:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
+
+/* ── RIGHT PANEL ── */
+.right-panel { display: flex; flex-direction: column; background: var(--surface-2); }
+
+/* Welcome */
+#welcomeScreen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 64px;
+  text-align: center;
+}
+.w-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--green-pale);
+  color: var(--green-main);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 5px 14px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  margin-bottom: 20px;
+}
+.w-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 30px;
+  font-style: italic;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 12px;
+  letter-spacing: -0.5px;
+  line-height: 1.25;
+}
+.w-title em { color: var(--green-main); font-style: italic; }
+.w-sub {
+  font-size: 14px;
+  color: var(--text-body);
+  line-height: 1.8;
+  max-width: 420px;
+  margin-bottom: 44px;
+}
+.w-steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  width: 100%;
+  max-width: 520px;
+}
+.w-step {
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  padding: 20px 16px;
+  text-align: left;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s;
+}
+.w-step:hover { border-color: var(--border); box-shadow: var(--shadow-sm); }
+.w-step::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--green-main);
+  opacity: 0.5;
+}
+.w-step-n {
+  font-family: 'Playfair Display', serif;
+  font-size: 22px;
+  font-style: italic;
+  color: var(--green-main);
+  opacity: 0.5;
+  margin-bottom: 10px;
+  line-height: 1;
+}
+.w-step-t { font-size: 13px; font-weight: 500; color: var(--ink); margin-bottom: 4px; }
+.w-step-d { font-size: 12px; color: var(--text-light); line-height: 1.6; }
+
+/* Processing overlay */
+.proc-overlay {
+  display: none; flex: 1;
+  flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 16px; padding: 60px;
+  background: var(--surface-2);
+}
+.proc-overlay.show { display: flex; }
+.spinner {
+  width: 32px; height: 32px;
+  border: 2px solid var(--border);
+  border-top-color: var(--green-main);
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.proc-title { font-size: 18px; font-weight: 500; color: var(--ink-soft); }
+.proc-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px; color: var(--text-light);
+  letter-spacing: 0.06em; text-align: center;
+}
+
+/* Tabs */
+.tabs-bar {
+  display: none;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border-soft);
+  padding: 0 24px;
+  gap: 0;
+}
+.tabs-bar.show { display: flex; }
+.tab-btn {
+  padding: 0 16px;
+  height: 48px;
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-light);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: all 0.2s;
+  white-space: nowrap;
+  background: transparent;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  display: flex; align-items: center; gap: 6px;
+}
+.tab-btn:hover { color: var(--text-body); }
+.tab-btn.active { color: var(--green-main); border-bottom-color: var(--green-main); font-weight: 500; }
+.tab-badge {
+  background: var(--surface-3);
+  color: var(--text-light);
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  font-family: 'DM Mono', monospace;
+}
+.tab-btn.active .tab-badge { background: var(--green-pale); color: var(--green-main); }
+
+/* Tab content */
+.tab-pane { display: none; flex: 1; overflow: hidden; flex-direction: column; }
+.tab-pane.active { display: flex; }
+
+/* Pending state */
+.tab-empty {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 12px; padding: 60px;
+  color: var(--text-ghost);
+}
+.tab-empty-icon { font-size: 36px; opacity: 0.3; }
+.tab-empty-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 17px; font-style: italic;
+  color: var(--text-light); opacity: 0.8;
+}
+.tab-empty-desc { font-size: 12.5px; text-align: center; line-height: 1.7; max-width: 280px; }
+.tab-empty-badge {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  background: var(--surface-3);
+  color: var(--text-light);
+  padding: 4px 12px; border-radius: 12px;
+  margin-top: 4px; letter-spacing: 0.04em;
+}
+
+/* Subtitle view */
+.sub-toolbar {
+  padding: 10px 20px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border-soft);
+  display: flex; align-items: center; gap: 8px;
+  flex-wrap: wrap;
+}
+.search-field {
+  flex: 1; min-width: 140px; max-width: 220px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 7px 11px;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--ink);
+  outline: none;
+  transition: all 0.2s;
+}
+.search-field:focus { border-color: var(--green-main); background: white; }
+.search-field::placeholder { color: var(--text-ghost); }
+.btn-sm {
+  height: 30px; padding: 0 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 11px;
+  color: var(--text-body);
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.btn-sm:hover { border-color: var(--green-main); color: var(--green-main); background: var(--green-ghost); }
+
+.sub-list {
+  flex: 1; overflow-y: auto;
+  padding: 16px 24px;
+}
+.sub-list::-webkit-scrollbar { width: 4px; }
+.sub-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.sub-item {
+  display: grid;
+  grid-template-columns: 68px 1fr;
+  gap: 12px;
+  padding: 10px 10px;
+  border-radius: 8px;
+  transition: background 0.15s;
+}
+.sub-item:hover { background: var(--surface-3); }
+.sub-tc {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px; color: var(--text-ghost);
+  padding-top: 2px; letter-spacing: 0.02em;
+}
+.sub-texts { display: flex; flex-direction: column; gap: 3px; }
+.sub-en { font-size: 13px; color: var(--ink); line-height: 1.5; font-weight: 400; }
+.sub-zh { font-size: 12px; color: var(--text-body); line-height: 1.5; }
+
+/* Analysis views */
+.analysis-toolbar {
+  padding: 10px 24px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border-soft);
+  display: flex; align-items: center; gap: 8px;
+}
+.edit-badge {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  font-weight: 500;
+  padding: 3px 9px;
+  border-radius: 6px;
+  background: var(--green-pale);
+  color: var(--green-main);
+  border: 1px solid var(--border);
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+.edit-badge.en {
+  background: rgba(184,148,74,0.1);
+  color: var(--gold);
+  border-color: rgba(184,148,74,0.25);
+}
+.toolbar-divider {
+  width: 1px; height: 18px;
+  background: var(--border-soft);
+  flex-shrink: 0;
+}
+.btn-translate {
+  color: var(--green-main) !important;
+  border-color: var(--border) !important;
+}
+.btn-translate:hover {
+  background: var(--green-ghost) !important;
+  border-color: var(--green-main) !important;
+}
+.btn-export { margin-left: auto; }
+.editable {
+  outline: none;
+  border-radius: 6px;
+  transition: background 0.15s, box-shadow 0.15s;
+  min-height: 40px;
+  cursor: text;
+}
+.editable:hover { background: rgba(30,92,58,0.02); }
+.editable:focus {
+  background: white;
+  box-shadow: 0 0 0 2px rgba(30,92,58,0.1);
+}
+.char-bio[contenteditable="true"] {
+  outline: none; cursor: text;
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+.char-bio[contenteditable="true"]:focus {
+  background: var(--surface-2);
+  box-shadow: 0 0 0 2px rgba(30,92,58,0.08);
+}
+.translating-overlay {
+  position: absolute; inset: 0;
+  background: rgba(247,250,248,0.85);
+  display: flex; align-items: center; justify-content: center;
+  gap: 10px; font-size: 13px; color: var(--text-light);
+  border-radius: 8px; z-index: 10;
+  backdrop-filter: blur(2px);
+}
+.analysis-scroll { position: relative; }
+.analysis-scroll {
+  flex: 1; overflow-y: auto;
+  padding: 28px 32px;
+}
+.analysis-scroll::-webkit-scrollbar { width: 4px; }
+.analysis-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.analysis-body { max-width: 720px; margin: 0 auto; }
+
+.a-block {
+  margin-bottom: 36px;
+  animation: fadeUp 0.35s ease forwards;
+  opacity: 0;
+}
+@keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+.a-head {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 14px;
+}
+.a-num {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px; color: var(--text-ghost);
+  min-width: 20px;
+}
+.a-title {
+  font-size: 16px; font-weight: 600;
+  color: var(--ink);
+}
+.a-line { flex: 1; height: 1px; background: var(--border-soft); }
+.a-body {
+  font-size: 13.5px; line-height: 1.9;
+  color: var(--text-body);
+  padding-left: 30px;
+}
+.a-body p { margin-bottom: 10px; }
+.a-body p:last-child { margin-bottom: 0; }
+
+/* Logic 4-grid */
+.logic-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 12px; padding-left: 30px;
+}
+.logic-card {
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: 12px; padding: 16px;
+  transition: all 0.2s;
+}
+.logic-card:hover { border-color: var(--border); box-shadow: var(--shadow-sm); }
+.logic-card-tag {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--green-main);
+  margin-bottom: 8px;
+}
+.logic-card-text { font-size: 12.5px; line-height: 1.75; color: var(--text-body); }
+
+/* Character cards */
+.char-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px; padding-left: 30px;
+}
+.char-card {
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: 12px; padding: 16px;
+  position: relative; overflow: hidden;
+  transition: all 0.2s;
+}
+.char-card:hover { border-color: var(--border); box-shadow: var(--shadow-sm); }
+.char-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 2px; background: var(--green-main);
+}
+.char-name { font-size: 13.5px; font-weight: 600; color: var(--ink); margin-bottom: 7px; }
+.char-bio { font-size: 12px; line-height: 1.8; color: var(--text-body); }
+
+/* Outline */
+.outline-list { padding-left: 30px; }
+.outline-item {
+  display: grid; grid-template-columns: 24px 1fr;
+  gap: 12px; padding: 12px 0;
+  border-bottom: 1px solid var(--border-soft);
+}
+.outline-item:last-child { border-bottom: none; }
+.outline-n {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px; color: var(--text-ghost); padding-top: 2px;
+}
+.outline-content { font-size: 13px; line-height: 1.8; color: var(--text-body); }
+.outline-pt {
+  display: block; margin-bottom: 4px;
+  font-weight: 600; color: var(--ink); font-size: 13.5px;
+}
+
+/* Toast */
+.toast {
+  position: fixed; bottom: 24px; right: 24px;
+  background: var(--ink); color: white;
+  padding: 10px 16px; border-radius: 10px;
+  font-size: 12.5px; z-index: 999;
+  transform: translateY(12px); opacity: 0;
+  transition: all 0.25s; pointer-events: none;
+  box-shadow: var(--shadow-md);
+  display: flex; align-items: center; gap: 7px;
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+.toast.ok { background: var(--success); }
+.toast.err { background: var(--red); }
+</style>
+</head>
+<body>
+
+<!-- ══════ SETTINGS MODAL ══════ -->
+<div id="settingsModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title">API 配置</div>
+      <button class="modal-close" onclick="closeSettings()">✕</button>
+    </div>
+    <div class="modal-body">
+      <!-- ASR -->
+      <div class="cfg-section">
+        <div class="cfg-section-title">🎙 豆包语音 ASR · 语音转录</div>
+        <div class="cfg-hint">
+          前往 <a href="https://console.volcengine.com/speech/service/16" target="_blank">火山引擎语音控制台</a> → 开通「录音文件识别标准版」→ 在「产品管理」中获取 <strong>AppID</strong> 和 <strong>Token</strong>。支持 ≤5 小时音频，60–80 分钟短剧完全覆盖。
+        </div>
+        <div class="cfg-field">
+          <div class="cfg-label">App ID <span class="cfg-tag">必填</span></div>
+          <input type="text" class="cfg-input" id="cfgAsrAppId" placeholder="如：1234567890">
+        </div>
+        <div class="cfg-field">
+          <div class="cfg-label">Access Token <span class="cfg-tag">必填</span></div>
+          <input type="password" class="cfg-input" id="cfgAsrToken" placeholder="录音文件识别 Token">
+        </div>
+      </div>
+      <!-- LLM -->
+      <div class="cfg-section">
+        <div class="cfg-section-title">🧠 豆包大模型 · 内容分析</div>
+        <div class="cfg-hint">
+          前往 <a href="https://console.volcengine.com/ark" target="_blank">火山方舟控制台</a> → 「API Key 管理」→ 新建 Key。推荐使用 <strong>doubao-seed-2.0-pro</strong>，效果最佳；<strong>doubao-pro-32k</strong> 更快更省。
+        </div>
+        <div class="cfg-field">
+          <div class="cfg-label">API Key <span class="cfg-tag">必填</span></div>
+          <input type="password" class="cfg-input" id="cfgLlmKey" placeholder="ark-xxxxxxxxxxxxxxxxxxxxxxxx">
+        </div>
+        <div class="cfg-field">
+          <div class="cfg-label">模型</div>
+          <select class="cfg-input" id="cfgModel">
+            <option value="doubao-seed-2.0-pro">doubao-seed-2.0-pro（推荐）</option>
+            <option value="doubao-pro-32k">doubao-pro-32k（快速）</option>
+            <option value="doubao-pro-128k">doubao-pro-128k（超长）</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-save" onclick="saveSettings()">保存配置</button>
+      <span class="save-ok" id="saveOk">✓ 已保存</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ FEISHU SURVEY MODAL ══════ -->
+<div id="surveyModal">
+  <div class="survey-box">
+    <div class="survey-header">
+      <div class="survey-title">开始前，请花 30 秒填写</div>
+      <div class="survey-sub">帮助我们了解你的使用需求，填完即可开始分析</div>
+    </div>
+    <div class="survey-iframe-wrap">
+      <iframe
+        src="https://my.feishu.cn/share/base/form/shrcnW93pIApwzXw6kvxH1HJjeh"
+        frameborder="0"
+        allowfullscreen
+        id="surveyFrame"
+      ></iframe>
+    </div>
+    <div class="survey-footer">
+      <span class="survey-done-hint" id="surveyHint">请填写完上方表单后继续 →</span>
+      <button class="survey-start-btn" id="surveyStartBtn" onclick="closeSurveyAndRun()">已填完，开始分析 →</button>
+    </div>
+  </div>
+</div>
+<header>
+  <div class="logo">
+    <div class="logo-dot"></div>
+    Drama<span>Lens</span>
+  </div>
+  <div class="header-divider"></div>
+  <div class="header-tagline">英文短剧智能拆解</div>
+  <div class="header-right">
+    <div class="status-chip">
+      <div class="status-dot" id="statusDot"></div>
+      <span id="statusText">待机</span>
+    </div>
+    <button class="btn-hdr" onclick="openSettings()">⚙ API 配置</button>
+  </div>
+</header>
+
+<!-- ══════ APP ══════ -->
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+
+    <div>
+      <div class="sidebar-label">输入方式</div>
+      <div class="input-toggle">
+        <button class="toggle-btn active" id="btnFile" onclick="switchInput('file')">📁 本地视频</button>
+        <button class="toggle-btn" id="btnUrl" onclick="switchInput('url')">🔗 视频链接</button>
+      </div>
+    </div>
+
+    <!-- File -->
+    <div id="fileArea">
+      <div class="upload-zone" id="uploadZone">
+        <input type="file" id="videoFile" accept="video/*">
+        <span class="upload-icon">🎬</span>
+        <div class="upload-label"><strong>点击上传</strong>或拖拽视频至此</div>
+        <div class="upload-formats">mp4 · mov · mkv · avi · webm</div>
+      </div>
+      <div class="file-chip" id="fileChip">
+        <div class="file-chip-icon">🎞️</div>
+        <div class="file-chip-info">
+          <div class="file-chip-name" id="fileName">—</div>
+          <div class="file-chip-meta" id="fileMeta">—</div>
+        </div>
+        <button class="file-chip-clear" onclick="clearFile()">×</button>
+      </div>
+    </div>
+
+    <!-- URL -->
+    <div id="urlArea" style="display:none">
+      <div class="url-area">
+        <input type="url" class="url-input" id="videoUrl" placeholder="粘贴视频直链 URL…">
+        <div class="url-hint">⚠ 仅支持可公开访问的直链视频 URL，B站等平台链接需后端支持。单次最长支持 5 小时视频。</div>
+      </div>
+    </div>
+
+    <!-- Config status -->
+    <div id="cfgWarn" class="cfg-status warn" onclick="openSettings()" style="display:none">
+      ⚠ API 未配置，点击前往设置
+    </div>
+    <div id="cfgOk" class="cfg-status ok" style="display:none">
+      ✓ API 已配置，可以开始分析
+    </div>
+
+    <!-- Progress -->
+    <div class="progress-wrap" id="progressWrap">
+      <div class="sidebar-label">处理进度</div>
+      <div class="progress-bar-bg"><div class="progress-bar" id="progressBar"></div></div>
+      <div class="p-step" id="s1"><div class="p-icon">1</div><span>提取音频</span></div>
+      <div class="p-step" id="s2"><div class="p-icon">2</div><span>上传 ASR</span></div>
+      <div class="p-step" id="s3"><div class="p-icon">3</div><span>英文转录</span></div>
+      <div class="p-step" id="s4"><div class="p-icon">4</div><span>生成双语字幕</span></div>
+      <div class="p-step" id="s5"><div class="p-icon">5</div><span>内容拆解分析</span></div>
+    </div>
+
+    <button class="btn-analyze" id="btnAnalyze" disabled onclick="runAnalysis()">
+      ▶ 开始分析
+    </button>
+
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="right-panel">
+
+    <!-- Welcome -->
+    <div id="welcomeScreen">
+      <div class="w-badge">✦ AI 驱动 · 全自动拆解</div>
+      <div class="w-title">一部剧，<em>三分钟</em>读透它</div>
+      <div class="w-sub">上传英文短剧视频，自动生成双语字幕时间轴、剧情简介、结构逻辑、人物小传与万字详纲，为改编创作提供完整素材基础</div>
+      <div class="w-steps">
+        <div class="w-step">
+          <div class="w-step-n">01</div>
+          <div class="w-step-t">配置 API</div>
+          <div class="w-step-d">右上角「API 配置」填入豆包密钥，一次配置永久生效</div>
+        </div>
+        <div class="w-step">
+          <div class="w-step-n">02</div>
+          <div class="w-step-t">上传视频</div>
+          <div class="w-step-d">支持本地文件上传或直链视频 URL，单集视频最长支持 5 小时</div>
+        </div>
+        <div class="w-step">
+          <div class="w-step-n">03</div>
+          <div class="w-step-t">开始分析</div>
+          <div class="w-step-d">约 10–15 分钟全自动处理，输出完整拆解文档</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Processing -->
+    <div class="proc-overlay" id="procOverlay">
+      <div class="spinner"></div>
+      <div class="proc-title">正在处理中…</div>
+      <div class="proc-label" id="procLabel">准备就绪</div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs-bar" id="tabsBar">
+      <button class="tab-btn active" data-tab="subtitles">双语字幕 <span class="tab-badge" id="subBadge">0</span></button>
+      <button class="tab-btn" data-tab="summary">剧情简介</button>
+      <button class="tab-btn" data-tab="logic">结构逻辑</button>
+      <button class="tab-btn" data-tab="characters">人物小传</button>
+      <button class="tab-btn" data-tab="outline">万字详纲</button>
+    </div>
+
+    <!-- Subtitle Pane -->
+    <div class="tab-pane active" id="pane-subtitles">
+      <div class="tab-empty" id="subEmpty">
+        <div class="tab-empty-icon">📜</div>
+        <div class="tab-empty-title">双语字幕时间轴</div>
+        <div class="tab-empty-desc">分析完成后，英文原台词与中文译文将按时间码对齐排列，支持关键词搜索定位。</div>
+        <div class="tab-empty-badge">步骤 4 完成后自动生成</div>
+      </div>
+      <div style="display:none;flex-direction:column;flex:1;overflow:hidden" id="subView">
+        <div class="sub-toolbar">
+          <input type="text" class="search-field" id="subSearch" placeholder="搜索台词…">
+          <button class="btn-sm" onclick="exportSubWord('en')">⬇ 英文 Word</button>
+          <button class="btn-sm" onclick="exportSubWord('zh')">⬇ 中文 Word</button>
+          <button class="btn-sm" onclick="exportSubWord('bi')">⬇ 双语 Word</button>
+        </div>
+        <div class="sub-list" id="subList"></div>
+      </div>
+    </div>
+
+    <!-- Summary Pane -->
+    <div class="tab-pane" id="pane-summary">
+      <div class="tab-empty" id="summaryEmpty">
+        <div class="tab-empty-icon">✦</div>
+        <div class="tab-empty-title">剧情简介</div>
+        <div class="tab-empty-desc">约 500 字的中文剧情概括，梳理故事起因、经过与结局，提炼核心主题与情感基调，帮你快速掌握全剧骨架，作为改编创作的第一块基石。</div>
+        <div class="tab-empty-badge">步骤 5 完成后自动生成</div>
+      </div>
+      <div style="display:none;flex-direction:column;flex:1;overflow:hidden" id="summaryView">
+        <div class="analysis-toolbar">
+          <span class="edit-badge" id="summaryLangBadge">中文</span>
+          <div class="toolbar-divider"></div>
+          <button class="btn-sm btn-translate" id="summaryTransBtn" onclick="translateSection('summary')">⇄ 中 → 英</button>
+          <button class="btn-sm btn-translate" id="summaryRestoreBtn" onclick="restoreSection('summary')" style="display:none">↺ 恢复中文</button>
+          <div class="toolbar-divider"></div>
+          <button class="btn-sm btn-export" onclick="exportSectionWord('summary')">⬇ 导出 Word</button>
+        </div>
+        <div class="analysis-scroll">
+          <div class="analysis-body">
+            <div class="a-block" style="animation-delay:.08s">
+              <div class="a-head"><div class="a-num">01</div><div class="a-title" id="summaryTabTitle">剧情简介</div><div class="a-line"></div></div>
+              <div class="a-body editable" id="summaryText" contenteditable="true" spellcheck="false"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Logic Pane -->
+    <div class="tab-pane" id="pane-logic">
+      <div class="tab-empty" id="logicEmpty">
+        <div class="tab-empty-icon">⬡</div>
+        <div class="tab-empty-title">结构逻辑分析</div>
+        <div class="tab-empty-desc">从四个维度深度拆解：<strong>核心亮点</strong>（最吸引人的卖点）、<strong>叙事结构</strong>（三幕节奏与悬念设计）、<strong>人物逻辑</strong>（动机与行为一致性）、<strong>情感逻辑</strong>（情绪弧线与共鸣点），是改编时最有价值的参考层。</div>
+        <div class="tab-empty-badge">步骤 5 完成后自动生成</div>
+      </div>
+      <div style="display:none;flex-direction:column;flex:1;overflow:hidden" id="logicView">
+        <div class="analysis-toolbar">
+          <span class="edit-badge" id="logicLangBadge">中文</span>
+          <div class="toolbar-divider"></div>
+          <button class="btn-sm btn-translate" id="logicTransBtn" onclick="translateSection('logic')">⇄ 中 → 英</button>
+          <button class="btn-sm btn-translate" id="logicRestoreBtn" onclick="restoreSection('logic')" style="display:none">↺ 恢复中文</button>
+          <div class="toolbar-divider"></div>
+          <button class="btn-sm btn-export" onclick="exportSectionWord('logic')">⬇ 导出 Word</button>
+        </div>
+        <div class="analysis-scroll">
+          <div class="analysis-body">
+            <div class="a-block" style="animation-delay:.08s">
+              <div class="a-head"><div class="a-num">02</div><div class="a-title">核心亮点</div><div class="a-line"></div></div>
+              <div class="a-body editable" id="highlightsText" contenteditable="true" spellcheck="false"></div>
+            </div>
+            <div class="a-block" style="animation-delay:.14s">
+              <div class="a-head"><div class="a-num">03</div><div class="a-title">叙事结构</div><div class="a-line"></div></div>
+              <div class="logic-grid" id="logicGrid"></div>
+            </div>
+            <div class="a-block" style="animation-delay:.2s">
+              <div class="a-head"><div class="a-num">04</div><div class="a-title">人物逻辑</div><div class="a-line"></div></div>
+              <div class="a-body editable" id="charLogicText" contenteditable="true" spellcheck="false"></div>
+            </div>
+            <div class="a-block" style="animation-delay:.26s">
+              <div class="a-head"><div class="a-num">05</div><div class="a-title">情感逻辑</div><div class="a-line"></div></div>
+              <div class="a-body editable" id="emotionText" contenteditable="true" spellcheck="false"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Characters Pane -->
+    <div class="tab-pane" id="pane-characters">
+      <div class="tab-empty" id="charEmpty">
+        <div class="tab-empty-icon">👤</div>
+        <div class="tab-empty-title">人物小传</div>
+        <div class="tab-empty-desc">自动识别全剧主要角色，每人生成 100–200 字中文小传，涵盖性格特点、核心动机、与其他角色的关系，以及贯穿全剧的成长弧线，为你的改编创作提供立体的人物原型参考。</div>
+        <div class="tab-empty-badge">步骤 5 完成后自动生成</div>
+      </div>
+      <div style="display:none;flex-direction:column;flex:1;overflow:hidden" id="charView">
+        <div class="analysis-toolbar">
+          <span class="edit-badge" id="charLangBadge">中文</span>
+          <div class="toolbar-divider"></div>
+          <button class="btn-sm btn-translate" id="charTransBtn" onclick="translateSection('characters')">⇄ 中 → 英</button>
+          <button class="btn-sm btn-translate" id="charRestoreBtn" onclick="restoreSection('characters')" style="display:none">↺ 恢复中文</button>
+          <div class="toolbar-divider"></div>
+          <button class="btn-sm btn-export" onclick="exportSectionWord('characters')">⬇ 导出 Word</button>
+        </div>
+        <div class="analysis-scroll">
+          <div class="analysis-body">
+            <div class="a-block" style="animation-delay:.08s">
+              <div class="a-head"><div class="a-num">06</div><div class="a-title">人物小传</div><div class="a-line"></div></div>
+              <div class="char-grid" id="charGrid"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Outline Pane -->
+    <div class="tab-pane" id="pane-outline">
+      <div class="tab-empty" id="outlineEmpty">
+        <div class="tab-empty-icon">📋</div>
+        <div class="tab-empty-title">万字详纲</div>
+        <div class="tab-empty-desc">按时间顺序拆解全剧 40+ 个剧情节点，每个节点 150–250 字，包含场景背景、人物行动、关键对白要点与情感冲突，并自动标注<strong>【转折】</strong>与<strong>【高潮】</strong>，是改编时最直接可用的素材底稿。</div>
+        <div class="tab-empty-badge">步骤 5 完成后自动生成</div>
+      </div>
+      <div style="display:none;flex-direction:column;flex:1;overflow:hidden" id="outlineView">
+        <div class="analysis-toolbar">
+          <span class="edit-badge" id="outlineLangBadge">中文</span>
+          <div class="toolbar-divider"></div>
+          <button class="btn-sm btn-translate" id="outlineTransBtn" onclick="translateSection('outline')">⇄ 中 → 英</button>
+          <button class="btn-sm btn-translate" id="outlineRestoreBtn" onclick="restoreSection('outline')" style="display:none">↺ 恢复中文</button>
+          <div class="toolbar-divider"></div>
+          <button class="btn-sm btn-export" onclick="exportSectionWord('outline')">⬇ 导出 Word</button>
+        </div>
+        <div class="analysis-scroll">
+          <div class="analysis-body">
+            <div class="a-block" style="animation-delay:.08s">
+              <div class="a-head"><div class="a-num">07</div><div class="a-title">全剧情万字详纲</div><div class="a-line"></div></div>
+              <div class="outline-list" id="outlineList"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── STATE ──
+let videoFile = null, videoUrl = '', inputMode = 'file';
+let subtitleData = [], analysisData = {};
+
+// ── INIT ──
+window.addEventListener('load', () => { loadSettings(); checkConfig(); });
+
+// ── SETTINGS ──
+function openSettings() { loadSettings(); document.getElementById('settingsModal').classList.add('open'); }
+function closeSettings() { document.getElementById('settingsModal').classList.remove('open'); }
+document.getElementById('settingsModal').addEventListener('click', e => { if(e.target===document.getElementById('settingsModal')) closeSettings(); });
+
+function saveSettings() {
+  localStorage.setItem('dlcfg', JSON.stringify({
+    asrAppId: document.getElementById('cfgAsrAppId').value.trim(),
+    asrToken: document.getElementById('cfgAsrToken').value.trim(),
+    llmKey:   document.getElementById('cfgLlmKey').value.trim(),
+    model:    document.getElementById('cfgModel').value,
+  }));
+  const ok = document.getElementById('saveOk');
+  ok.classList.add('show');
+  setTimeout(()=>ok.classList.remove('show'),2000);
+  checkConfig();
+  toast('配置已保存','ok');
+}
+
+function loadSettings() {
+  const c = getConfig();
+  document.getElementById('cfgAsrAppId').value = c.asrAppId||'';
+  document.getElementById('cfgAsrToken').value  = c.asrToken||'';
+  document.getElementById('cfgLlmKey').value    = c.llmKey||'';
+  document.getElementById('cfgModel').value     = c.model||'doubao-seed-2.0-pro';
+}
+
+function getConfig() { return JSON.parse(localStorage.getItem('dlcfg')||'{}'); }
+
+function checkConfig() {
+  const c = getConfig(), ok = !!(c.asrAppId && c.asrToken && c.llmKey);
+  document.getElementById('cfgWarn').style.display = ok ? 'none' : 'flex';
+  document.getElementById('cfgOk').style.display   = ok ? 'flex' : 'none';
+  updateBtn();
+}
+
+// ── INPUT ──
+function switchInput(mode) {
+  inputMode = mode;
+  document.getElementById('btnFile').classList.toggle('active', mode==='file');
+  document.getElementById('btnUrl').classList.toggle('active', mode==='url');
+  document.getElementById('fileArea').style.display = mode==='file' ? 'block' : 'none';
+  document.getElementById('urlArea').style.display  = mode==='url'  ? 'block' : 'none';
+  updateBtn();
+}
+
+document.getElementById('videoFile').addEventListener('change', e => {
+  const f = e.target.files[0]; if(!f) return;
+  videoFile = f;
+  document.getElementById('fileName').textContent = f.name;
+  document.getElementById('fileMeta').textContent = fmtSize(f.size);
+  const u = URL.createObjectURL(f), v = document.createElement('video');
+  v.src = u;
+  v.onloadedmetadata = () => {
+    document.getElementById('fileMeta').textContent = fmtSize(f.size)+' · '+fmtDur(v.duration);
+    URL.revokeObjectURL(u);
+  };
+  document.getElementById('uploadZone').style.display = 'none';
+  document.getElementById('fileChip').classList.add('show');
+  updateBtn();
+});
+
+const zone = document.getElementById('uploadZone');
+zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+zone.addEventListener('drop', e => {
+  e.preventDefault(); zone.classList.remove('drag-over');
+  const f = e.dataTransfer.files[0];
+  if(f && f.type.startsWith('video/')) {
+    document.getElementById('videoFile').files = e.dataTransfer.files;
+    document.getElementById('videoFile').dispatchEvent(new Event('change'));
+  }
+});
+
+function clearFile() {
+  videoFile = null;
+  document.getElementById('videoFile').value = '';
+  document.getElementById('fileChip').classList.remove('show');
+  document.getElementById('uploadZone').style.display = '';
+  updateBtn();
+}
+
+document.getElementById('videoUrl').addEventListener('input', e => { videoUrl = e.target.value.trim(); updateBtn(); });
+
+function updateBtn() {
+  const c = getConfig(), hasCfg = !!(c.asrAppId && c.asrToken && c.llmKey);
+  const hasInput = (inputMode==='file' && videoFile) || (inputMode==='url' && videoUrl);
+  document.getElementById('btnAnalyze').disabled = !(hasCfg && hasInput);
+}
+
+// ── TABS ──
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('pane-'+btn.dataset.tab).classList.add('active');
+  });
+});
+
+document.getElementById('subSearch').addEventListener('input', e => {
+  const q = e.target.value.toLowerCase();
+  document.querySelectorAll('.sub-item').forEach(el => {
+    el.style.display = !q || el.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+});
+
+// ── SURVEY ──
+let surveyDone = false;
+
+function openSurvey() {
+  document.getElementById('surveyModal').classList.add('open');
+  // 15秒后才显示「已填完」按钮，确保用户有时间填写
+  setTimeout(() => {
+    document.getElementById('surveyStartBtn').classList.add('show');
+    document.getElementById('surveyHint').textContent = '填写完成后点击右侧按钮 →';
+  }, 15000);
+}
+
+function closeSurveyAndRun() {
+  surveyDone = true;
+  document.getElementById('surveyModal').classList.remove('open');
+  doRunAnalysis();
+}
+
+// ── ANALYSIS ──
+async function runAnalysis() {
+  if (!surveyDone) {
+    openSurvey();
+    return;
+  }
+  doRunAnalysis();
+}
+
+async function doRunAnalysis() {
+  const c = getConfig();
+  document.getElementById('btnAnalyze').disabled = true;
+  document.getElementById('progressWrap').classList.add('show');
+  document.getElementById('welcomeScreen').style.display = 'none';
+  document.getElementById('procOverlay').classList.add('show');
+  document.getElementById('tabsBar').classList.remove('show');
+  setStatus('loading','处理中');
+  setProg(0);
+
+  try {
+    setStep(1,'active'); setLabel('提取音频轨道…');
+    const audio = inputMode==='file' ? await extractAudio(videoFile) : await fetchExtract(videoUrl);
+    setStep(1,'done'); setProg(18);
+
+    setStep(2,'active'); setStep(3,'active'); setLabel('上传并转录语音… (约3-8分钟)');
+    const asr = await transcribeAudio(audio, c.asrAppId, c.asrToken);
+    setStep(2,'done'); setStep(3,'done'); setProg(50);
+
+    setStep(4,'active'); setLabel('生成双语字幕…');
+    subtitleData = await translateSubs(asr, c.llmKey, c.model);
+    renderSubs();
+    setStep(4,'done'); setProg(70);
+
+    setStep(5,'active'); setLabel('内容拆解分析… (约2-3分钟)');
+    analysisData = await analyzeContent(asr.map(s=>s.text).join(' '), c.llmKey, c.model);
+    renderAnalysis();
+    setStep(5,'done'); setProg(100);
+
+    document.getElementById('procOverlay').classList.remove('show');
+    document.getElementById('tabsBar').classList.add('show');
+    document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.getElementById('pane-subtitles').classList.add('active');
+    document.querySelector('.tab-btn[data-tab="subtitles"]').classList.add('active');
+
+    setStatus('active','分析完成');
+    toast('分析完成！','ok');
+
+  } catch(err) {
+    console.error(err);
+    setStatus('error','出错');
+    document.getElementById('procOverlay').classList.remove('show');
+    document.getElementById('welcomeScreen').style.display = 'flex';
+    document.getElementById('btnAnalyze').disabled = false;
+    toast('错误：'+err.message,'err');
+  }
+}
+
+// ── AUDIO ──
+async function extractAudio(file) {
+  const ab = await file.arrayBuffer();
+  const ctx = new (window.AudioContext||window.webkitAudioContext)({sampleRate:16000});
+  const dec = await ctx.decodeAudioData(ab);
+  const off = new OfflineAudioContext(1, dec.length, 16000);
+  const mono = off.createBuffer(1, dec.length, 16000);
+  const md = mono.getChannelData(0);
+  for(let i=0;i<dec.numberOfChannels;i++){const d=dec.getChannelData(i);for(let j=0;j<dec.length;j++)md[j]+=d[j]/dec.numberOfChannels;}
+  const src = off.createBufferSource(); src.buffer=mono; src.connect(off.destination); src.start(0);
+  const r = await off.startRendering(); ctx.close();
+  return encodeWAV(r.getChannelData(0),16000);
+}
+
+async function fetchExtract(url) {
+  setLabel('获取视频链接…');
+  const r = await fetch(url); if(!r.ok) throw new Error('无法访问视频链接');
+  return extractAudio(new File([await r.blob()],'v.mp4',{type:'video/mp4'}));
+}
+
+function encodeWAV(s,sr) {
+  const b=new ArrayBuffer(44+s.length*2), v=new DataView(b);
+  const ws=(o,t)=>{for(let i=0;i<t.length;i++)v.setUint8(o+i,t.charCodeAt(i));};
+  ws(0,'RIFF');v.setUint32(4,36+s.length*2,true);ws(8,'WAVE');ws(12,'fmt ');
+  v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);
+  v.setUint32(24,sr,true);v.setUint32(28,sr*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);
+  ws(36,'data');v.setUint32(40,s.length*2,true);
+  let o=44; for(let i=0;i<s.length;i++,o+=2){const x=Math.max(-1,Math.min(1,s[i]));v.setInt16(o,x<0?x*0x8000:x*0x7FFF,true);}
+  return new Blob([b],{type:'audio/wav'});
+}
+
+// ── ASR ──
+async function transcribeAudio(blob, appId, token) {
+  const fd=new FormData(); fd.append('audio',blob,'audio.wav');
+  const sr=await fetch('https://openspeech.bytedance.com/api/v1/asr/submit',{
+    method:'POST',
+    headers:{'Authorization':`Bearer;${token}`,'X-Api-App-Key':appId,'X-Api-Request-Id':'dl-'+Date.now()},
+    body:fd
+  });
+  if(!sr.ok) throw new Error('ASR 提交失败: '+await sr.text());
+  const sd=await sr.json();
+  if(sd.resp_code!==0) throw new Error('ASR 错误: '+sd.resp_message);
+  const tid=sd.resp?.task_id; if(!tid) throw new Error('未获取任务 ID');
+  for(let i=0;i<120;i++){
+    await sleep(5000); setLabel(`转录中… ${(i+1)*5}s`);
+    const qr=await fetch('https://openspeech.bytedance.com/api/v1/asr/query',{
+      method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer;${token}`,'X-Api-App-Key':appId},
+      body:JSON.stringify({task_id:tid})
+    });
+    const qd=await qr.json(); if(qd.resp_code!==0) continue;
+    const st=qd.resp?.task_status;
+    if(st==='completed') return (qd.resp?.result?.utterances||[]).map(u=>({start:u.start_time/1000,end:u.end_time/1000,text:u.text}));
+    if(st==='failed') throw new Error('ASR 转录失败');
+  }
+  throw new Error('ASR 超时');
+}
+
+// ── TRANSLATE ──
+async function translateSubs(subs, key, model) {
+  const B=30, result=[];
+  for(let i=0;i<subs.length;i+=B){
+    const batch=subs.slice(i,i+B);
+    setLabel(`翻译字幕 ${i+1}–${Math.min(i+B,subs.length)} / ${subs.length}`);
+    const lines=batch.map((s,n)=>`${n+1}. ${s.text}`).join('\n');
+    const r=await callLLM(`将以下英文短剧台词逐句翻译成中文，口语化，保留人名。只输出JSON数组["译1","译2"]：\n\n${lines}`,key,model,2000);
+    let tr; try{tr=JSON.parse(r.replace(/```json|```/g,'').trim());}catch{tr=batch.map(()=>'—');}
+    batch.forEach((s,n)=>result.push({tc:s.start,tcEnd:s.end,en:s.text,zh:tr[n]||'—'}));
+  }
+  return result;
+}
+
+// ── ANALYZE ──
+async function analyzeContent(text, key, model) {
+  const t = text.length>15000 ? text.slice(0,15000)+'…' : text;
+
+  setLabel('分析剧情与结构…');
+  const r1=await callLLM(`你是专业影视改编策划。分析以下英文短剧对白（只输出JSON，不加说明）：
+{"summary":"500字中文剧情简介","highlights":"核心亮点200字","structure_acts":"三幕结构分析150字","structure_hooks":"悬念设计150字","character_logic":"人物逻辑200字","emotion":"情感逻辑200字"}
+
+对白：\n${t}`,key,model,2500);
+  let p1; try{p1=JSON.parse(r1.replace(/```json|```/g,'').trim());}catch{p1={summary:r1.slice(0,500)};}
+
+  setLabel('提取人物小传…');
+  const r2=await callLLM(`从以下英文短剧对白提取主要人物，每人100-200字中文小传。只输出JSON数组[{"name":"中英名","bio":"小传"}]：\n${t}`,key,model,2000);
+  let chars; try{chars=JSON.parse(r2.replace(/```json|```/g,'').trim());}catch{chars=[];}
+
+  setLabel('生成万字详纲…');
+  const r3=await callLLM(`根据以下英文短剧对白写全剧万字详纲。至少40个节点，每节点150-250字，含场景/行动/对白要点/情感。转折标注【转折】，高潮标注【高潮】。只输出JSON数组[{"point":"幕次标题","content":"描述"}]：\n${t}`,key,model,4500);
+  let outline; try{outline=JSON.parse(r3.replace(/```json|```/g,'').trim());}catch{outline=[{point:'详纲',content:r3.slice(0,800)}];}
+
+  return { summary:p1.summary||'', highlights:p1.highlights||'',
+    structureActs:p1.structure_acts||'', structureHooks:p1.structure_hooks||'',
+    characterLogic:p1.character_logic||'', emotion:p1.emotion||'',
+    characters:chars, outline };
+}
+
+async function callLLM(prompt, key, model, maxTok=1500) {
+  const r=await fetch('https://ark.cn-beijing.volces.com/api/v3/chat/completions',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':`Bearer ${key}`},
+    body:JSON.stringify({model,max_tokens:maxTok,temperature:0.7,messages:[{role:'user',content:prompt}]})
+  });
+  if(!r.ok) throw new Error('豆包 API: '+await r.text());
+  const d=await r.json(); return d.choices?.[0]?.message?.content||'';
+}
+
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+
+// ── RENDER ──
+function renderSubs() {
+  const list=document.getElementById('subList'); list.innerHTML='';
+  subtitleData.forEach(item=>{
+    const d=document.createElement('div'); d.className='sub-item';
+    d.innerHTML=`<div class="sub-tc">${fmtTC(item.tc)}</div>
+      <div class="sub-texts"><div class="sub-en">${esc(item.en)}</div><div class="sub-zh">${esc(item.zh)}</div></div>`;
+    list.appendChild(d);
+  });
+  document.getElementById('subBadge').textContent=subtitleData.length;
+  document.getElementById('subEmpty').style.display='none';
+  document.getElementById('subView').style.display='flex';
+}
+
+function renderAnalysis() {
+  const d = analysisData;
+  const toP = t => (t||'').split('\n').filter(Boolean).map(p=>`<p>${esc(p)}</p>`).join('');
+
+  // 重置所有语言状态
+  ['summary','logic','characters','outline'].forEach(sec => {
+    sectionLang[sec] = 'zh';
+    const badge = document.getElementById(sec+'LangBadge');
+    if(badge){ badge.textContent='中文'; badge.classList.remove('en'); }
+    const tb = document.getElementById(sec+'TransBtn');
+    const rb = document.getElementById(sec+'RestoreBtn');
+    if(tb) tb.style.display='';
+    if(rb) rb.style.display='none';
+  });
+
+  document.getElementById('summaryText').innerHTML = toP(d.summary);
+  document.getElementById('summaryEmpty').style.display='none';
+  document.getElementById('summaryView').style.display='flex';
+
+  document.getElementById('highlightsText').innerHTML = toP(d.highlights);
+  const lg = document.getElementById('logicGrid');
+  lg.innerHTML = `
+    <div class="logic-card"><div class="logic-card-tag">三幕结构</div><div class="logic-card-text editable" contenteditable="true" spellcheck="false">${esc(d.structureActs)}</div></div>
+    <div class="logic-card"><div class="logic-card-tag">悬念设计</div><div class="logic-card-text editable" contenteditable="true" spellcheck="false">${esc(d.structureHooks)}</div></div>`;
+  document.getElementById('charLogicText').innerHTML = toP(d.characterLogic);
+  document.getElementById('emotionText').innerHTML   = toP(d.emotion);
+  document.getElementById('logicEmpty').style.display='none';
+  document.getElementById('logicView').style.display='flex';
+
+  const cg = document.getElementById('charGrid'); cg.innerHTML='';
+  (d.characters||[]).forEach(c => {
+    const card = document.createElement('div'); card.className='char-card';
+    card.innerHTML = `<div class="char-name" contenteditable="true" spellcheck="false">${esc(c.name)}</div><div class="char-bio" contenteditable="true" spellcheck="false">${esc(c.bio)}</div>`;
+    cg.appendChild(card);
+  });
+  document.getElementById('charEmpty').style.display='none';
+  document.getElementById('charView').style.display='flex';
+
+  const ol = document.getElementById('outlineList'); ol.innerHTML='';
+  (d.outline||[]).forEach((item,i) => {
+    const div = document.createElement('div'); div.className='outline-item';
+    const content = esc(item.content||'').replace(/【转折】/g,'<strong style="color:var(--red)">【转折】</strong>').replace(/【高潮】/g,'<strong style="color:var(--green-main)">【高潮】</strong>');
+    div.innerHTML = `<div class="outline-n">${String(i+1).padStart(2,'0')}</div>
+      <div class="outline-content"><span class="outline-pt" contenteditable="true" spellcheck="false">${esc(item.point||'')}</span><span contenteditable="true" spellcheck="false">${content}</span></div>`;
+    ol.appendChild(div);
+  });
+  document.getElementById('outlineEmpty').style.display='none';
+  document.getElementById('outlineView').style.display='flex';
+}
+
+// ── TRANSLATE & EDIT ──
+// 每个 section 的语言状态：'zh' | 'en'
+const sectionLang = { summary:'zh', logic:'zh', characters:'zh', outline:'zh' };
+
+async function translateSection(sec) {
+  const cfg = getConfig();
+  if(!cfg.llmKey){ toast('请先配置 API Key','err'); return; }
+
+  const transBtn = document.getElementById(sec+'TransBtn');
+  const restoreBtn = document.getElementById(sec+'RestoreBtn');
+  const badge = document.getElementById(sec+'LangBadge');
+  const scrollEl = document.querySelector(`#${sec}View .analysis-scroll`);
+
+  // 显示翻译中遮罩
+  const overlay = document.createElement('div');
+  overlay.className = 'translating-overlay';
+  overlay.innerHTML = '<div class="spinner" style="width:20px;height:20px;border-width:2px"></div><span>翻译中…</span>';
+  scrollEl.appendChild(overlay);
+  transBtn.disabled = true;
+
+  try {
+    const zhContent = extractSectionText(sec);
+    const prompt = `将以下中文影视分析内容翻译成流畅的英文，保留所有段落结构和标点格式，保持专业影视术语。直接输出译文，不加任何说明：\n\n${zhContent}`;
+    const result = await callLLM(prompt, cfg.llmKey, cfg.model || 'doubao-seed-2.0-pro', 3000);
+
+    applySectionTranslation(sec, result);
+    sectionLang[sec] = 'en';
+    badge.textContent = 'English';
+    badge.classList.add('en');
+    transBtn.style.display = 'none';
+    restoreBtn.style.display = '';
+    toast('翻译完成，可直接编辑','ok');
+  } catch(e) {
+    toast('翻译失败：'+e.message,'err');
+  } finally {
+    overlay.remove();
+    transBtn.disabled = false;
+  }
+}
+
+function restoreSection(sec) {
+  const badge = document.getElementById(sec+'LangBadge');
+  const transBtn = document.getElementById(sec+'TransBtn');
+  const restoreBtn = document.getElementById(sec+'RestoreBtn');
+
+  // 重新渲染中文内容
+  const d = analysisData;
+  const toP = t => (t||'').split('\n').filter(Boolean).map(p=>`<p>${esc(p)}</p>`).join('');
+
+  if(sec === 'summary'){
+    document.getElementById('summaryText').innerHTML = toP(d.summary);
+  } else if(sec === 'logic'){
+    document.getElementById('highlightsText').innerHTML = toP(d.highlights);
+    document.getElementById('charLogicText').innerHTML = toP(d.characterLogic);
+    document.getElementById('emotionText').innerHTML = toP(d.emotion);
+    const lg = document.getElementById('logicGrid');
+    lg.innerHTML = `
+      <div class="logic-card"><div class="logic-card-tag">三幕结构</div><div class="logic-card-text editable" contenteditable="true" spellcheck="false">${esc(d.structureActs)}</div></div>
+      <div class="logic-card"><div class="logic-card-tag">悬念设计</div><div class="logic-card-text editable" contenteditable="true" spellcheck="false">${esc(d.structureHooks)}</div></div>`;
+  } else if(sec === 'characters'){
+    const cg = document.getElementById('charGrid'); cg.innerHTML='';
+    (d.characters||[]).forEach(c=>{
+      const card = document.createElement('div'); card.className='char-card';
+      card.innerHTML = `<div class="char-name" contenteditable="true" spellcheck="false">${esc(c.name)}</div><div class="char-bio" contenteditable="true" spellcheck="false">${esc(c.bio)}</div>`;
+      cg.appendChild(card);
+    });
+  } else if(sec === 'outline'){
+    const ol = document.getElementById('outlineList'); ol.innerHTML='';
+    (d.outline||[]).forEach((item,i)=>{
+      const div = document.createElement('div'); div.className='outline-item';
+      const content = esc(item.content||'').replace(/【转折】/g,'<strong style="color:var(--red)">【转折】</strong>').replace(/【高潮】/g,'<strong style="color:var(--green-main)">【高潮】</strong>');
+      div.innerHTML = `<div class="outline-n">${String(i+1).padStart(2,'0')}</div>
+        <div class="outline-content"><span class="outline-pt" contenteditable="true" spellcheck="false">${esc(item.point||'')}</span><span contenteditable="true" spellcheck="false">${content}</span></div>`;
+      ol.appendChild(div);
+    });
+  }
+
+  sectionLang[sec] = 'zh';
+  badge.textContent = '中文';
+  badge.classList.remove('en');
+  transBtn.style.display = '';
+  restoreBtn.style.display = 'none';
+}
+
+function extractSectionText(sec) {
+  // 从当前DOM里提取纯文本用于翻译
+  if(sec === 'summary') return document.getElementById('summaryText').innerText || '';
+  if(sec === 'logic') return [
+    '【核心亮点】\n' + (document.getElementById('highlightsText').innerText||''),
+    '【叙事结构】\n' + (document.getElementById('logicGrid').innerText||''),
+    '【人物逻辑】\n' + (document.getElementById('charLogicText').innerText||''),
+    '【情感逻辑】\n' + (document.getElementById('emotionText').innerText||''),
+  ].join('\n\n');
+  if(sec === 'characters') return document.getElementById('charGrid').innerText || '';
+  if(sec === 'outline') return document.getElementById('outlineList').innerText || '';
+  return '';
+}
+
+function applySectionTranslation(sec, enText) {
+  // 将翻译结果按段落重新渲染到DOM
+  const paras = enText.split('\n').filter(Boolean);
+  const toP = arr => arr.map(p=>`<p>${esc(p)}</p>`).join('');
+
+  if(sec === 'summary'){
+    document.getElementById('summaryText').innerHTML = toP(paras);
+
+  } else if(sec === 'logic'){
+    // 按标记拆分各部分
+    const sections = { highlights:[], structure:[], charLogic:[], emotion:[] };
+    let current = 'highlights';
+    paras.forEach(p => {
+      const lp = p.toLowerCase();
+      if(lp.includes('core highlight') || lp.includes('【core')) current='highlights';
+      else if(lp.includes('structure') || lp.includes('three-act') || lp.includes('【narrat')) current='structure';
+      else if(lp.includes('character logic') || lp.includes('【character')) current='charLogic';
+      else if(lp.includes('emotion') || lp.includes('【emotion')) current='emotion';
+      else sections[current].push(p);
+    });
+    if(!sections.highlights.length && !sections.structure.length) {
+      // fallback: 均分四段
+      const chunk = Math.ceil(paras.length/4);
+      sections.highlights = paras.slice(0, chunk);
+      sections.structure  = paras.slice(chunk, chunk*2);
+      sections.charLogic  = paras.slice(chunk*2, chunk*3);
+      sections.emotion    = paras.slice(chunk*3);
+    }
+    document.getElementById('highlightsText').innerHTML = toP(sections.highlights);
+    document.getElementById('charLogicText').innerHTML  = toP(sections.charLogic);
+    document.getElementById('emotionText').innerHTML    = toP(sections.emotion);
+    const lg = document.getElementById('logicGrid');
+    const structText = sections.structure.join('\n');
+    const half = Math.ceil(sections.structure.length/2);
+    lg.innerHTML = `
+      <div class="logic-card"><div class="logic-card-tag">Three-Act Structure</div><div class="logic-card-text editable" contenteditable="true" spellcheck="false">${esc(sections.structure.slice(0,half).join('\n'))}</div></div>
+      <div class="logic-card"><div class="logic-card-tag">Suspense Design</div><div class="logic-card-text editable" contenteditable="true" spellcheck="false">${esc(sections.structure.slice(half).join('\n'))}</div></div>`;
+
+  } else if(sec === 'characters'){
+    const cg = document.getElementById('charGrid');
+    const cards = Array.from(cg.querySelectorAll('.char-card'));
+    // 按人物卡片数量分段
+    const cardCount = cards.length || 1;
+    const chunkSize = Math.ceil(paras.length / cardCount);
+    cards.forEach((card, i) => {
+      const bio = card.querySelector('.char-bio');
+      if(bio) bio.innerHTML = esc(paras.slice(i*chunkSize,(i+1)*chunkSize).join('\n'));
+    });
+
+  } else if(sec === 'outline'){
+    const items = document.querySelectorAll('#outlineList .outline-item');
+    const itemCount = items.length || 1;
+    const chunkSize = Math.ceil(paras.length / itemCount);
+    items.forEach((item, i) => {
+      const contentSpan = item.querySelectorAll('span')[1];
+      if(contentSpan) contentSpan.innerHTML = esc(paras.slice(i*chunkSize,(i+1)*chunkSize).join('\n'));
+    });
+  }
+}
+
+// ── 导出（跟随当前显示语种）──
+function exportSectionWord(sec) {
+  const d = analysisData;
+  const lang = sectionLang[sec]; // 'zh' | 'en'
+  const title = videoFile?.name?.replace(/\.[^.]+$/,'') || videoUrl || '剧本分析';
+  const langLabel = lang === 'en' ? 'EN' : 'ZH';
+  const isEn = lang === 'en';
+
+  let body = '', docTitle = '';
+  const para = (text, font) => `{\\pard\\${font||'f0'}\\fs20 ${rtfEsc(text)}\\par}\n`;
+  const heading = (text) => `{\\pard\\b\\f0\\fs24\\cf1 ${rtfEsc(text)}\\par}\n{\\pard\\par}\n`;
+  const subH = (text) => `{\\pard\\b\\f0\\fs22 ${rtfEsc(text)}\\par}\n`;
+
+  if(sec === 'summary'){
+    docTitle = title + (isEn ? ' — Story Synopsis' : ' — 剧情简介');
+    body += para(document.getElementById('summaryText').innerText||'');
+
+  } else if(sec === 'logic'){
+    docTitle = title + (isEn ? ' — Story Analysis' : ' — 结构逻辑分析');
+    const sections = [
+      { label: isEn ? 'Core Highlights' : '核心亮点', el: 'highlightsText' },
+      { label: isEn ? 'Narrative Structure' : '叙事结构', grid: true },
+      { label: isEn ? 'Character Logic' : '人物逻辑', el: 'charLogicText' },
+      { label: isEn ? 'Emotional Logic' : '情感逻辑', el: 'emotionText' },
+    ];
+    sections.forEach(s => {
+      body += heading(s.label);
+      if(s.grid) {
+        body += para(document.getElementById('logicGrid').innerText||'');
+      } else {
+        body += para(document.getElementById(s.el).innerText||'');
+      }
+    });
+
+  } else if(sec === 'characters'){
+    docTitle = title + (isEn ? ' — Character Profiles' : ' — 人物小传');
+    document.querySelectorAll('#charGrid .char-card').forEach(card => {
+      const name = card.querySelector('.char-name')?.innerText||'';
+      const bio  = card.querySelector('.char-bio')?.innerText||'';
+      body += subH(name);
+      body += para(bio);
+      body += `{\\pard\\par}\n`;
+    });
+
+  } else if(sec === 'outline'){
+    docTitle = title + (isEn ? ' — Full Story Outline' : ' — 万字详纲');
+    document.querySelectorAll('#outlineList .outline-item').forEach((item, i) => {
+      const pt = item.querySelector('.outline-pt')?.innerText||'';
+      const spans = item.querySelectorAll('span');
+      const content = spans[1]?.innerText || spans[0]?.innerText || '';
+      body += subH(`${String(i+1).padStart(2,'0')}. ${pt}`);
+      body += para(content, isEn ? 'f1' : 'f0');
+      body += `{\\pard\\par}\n`;
+    });
+  }
+
+  dlRtf(`${title}_${sec}_${langLabel}.doc`, makeRtf(body, docTitle));
+  toast('Word 已下载','ok');
+}
+
+function exportAnalysisWord(){} // 兼容旧引用
+
+// ── RTF UTILS ──
+function rtfEsc(t){return String(t||'').replace(/\\/g,'\\\\').replace(/\{/g,'\\{').replace(/\}/g,'\\}').replace(/[\u0080-\uffff]/g,c=>`\\u${c.charCodeAt(0)}?`);}
+function makeRtf(body,docTitle){return `{\\rtf1\\ansi\\ansicpg936\\deff0\n{\\fonttbl{\\f0\\fnil\\fcharset134 \\u23435?\\u20307?;}{\\f1\\froman\\fcharset0 Times New Roman;}}\n{\\colortbl;\\red30\\green92\\blue58;\\red44\\green92\\blue68;}\n{\\pard\\qc\\b\\fs30 ${rtfEsc(docTitle)}\\par}\n{\\pard\\qc\\fs18\\cf1 DramaLens \\u23548?\\u20986?\\par}\n{\\pard\\par}\n${body}\n}`;}
+function dlRtf(filename,rtf){const b=new Blob([rtf],{type:'application/rtf'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=filename;a.click();}
+
+// ── UTILS ──
+function setStatus(s,t){document.getElementById('statusDot').className='status-dot '+s;document.getElementById('statusText').textContent=t;}
+function setProg(p){document.getElementById('progressBar').style.width=p+'%';}
+function setStep(n,s){document.getElementById('s'+n).className='p-step '+s;}
+function setLabel(t){document.getElementById('procLabel').textContent=t;}
+function fmtSize(b){return b<1048576?(b/1024).toFixed(1)+' KB':(b/1048576).toFixed(1)+' MB';}
+function fmtDur(s){const m=Math.floor(s/60),sc=Math.floor(s%60);return `${m}:${String(sc).padStart(2,'0')}`;}
+function fmtTC(s){const m=Math.floor(s/60),sc=Math.floor(s%60);return `${String(m).padStart(2,'0')}:${String(sc).padStart(2,'0')}`;}
+function srtTC(s){const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sc=Math.floor(s%60),ms=Math.round((s-Math.floor(s))*1000);return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sc).padStart(2,'0')},${String(ms).padStart(3,'0')}`;}
+function esc(t){return String(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function dl(name,c){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([c],{type:'text/plain;charset=utf-8'}));a.download=name;a.click();}
+function toast(msg,type=''){const t=document.getElementById('toast');t.textContent=msg;t.className='toast show '+type;setTimeout(()=>t.className='toast',3000);}
+</script>
+</body>
+</html>
