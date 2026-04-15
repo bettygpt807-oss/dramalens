@@ -1,25 +1,4 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "api/asr-proxy.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "index.html",
-      "use": "@vercel/static"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
-    }
-  ],
   "functions": {
     "api/asr-proxy.js": {
       "maxDuration": 300
