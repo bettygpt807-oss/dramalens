@@ -14,10 +14,12 @@ console.log('headers:', JSON.stringify(req.headers));
 
     if (action === 'submit') {
       const audioBase64 = audioBuffer.toString('base64');
-      const reqBody = JSON.stringify({
-        audio: { format: 'wav', data: audioBase64 },
-        request: { model_name: 'bigasr', language: 'en-US' }
-      });
+     const reqBody = JSON.stringify({
+  appid: appId,
+  token: token,
+  audio: { format: 'wav', data: audioBase64 },
+  request: { model_name: 'bigasr', language: 'en-US' }
+});
       const result = await httpsPost('openspeech.bytedance.com', '/api/v1/auc/submit', {
         'Authorization': `Bearer;${token}`,
         'X-Api-App-Key': appId,
