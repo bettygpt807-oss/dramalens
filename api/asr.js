@@ -12,34 +12,25 @@ module.exports = async function handler(req, res) {
   try {
     const { action, taskId, audioBuffer } = await parseMultipart(req);
 
-if (action === 'submit') {
-  const audioBase64 = audioBuffer.toString('base64');
-  const reqBody = JSON.stringify({
-    audio: {
-      format: 'wav',
-      data: audioBase64,
-    },
-    request: {
-      model_name: 'bigasr',
-      language: 'en-US',
-    }
-  });
-
-  const result = await httpsPost('openspeech.bytedance.com', '/api/v1/auc/submit', {
-    'Authorization': `Bearer;${token}`,
-    'X-Api-App-Key': appId,
-    'X-Api-Request-Id': 'dl-' + Date.now(),
-    'Content-Type': 'application/json',
-    'Content-Length': Buffer.byteLength(reqBody),
-  }, Buffer.from(reqBody));
-
-  console.log('ASR submit response:', result);
-  try {
-    return res.status(200).json(JSON.parse(result));
-  } catch(e) {
-    return res.status(200).json({ raw: result, parseError: e.message });
-  }
-}
+    if (action === 'submit') {
+      const audioBase64 = audioBuffer.toString('base64');
+      const reqBody = JSON.stringify({
+        audio: { format: 'wav', data: audioBase64 },
+        request: { model_name: 'bigasr', language: 'en-US' }
+      });
+      const result = await httpsPost('openspeech.bytedance.com', '/api/v1/auc/submit', {
+        'Authorization': `Bearer;${token}`,
+        'X-Api-App-Key': appId,
+        'X-Api-Request-Id': 'dl-' + Date.now(),
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(reqBody),
+      }, Buffer.from(reqBody));
+      console.log('ASR submit response:', result);
+      try {
+        return res.status(200).json(JSON.parse(result));
+      } catch(e) {
+        return res.status(200).json({ raw: result, parseError: e.message });
+      }
 
     } else if (action === 'query') {
       const body = Buffer.from(JSON.stringify({ task_id: taskId }));
@@ -49,11 +40,12 @@ if (action === 'submit') {
         'X-Api-App-Key': appId,
         'Content-Length': body.length,
       }, body);
-
       return res.status(200).json(JSON.parse(result));
+
+    } else {
+      res.status(400).json({ error: 'unknown action' });
     }
 
-    res.status(400).json({ error: 'unknown action' });
   } catch(err) {
     res.status(500).json({ error: err.message });
   }
@@ -69,25 +61,20 @@ function parseMultipart(req) {
         const contentType = req.headers['content-type'] || '';
         const boundaryMatch = contentType.match(/boundary=(.+)/);
         if (!boundaryMatch) return reject(new Error('no boundary'));
-        
-        const boundary = Buffer.from('--' + boundaryMatch[1]);
+        const boundary = Buffer.from('--' + boundaryMatch[1].trim());
         const parts = splitBuffer(body, boundary);
-        
         let action = '', taskId = '', audioBuffer = null;
-        
         for (const part of parts) {
           if (!part.length) continue;
           const headerEnd = indexOfBuffer(part, Buffer.from('\r\n\r\n'));
           if (headerEnd === -1) continue;
           const header = part.slice(0, headerEnd).toString();
           const content = part.slice(headerEnd + 4);
-          const trimmed = content.slice(0, content.length - 2); // remove trailing \r\n
-          
+          const trimmed = content.slice(0, content.length - 2);
           if (header.includes('name="action"')) action = trimmed.toString().trim();
           else if (header.includes('name="taskId"')) taskId = trimmed.toString().trim();
           else if (header.includes('name="audio"')) audioBuffer = trimmed;
         }
-        
         resolve({ action, taskId, audioBuffer });
       } catch(e) { reject(e); }
     });
