@@ -1142,7 +1142,7 @@ header {
       <div class="sidebar-label">处理进度</div>
       <div class="progress-bar-bg"><div class="progress-bar" id="progressBar"></div></div>
       <div class="p-step" id="s1"><div class="p-icon">1</div><span>提取音频</span></div>
-      <div class="p-step" id="s2"><div class="p-icon">2</div><span>上传 ASR</span></div>
+      <div class="p-step" id="s2"><div class="p-icon">2</div><span>上传临时存储</span></div>
       <div class="p-step" id="s3"><div class="p-icon">3</div><span>英文转录</span></div>
       <div class="p-step" id="s4"><div class="p-icon">4</div><span>生成双语字幕</span></div>
       <div class="p-step" id="s5"><div class="p-icon">5</div><span>内容拆解分析</span></div>
@@ -1569,30 +1569,71 @@ function encodeWAV(s,sr) {
 }
 
 // ── ASR ──
-async function transcribeAudio(blob, appId, token) {
-  const PROXY = '/api/asr-proxy?target=';
-  const fd=new FormData(); fd.append('audio',blob,'audio.wav');
-  const sr=await fetch(PROXY+encodeURIComponent('https://openspeech.bytedance.com/api/v1/asr/submit'),{
-    method:'POST',
-    headers:{'Authorization':`Bearer;${token}`,'X-Api-App-Key':appId,'X-Api-Request-Id':'dl-'+Date.now()},
-    body:fd
+async function uploadAudioToTemp(blob) {
+  // 使用 file.io 免费临时文件托管，文件上传后返回一次性下载URL
+  // 文件默认保留14天，下载一次后自动删除
+  setLabel('上传音频到临时存储…');
+  const fd = new FormData();
+  fd.append('file', blob, 'audio.wav');
+  const resp = await fetch('https://file.io/?expires=1d', {
+    method: 'POST',
+    body: fd
   });
-  if(!sr.ok) throw new Error('ASR 提交失败: '+await sr.text());
-  const sd=await sr.json();
-  if(sd.resp_code!==0) throw new Error('ASR 错误: '+sd.resp_message);
-  const tid=sd.resp?.task_id; if(!tid) throw new Error('未获取任务 ID');
-  for(let i=0;i<120;i++){
-    await sleep(5000); setLabel(`转录中… ${(i+1)*5}s`);
-    const qr=await fetch(PROXY+encodeURIComponent('https://openspeech.bytedance.com/api/v1/asr/query'),{
-      method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer;${token}`,'X-Api-App-Key':appId},
-      body:JSON.stringify({task_id:tid})
+  if (!resp.ok) throw new Error('临时文件上传失败: ' + resp.status);
+  const data = await resp.json();
+  if (!data.success || !data.link) throw new Error('临时文件上传失败: ' + JSON.stringify(data));
+  return data.link;
+}
+
+async function transcribeAudio(blob, appId, token) {
+  // Step 1: 上传音频获取临时URL
+  const audioUrl = await uploadAudioToTemp(blob);
+  setLabel('提交 ASR 转录任务…');
+
+  // Step 2: 用URL提交豆包ASR任务（豆包服务器直接下载，无CORS问题）
+  const submitResp = await fetch('https://openspeech.bytedance.com/api/v1/asr/submit', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer;${token}`,
+      'X-Api-App-Key': appId,
+      'X-Api-Request-Id': 'dl-' + Date.now(),
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      url: audioUrl,
+      language: 'en-US',
+      use_itn: true,
+      use_capitalize: true,
+    })
+  });
+  if (!submitResp.ok) throw new Error('ASR 提交失败: ' + await submitResp.text());
+  const sd = await submitResp.json();
+  if (sd.resp_code !== 0) throw new Error('ASR 错误: ' + sd.resp_message);
+  const tid = sd.resp?.task_id;
+  if (!tid) throw new Error('未获取任务 ID');
+
+  // Step 3: 轮询结果
+  for (let i = 0; i < 120; i++) {
+    await sleep(5000);
+    setLabel(`转录中… 已等待 ${(i+1)*5}s`);
+    const qr = await fetch('https://openspeech.bytedance.com/api/v1/asr/query', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer;${token}`,
+        'X-Api-App-Key': appId,
+      },
+      body: JSON.stringify({ task_id: tid })
     });
-    const qd=await qr.json(); if(qd.resp_code!==0) continue;
-    const st=qd.resp?.task_status;
-    if(st==='completed') return (qd.resp?.result?.utterances||[]).map(u=>({start:u.start_time/1000,end:u.end_time/1000,text:u.text}));
-    if(st==='failed') throw new Error('ASR 转录失败');
+    const qd = await qr.json();
+    if (qd.resp_code !== 0) continue;
+    const st = qd.resp?.task_status;
+    if (st === 'completed') return (qd.resp?.result?.utterances || []).map(u => ({
+      start: u.start_time / 1000, end: u.end_time / 1000, text: u.text
+    }));
+    if (st === 'failed') throw new Error('ASR 转录失败');
   }
-  throw new Error('ASR 超时');
+  throw new Error('ASR 超时，请重试');
 }
 
 // ── TRANSLATE ──
