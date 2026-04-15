@@ -21,7 +21,7 @@ console.log('headers:', JSON.stringify(req.headers));
   request: { model_name: 'bigasr', language: 'en-US' }
 });
       const result = await httpsPost('openspeech.bytedance.com', '/api/v1/auc/submit', {
-        'Authorization': `Bearer;${token}`,
+        'Authorization': `Bearer ${token}`,
         'X-Api-App-Key': appId,
         'X-Api-Request-Id': 'dl-' + Date.now(),
         'Content-Type': 'application/json',
