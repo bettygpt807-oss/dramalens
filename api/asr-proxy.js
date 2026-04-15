@@ -1,35 +1,47 @@
-module.exports = async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', '*');
+export const config = { runtime: 'edge' };
 
-  if (req.method === 'OPTIONS') return res.status(200).end();
+export default async function handler(request) {
+  const url = new URL(request.url);
+  const target = url.searchParams.get('target');
 
-  const target = req.query.target;
-  if (!target) return res.status(400).json({ error: 'missing target' });
-
-  const forbidden = ['host', 'content-length', 'transfer-encoding'];
-  const headers = Object.fromEntries(
-    Object.entries(req.headers).filter(([k]) => !forbidden.includes(k))
-  );
-
-  try {
-    const chunks = [];
-    await new Promise((resolve, reject) => {
-      req.on('data', c => chunks.push(c));
-      req.on('end', resolve);
-      req.on('error', reject);
+  if (request.method === 'OPTIONS') {
+    return new Response(null, {
+      status: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': '*',
+      },
     });
-    const body = chunks.length ? Buffer.concat(chunks) : undefined;
-
-    const response = await fetch(target, { method: req.method, headers, body });
-    const data = await response.arrayBuffer();
-
-    res.status(response.status);
-    const ct = response.headers.get('Content-Type');
-    if (ct) res.setHeader('Content-Type', ct);
-    res.send(Buffer.from(data));
-  } catch (err) {
-    res.status(500).json({ error: err.message });
   }
-};
+
+  if (!target) {
+    return new Response(JSON.stringify({ error: 'missing target' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+    });
+  }
+
+  const headers = new Headers();
+  for (const [key, value] of request.headers.entries()) {
+    if (!['host', 'content-length'].includes(key.toLowerCase())) {
+      headers.set(key, value);
+    }
+  }
+
+  const body = request.method !== 'GET' ? await request.arrayBuffer() : null;
+
+  const response = await fetch(target, {
+    method: request.method,
+    headers,
+    body,
+  });
+
+  const responseHeaders = new Headers(response.headers);
+  responseHeaders.set('Access-Control-Allow-Origin', '*');
+
+  return new Response(response.body, {
+    status: response.status,
+    headers: responseHeaders,
+  });
+}
