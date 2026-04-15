@@ -1010,26 +1010,10 @@ header {
       <button class="modal-close" onclick="closeSettings()">✕</button>
     </div>
     <div class="modal-body">
-      <!-- ASR -->
       <div class="cfg-section">
-        <div class="cfg-section-title">🎙 豆包语音 ASR · 语音转录</div>
+        <div class="cfg-section-title">🧠 豆包大模型 · 转录 + 内容分析</div>
         <div class="cfg-hint">
-          前往 <a href="https://console.volcengine.com/speech/service/16" target="_blank">火山引擎语音控制台</a> → 开通「录音文件识别标准版」→ 在「产品管理」中获取 <strong>AppID</strong> 和 <strong>Token</strong>。支持 ≤5 小时音频，60–80 分钟短剧完全覆盖。
-        </div>
-        <div class="cfg-field">
-          <div class="cfg-label">App ID <span class="cfg-tag">必填</span></div>
-          <input type="text" class="cfg-input" id="cfgAsrAppId" placeholder="如：1234567890">
-        </div>
-        <div class="cfg-field">
-          <div class="cfg-label">Access Token <span class="cfg-tag">必填</span></div>
-          <input type="password" class="cfg-input" id="cfgAsrToken" placeholder="录音文件识别 Token">
-        </div>
-      </div>
-      <!-- LLM -->
-      <div class="cfg-section">
-        <div class="cfg-section-title">🧠 豆包大模型 · 内容分析</div>
-        <div class="cfg-hint">
-          前往 <a href="https://console.volcengine.com/ark" target="_blank">火山方舟控制台</a> → 「API Key 管理」→ 新建 Key。推荐使用 <strong>doubao-seed-2.0-pro</strong>，效果最佳；<strong>doubao-pro-32k</strong> 更快更省。
+          前往 <a href="https://console.volcengine.com/ark" target="_blank">火山方舟控制台</a> → 「API Key 管理」→ 新建 Key。语音转录和内容分析全部使用同一个 Key。
         </div>
         <div class="cfg-field">
           <div class="cfg-label">API Key <span class="cfg-tag">必填</span></div>
@@ -1142,8 +1126,8 @@ header {
       <div class="sidebar-label">处理进度</div>
       <div class="progress-bar-bg"><div class="progress-bar" id="progressBar"></div></div>
       <div class="p-step" id="s1"><div class="p-icon">1</div><span>提取音频</span></div>
-      <div class="p-step" id="s2"><div class="p-icon">2</div><span>提交转录任务</span></div>
-      <div class="p-step" id="s3"><div class="p-icon">3</div><span>英文转录</span></div>
+      <div class="p-step" id="s2"><div class="p-icon">2</div><span>音频转文字</span></div>
+      <div class="p-step" id="s3"><div class="p-icon">3</div><span>处理转录结果</span></div>
       <div class="p-step" id="s4"><div class="p-icon">4</div><span>生成双语字幕</span></div>
       <div class="p-step" id="s5"><div class="p-icon">5</div><span>内容拆解分析</span></div>
     </div>
@@ -1362,10 +1346,8 @@ document.getElementById('settingsModal').addEventListener('click', e => { if(e.t
 
 function saveSettings() {
   localStorage.setItem('dlcfg', JSON.stringify({
-    asrAppId: document.getElementById('cfgAsrAppId').value.trim(),
-    asrToken: document.getElementById('cfgAsrToken').value.trim(),
-    llmKey:   document.getElementById('cfgLlmKey').value.trim(),
-    model:    document.getElementById('cfgModel').value,
+    llmKey: document.getElementById('cfgLlmKey').value.trim(),
+    model:  document.getElementById('cfgModel').value,
   }));
   const ok = document.getElementById('saveOk');
   ok.classList.add('show');
@@ -1376,16 +1358,14 @@ function saveSettings() {
 
 function loadSettings() {
   const c = getConfig();
-  document.getElementById('cfgAsrAppId').value = c.asrAppId||'';
-  document.getElementById('cfgAsrToken').value  = c.asrToken||'';
-  document.getElementById('cfgLlmKey').value    = c.llmKey||'';
-  document.getElementById('cfgModel').value     = c.model||'doubao-seed-2.0-pro';
+  document.getElementById('cfgLlmKey').value = c.llmKey||'';
+  document.getElementById('cfgModel').value  = c.model||'doubao-seed-2.0-pro';
 }
 
 function getConfig() { return JSON.parse(localStorage.getItem('dlcfg')||'{}'); }
 
 function checkConfig() {
-  const c = getConfig(), ok = !!(c.asrAppId && c.asrToken && c.llmKey);
+  const c = getConfig(), ok = !!(c.llmKey);
   document.getElementById('cfgWarn').style.display = ok ? 'none' : 'flex';
   document.getElementById('cfgOk').style.display   = ok ? 'flex' : 'none';
   updateBtn();
@@ -1440,7 +1420,7 @@ function clearFile() {
 document.getElementById('videoUrl').addEventListener('input', e => { videoUrl = e.target.value.trim(); updateBtn(); });
 
 function updateBtn() {
-  const c = getConfig(), hasCfg = !!(c.asrAppId && c.asrToken && c.llmKey);
+  const c = getConfig(), hasCfg = !!(c.llmKey);
   const hasInput = (inputMode==='file' && videoFile) || (inputMode==='url' && videoUrl);
   document.getElementById('btnAnalyze').disabled = !(hasCfg && hasInput);
 }
@@ -1570,48 +1550,47 @@ function encodeWAV(s,sr) {
 
 // ── ASR ──
 async function transcribeAudio(blob, appId, token) {
-  setLabel('提交 ASR 转录任务…');
+  const cfg = getConfig();
+  setLabel('音频转文字中…');
 
-  // 用 FormData 直接传音频文件，appId/token 放 header
-  const fd = new FormData();
-  fd.append('audio', blob, 'audio.wav');
-  fd.append('action', 'submit');
+  const audioBase64 = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
 
-  const submitResp = await fetch('/api/asr', {
+  const resp = await fetch('https://ark.cn-beijing.volces.com/api/v3/audio/transcriptions', {
     method: 'POST',
     headers: {
-      'X-App-Id': appId,
-      'X-Token': token,
+      'Authorization': `Bearer ${cfg.llmKey}`,
+      'Content-Type': 'application/json',
     },
-    body: fd
+    body: JSON.stringify({
+      model: 'doubao-asr-pro',
+      audio: { format: 'wav', data: audioBase64 },
+      language: 'en',
+    })
   });
-  if (!submitResp.ok) throw new Error('ASR 提交失败: ' + await submitResp.text());
-  const sd = await submitResp.json();
-  if (sd.resp_code !== 0) throw new Error('ASR 错误: ' + sd.resp_message);
-  const tid = sd.resp?.task_id;
-  if (!tid) throw new Error('未获取任务 ID');
 
-  // 轮询结果
-  for (let i = 0; i < 120; i++) {
-    await sleep(5000);
-    setLabel(`转录中… 已等待 ${(i+1)*5}s`);
-    const qfd = new FormData();
-    qfd.append('action', 'query');
-    qfd.append('taskId', tid);
-    const qr = await fetch('/api/asr', {
-      method: 'POST',
-      headers: { 'X-App-Id': appId, 'X-Token': token },
-      body: qfd
-    });
-    const qd = await qr.json();
-    if (qd.resp_code !== 0) continue;
-    const st = qd.resp?.task_status;
-    if (st === 'completed') return (qd.resp?.result?.utterances || []).map(u => ({
-      start: u.start_time / 1000, end: u.end_time / 1000, text: u.text
+  if (!resp.ok) throw new Error('ASR 转录失败: ' + await resp.text());
+  const data = await resp.json();
+
+  if (data.utterances && data.utterances.length) {
+    return data.utterances.map(u => ({
+      start: (u.start_time || 0) / 1000,
+      end: (u.end_time || 0) / 1000,
+      text: u.text
     }));
-    if (st === 'failed') throw new Error('ASR 转录失败');
   }
-  throw new Error('ASR 超时，请重试');
+
+  const fullText = data.text || data.result || '';
+  if (!fullText) throw new Error('ASR 返回内容为空');
+
+  const sentences = fullText.match(/[^.!?]+[.!?]*/g) || [fullText];
+  return sentences.map((s, i) => ({
+    start: i * 3, end: (i + 1) * 3, text: s.trim()
+  }));
 }
 
 // ── TRANSLATE ──
