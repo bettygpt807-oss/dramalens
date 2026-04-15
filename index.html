@@ -362,9 +362,42 @@ header {
    MAIN LAYOUT
 ══════════════════════════════ */
 .app {
-  display: grid;
-  grid-template-columns: 320px 1fr;
+  display: flex;
   min-height: calc(100vh - 56px);
+  overflow: hidden;
+}
+.sidebar {
+  width: 320px;
+  min-width: 220px;
+  max-width: 520px;
+  flex-shrink: 0;
+}
+.resize-handle {
+  width: 5px;
+  background: var(--border-soft);
+  cursor: col-resize;
+  flex-shrink: 0;
+  transition: background 0.15s;
+  position: relative;
+}
+.resize-handle:hover,
+.resize-handle.dragging {
+  background: var(--green-main);
+}
+.resize-handle::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 3px;
+  height: 32px;
+  border-radius: 3px;
+  background: var(--border);
+}
+.right-panel {
+  flex: 1;
+  min-width: 0;
 }
 
 /* ── LEFT SIDEBAR ── */
@@ -1119,7 +1152,9 @@ header {
       ▶ 开始分析
     </button>
 
-  </div>
+  </div><!-- /sidebar -->
+
+  <div class="resize-handle" id="resizeHandle"></div>
 
   <!-- RIGHT PANEL -->
   <div class="right-panel">
@@ -1436,7 +1471,7 @@ function openSurvey() {
   setTimeout(() => {
     document.getElementById('surveyStartBtn').classList.add('show');
     document.getElementById('surveyHint').textContent = '填写完成后点击右侧按钮 →';
-  }, 15000);
+  }, 30000);
 }
 
 function closeSurveyAndRun() {
@@ -1536,8 +1571,9 @@ function encodeWAV(s,sr) {
 
 // ── ASR ──
 async function transcribeAudio(blob, appId, token) {
+  const PROXY = '/api/asr-proxy?target=';
   const fd=new FormData(); fd.append('audio',blob,'audio.wav');
-  const sr=await fetch('https://openspeech.bytedance.com/api/v1/asr/submit',{
+  const sr=await fetch(PROXY+encodeURIComponent('https://openspeech.bytedance.com/api/v1/asr/submit'),{
     method:'POST',
     headers:{'Authorization':`Bearer;${token}`,'X-Api-App-Key':appId,'X-Api-Request-Id':'dl-'+Date.now()},
     body:fd
@@ -1548,7 +1584,7 @@ async function transcribeAudio(blob, appId, token) {
   const tid=sd.resp?.task_id; if(!tid) throw new Error('未获取任务 ID');
   for(let i=0;i<120;i++){
     await sleep(5000); setLabel(`转录中… ${(i+1)*5}s`);
-    const qr=await fetch('https://openspeech.bytedance.com/api/v1/asr/query',{
+    const qr=await fetch(PROXY+encodeURIComponent('https://openspeech.bytedance.com/api/v1/asr/query'),{
       method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer;${token}`,'X-Api-App-Key':appId},
       body:JSON.stringify({task_id:tid})
     });
@@ -1900,7 +1936,32 @@ function rtfEsc(t){return String(t||'').replace(/\\/g,'\\\\').replace(/\{/g,'\\{
 function makeRtf(body,docTitle){return `{\\rtf1\\ansi\\ansicpg936\\deff0\n{\\fonttbl{\\f0\\fnil\\fcharset134 \\u23435?\\u20307?;}{\\f1\\froman\\fcharset0 Times New Roman;}}\n{\\colortbl;\\red30\\green92\\blue58;\\red44\\green92\\blue68;}\n{\\pard\\qc\\b\\fs30 ${rtfEsc(docTitle)}\\par}\n{\\pard\\qc\\fs18\\cf1 DramaLens \\u23548?\\u20986?\\par}\n{\\pard\\par}\n${body}\n}`;}
 function dlRtf(filename,rtf){const b=new Blob([rtf],{type:'application/rtf'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=filename;a.click();}
 
-// ── UTILS ──
+// ── RESIZE ──
+(function(){
+  const handle = document.getElementById('resizeHandle');
+  const sidebar = document.querySelector('.sidebar');
+  let dragging = false, startX = 0, startW = 0;
+  handle.addEventListener('mousedown', e => {
+    dragging = true;
+    startX = e.clientX;
+    startW = sidebar.offsetWidth;
+    handle.classList.add('dragging');
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  });
+  document.addEventListener('mousemove', e => {
+    if(!dragging) return;
+    const newW = Math.min(520, Math.max(220, startW + e.clientX - startX));
+    sidebar.style.width = newW + 'px';
+  });
+  document.addEventListener('mouseup', () => {
+    if(!dragging) return;
+    dragging = false;
+    handle.classList.remove('dragging');
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  });
+})();
 function setStatus(s,t){document.getElementById('statusDot').className='status-dot '+s;document.getElementById('statusText').textContent=t;}
 function setProg(p){document.getElementById('progressBar').style.width=p+'%';}
 function setStep(n,s){document.getElementById('s'+n).className='p-step '+s;}
