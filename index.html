@@ -1570,19 +1570,16 @@ function encodeWAV(s,sr) {
 
 // ── ASR ──
 async function uploadAudioToTemp(blob) {
-  // 使用 file.io 免费临时文件托管，文件上传后返回一次性下载URL
-  // 文件默认保留14天，下载一次后自动删除
   setLabel('上传音频到临时存储…');
   const fd = new FormData();
   fd.append('file', blob, 'audio.wav');
-  const resp = await fetch('https://file.io/?expires=1d', {
+  const resp = await fetch('https://0x0.st', {
     method: 'POST',
     body: fd
   });
   if (!resp.ok) throw new Error('临时文件上传失败: ' + resp.status);
-  const data = await resp.json();
-  if (!data.success || !data.link) throw new Error('临时文件上传失败: ' + JSON.stringify(data));
-  return data.link;
+  const url = await resp.text();
+  return url.trim();
 }
 
 async function transcribeAudio(blob, appId, token) {
