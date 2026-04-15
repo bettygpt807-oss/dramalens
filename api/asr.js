@@ -1,5 +1,4 @@
 const https = require('https');
-const { IncomingForm } = require('formidable');
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -10,67 +9,107 @@ module.exports = async function handler(req, res) {
   const appId = req.headers['x-app-id'];
   const token = req.headers['x-token'];
 
-  // 解析 FormData
-  const form = new IncomingForm();
-  const { fields, files } = await new Promise((resolve, reject) => {
-    form.parse(req, (err, fields, files) => {
-      if (err) reject(err);
-      else resolve({ fields, files });
-    });
-  });
+  try {
+    const { action, taskId, audioBuffer } = await parseMultipart(req);
 
-  const action = Array.isArray(fields.action) ? fields.action[0] : fields.action;
+    if (action === 'submit') {
+      const boundary = '----DL' + Date.now();
+      const part1 = Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="audio"; filename="audio.wav"\r\nContent-Type: audio/wav\r\n\r\n`);
+      const part2 = Buffer.from(`\r\n--${boundary}--\r\n`);
+      const body = Buffer.concat([part1, audioBuffer, part2]);
 
-  if (action === 'submit') {
-    const audioFile = Array.isArray(files.audio) ? files.audio[0] : files.audio;
-    const fs = require('fs');
-    const audioBuffer = fs.readFileSync(audioFile.filepath);
-
-    const boundary = '----DL' + Date.now();
-    const part1 = Buffer.from(
-      `--${boundary}\r\nContent-Disposition: form-data; name="audio"; filename="audio.wav"\r\nContent-Type: audio/wav\r\n\r\n`
-    );
-    const part2 = Buffer.from(`\r\n--${boundary}--\r\n`);
-    const bodyBuffer = Buffer.concat([part1, audioBuffer, part2]);
-
-    const result = await httpsPost({
-      hostname: 'openspeech.bytedance.com',
-      path: '/api/v1/asr/submit',
-      headers: {
+      const result = await httpsPost('openspeech.bytedance.com', '/api/v1/asr/submit', {
         'Authorization': `Bearer;${token}`,
         'X-Api-App-Key': appId,
         'X-Api-Request-Id': 'dl-' + Date.now(),
         'Content-Type': `multipart/form-data; boundary=${boundary}`,
-        'Content-Length': bodyBuffer.length,
-      }
-    }, bodyBuffer);
+        'Content-Length': body.length,
+      }, body);
 
-    return res.status(200).json(JSON.parse(result));
+      return res.status(200).json(JSON.parse(result));
 
-  } else if (action === 'query') {
-    const taskId = Array.isArray(fields.taskId) ? fields.taskId[0] : fields.taskId;
-    const body = Buffer.from(JSON.stringify({ task_id: taskId }));
-
-    const result = await httpsPost({
-      hostname: 'openspeech.bytedance.com',
-      path: '/api/v1/asr/query',
-      headers: {
+    } else if (action === 'query') {
+      const body = Buffer.from(JSON.stringify({ task_id: taskId }));
+      const result = await httpsPost('openspeech.bytedance.com', '/api/v1/asr/query', {
         'Content-Type': 'application/json',
         'Authorization': `Bearer;${token}`,
         'X-Api-App-Key': appId,
         'Content-Length': body.length,
-      }
-    }, body);
+      }, body);
 
-    return res.status(200).json(JSON.parse(result));
+      return res.status(200).json(JSON.parse(result));
+    }
+
+    res.status(400).json({ error: 'unknown action' });
+  } catch(err) {
+    res.status(500).json({ error: err.message });
   }
-
-  res.status(400).json({ error: 'unknown action' });
 };
 
-function httpsPost(options, body) {
+function parseMultipart(req) {
   return new Promise((resolve, reject) => {
-    const req = https.request({ ...options, method: 'POST' }, res => {
+    const chunks = [];
+    req.on('data', c => chunks.push(c));
+    req.on('end', () => {
+      try {
+        const body = Buffer.concat(chunks);
+        const contentType = req.headers['content-type'] || '';
+        const boundaryMatch = contentType.match(/boundary=(.+)/);
+        if (!boundaryMatch) return reject(new Error('no boundary'));
+        
+        const boundary = Buffer.from('--' + boundaryMatch[1]);
+        const parts = splitBuffer(body, boundary);
+        
+        let action = '', taskId = '', audioBuffer = null;
+        
+        for (const part of parts) {
+          if (!part.length) continue;
+          const headerEnd = indexOfBuffer(part, Buffer.from('\r\n\r\n'));
+          if (headerEnd === -1) continue;
+          const header = part.slice(0, headerEnd).toString();
+          const content = part.slice(headerEnd + 4);
+          const trimmed = content.slice(0, content.length - 2); // remove trailing \r\n
+          
+          if (header.includes('name="action"')) action = trimmed.toString().trim();
+          else if (header.includes('name="taskId"')) taskId = trimmed.toString().trim();
+          else if (header.includes('name="audio"')) audioBuffer = trimmed;
+        }
+        
+        resolve({ action, taskId, audioBuffer });
+      } catch(e) { reject(e); }
+    });
+    req.on('error', reject);
+  });
+}
+
+function splitBuffer(buf, delimiter) {
+  const parts = [];
+  let start = 0;
+  let pos = indexOfBuffer(buf, delimiter, start);
+  while (pos !== -1) {
+    parts.push(buf.slice(start, pos));
+    start = pos + delimiter.length;
+    if (buf[start] === 13 && buf[start+1] === 10) start += 2;
+    pos = indexOfBuffer(buf, delimiter, start);
+  }
+  parts.push(buf.slice(start));
+  return parts;
+}
+
+function indexOfBuffer(buf, search, offset = 0) {
+  for (let i = offset; i <= buf.length - search.length; i++) {
+    let found = true;
+    for (let j = 0; j < search.length; j++) {
+      if (buf[i+j] !== search[j]) { found = false; break; }
+    }
+    if (found) return i;
+  }
+  return -1;
+}
+
+function httpsPost(hostname, path, headers, body) {
+  return new Promise((resolve, reject) => {
+    const req = https.request({ hostname, path, method: 'POST', headers }, res => {
       const chunks = [];
       res.on('data', c => chunks.push(c));
       res.on('end', () => resolve(Buffer.concat(chunks).toString()));
