@@ -18,7 +18,7 @@ module.exports = async function handler(req, res) {
       const part2 = Buffer.from(`\r\n--${boundary}--\r\n`);
       const body = Buffer.concat([part1, audioBuffer, part2]);
 
-      const result = await httpsPost('openspeech.bytedance.com', '/api/v1/asr/submit', {
+      const result = await httpsPost('openspeech.bytedance.com', '/api/v1/auc/submit', {
         'Authorization': `Bearer;${token}`,
         'X-Api-App-Key': appId,
         'X-Api-Request-Id': 'dl-' + Date.now(),
@@ -35,7 +35,7 @@ try {
 
     } else if (action === 'query') {
       const body = Buffer.from(JSON.stringify({ task_id: taskId }));
-      const result = await httpsPost('openspeech.bytedance.com', '/api/v1/asr/query', {
+      const result = await httpsPost('openspeech.bytedance.com', '/api/v1/auc/query', {
         'Content-Type': 'application/json',
         'Authorization': `Bearer;${token}`,
         'X-Api-App-Key': appId,
