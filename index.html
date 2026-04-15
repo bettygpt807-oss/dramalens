@@ -1560,7 +1560,7 @@ async function transcribeAudio(blob, appId, token) {
     reader.readAsDataURL(blob);
   });
 
-  const resp = await fetch('https://ark.cn-beijing.volces.com/api/v3/audio/transcriptions', {
+  const resp = await fetch('/api/asr', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${cfg.llmKey}`,
