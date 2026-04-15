@@ -26,7 +26,12 @@ module.exports = async function handler(req, res) {
         'Content-Length': body.length,
       }, body);
 
-      return res.status(200).json(JSON.parse(result));
+      console.log('ASR submit response:', result);
+try {
+  return res.status(200).json(JSON.parse(result));
+} catch(e) {
+  return res.status(200).json({ raw: result, parseError: e.message });
+}
 
     } else if (action === 'query') {
       const body = Buffer.from(JSON.stringify({ task_id: taskId }));
