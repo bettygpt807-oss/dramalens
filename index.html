@@ -1570,15 +1570,20 @@ function encodeWAV(s,sr) {
 
 // ── ASR ──
 async function transcribeAudio(blob, appId, token) {
-  // 把音频转为base64，发给我们自己的Vercel函数，由服务端调用豆包ASR
-  setLabel('准备音频数据…');
-  const audioBase64 = await blobToBase64(blob);
-
   setLabel('提交 ASR 转录任务…');
+
+  // 用 FormData 直接传音频文件，appId/token 放 header
+  const fd = new FormData();
+  fd.append('audio', blob, 'audio.wav');
+  fd.append('action', 'submit');
+
   const submitResp = await fetch('/api/asr', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'submit', appId, token, audioBase64 })
+    headers: {
+      'X-App-Id': appId,
+      'X-Token': token,
+    },
+    body: fd
   });
   if (!submitResp.ok) throw new Error('ASR 提交失败: ' + await submitResp.text());
   const sd = await submitResp.json();
@@ -1590,10 +1595,13 @@ async function transcribeAudio(blob, appId, token) {
   for (let i = 0; i < 120; i++) {
     await sleep(5000);
     setLabel(`转录中… 已等待 ${(i+1)*5}s`);
+    const qfd = new FormData();
+    qfd.append('action', 'query');
+    qfd.append('taskId', tid);
     const qr = await fetch('/api/asr', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'query', appId, token, taskId: tid })
+      headers: { 'X-App-Id': appId, 'X-Token': token },
+      body: qfd
     });
     const qd = await qr.json();
     if (qd.resp_code !== 0) continue;
@@ -1604,15 +1612,6 @@ async function transcribeAudio(blob, appId, token) {
     if (st === 'failed') throw new Error('ASR 转录失败');
   }
   throw new Error('ASR 超时，请重试');
-}
-
-function blobToBase64(blob) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result.split(',')[1]);
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
 }
 
 // ── TRANSLATE ──
