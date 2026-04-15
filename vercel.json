@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "api/asr-proxy.js": {
+      "maxDuration": 300
+    }
+  }
+}
