@@ -1463,11 +1463,10 @@ document.getElementById('subSearch').addEventListener('input', e => {
 });
 
 // ── SURVEY ──
-let surveyDone = false;
+function isSurveyDone() { return localStorage.getItem('dl_survey_done') === '1'; }
 
 function openSurvey() {
   document.getElementById('surveyModal').classList.add('open');
-  // 15秒后才显示「已填完」按钮，确保用户有时间填写
   setTimeout(() => {
     document.getElementById('surveyStartBtn').classList.add('show');
     document.getElementById('surveyHint').textContent = '填写完成后点击右侧按钮 →';
@@ -1475,14 +1474,14 @@ function openSurvey() {
 }
 
 function closeSurveyAndRun() {
-  surveyDone = true;
+  localStorage.setItem('dl_survey_done', '1');
   document.getElementById('surveyModal').classList.remove('open');
   doRunAnalysis();
 }
 
 // ── ANALYSIS ──
 async function runAnalysis() {
-  if (!surveyDone) {
+  if (!isSurveyDone()) {
     openSurvey();
     return;
   }
