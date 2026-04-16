@@ -1,7 +1,8 @@
 {
   "functions": {
-    "api/asr.js": {
-      "maxDuration": 300
-    }
+    "api/asr-submit.js": { "maxDuration": 10 },
+    "api/asr-query.js":  { "maxDuration": 10 },
+    "api/upload.js":     { "maxDuration": 30 },
+    "api/upload-delete.js": { "maxDuration": 10 }
   }
 }
