@@ -1003,6 +1003,44 @@ header {
   display: block; margin-bottom: 4px;
   font-weight: 600; color: var(--ink); font-size: 13.5px;
 }
+.outline-pt[contenteditable], .outline-content [contenteditable],
+.outline-content span[contenteditable] {
+  outline: none;
+  border-radius: 3px;
+  transition: background 0.15s;
+}
+.outline-pt[contenteditable]:focus, .outline-content span[contenteditable]:focus {
+  background: rgba(30,92,58,0.04);
+  box-shadow: 0 0 0 2px rgba(30,92,58,0.08);
+}
+
+/* Info Grid */
+.info-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 4px; }
+.info-card { background: var(--surface-2); border: 1px solid var(--border-soft); border-radius: 8px; padding: 12px 14px; }
+.info-card-label { font-size: 10px; color: var(--text-ghost); margin-bottom: 4px; text-transform: uppercase; letter-spacing: .06em; }
+.info-card-value { font-size: 13px; color: var(--ink); font-weight: 500; line-height: 1.5; }
+
+/* Relation Graph */
+#relationGraph svg { width: 100%; overflow: visible; }
+.rel-node text { font-size: 11px; font-family: 'Noto Sans SC',sans-serif; pointer-events: none; }
+.rel-edge line { stroke: var(--border); stroke-width: 1.5; }
+.rel-edge text { font-size: 10px; fill: var(--text-ghost); font-family: 'Noto Sans SC',sans-serif; }
+
+/* Adapt Plans */
+.adapt-plan-card { border: 1.5px solid var(--border-soft); border-radius: 10px; padding: 16px 18px; margin-bottom: 12px; transition: border-color .2s; }
+.adapt-plan-card:hover { border-color: var(--green-light); box-shadow: var(--shadow-sm); }
+.adapt-plan-num { font-size: 10px; color: var(--text-ghost); margin-bottom: 4px; font-family: 'DM Mono',monospace; }
+.adapt-plan-title { font-size: 14px; font-weight: 600; color: var(--ink); margin-bottom: 8px; outline: none; border-radius: 3px; }
+.adapt-plan-title:focus { background: rgba(30,92,58,0.04); }
+.adapt-plan-body { font-size: 13px; color: var(--text-body); line-height: 1.8; outline: none; border-radius: 3px; }
+.adapt-plan-body:focus { background: rgba(30,92,58,0.04); }
+
+/* Script Body */
+.script-body { font-family: 'DM Mono','Courier New',monospace; font-size: 13px; line-height: 2; color: var(--ink); white-space: pre-wrap; padding: 8px 4px; outline: none; }
+
+/* Primary Button */
+.btn-primary { display: inline-flex; align-items: center; gap: 6px; padding: 10px 24px; border-radius: 8px; border: none; cursor: pointer; background: var(--green-main); color: white; font-size: 13px; font-weight: 500; font-family: inherit; transition: background .15s; }
+.btn-primary:hover { background: var(--green-mid); }
 
 /* Toast */
 .toast {
@@ -1180,7 +1218,7 @@ header {
     <div id="welcomeScreen">
       <div class="w-badge">✦ AI 驱动 · 全自动拆解</div>
       <div class="w-title">一部剧，<em>三分钟</em>读透它</div>
-      <div class="w-sub">上传英文短剧视频，自动生成双语字幕时间轴、剧情简介、结构逻辑、人物小传与万字详纲，为改编创作提供完整素材基础</div>
+      <div class="w-sub">上传英文短剧视频，自动生成双语字幕时间轴、剧情简介、结构逻辑、人物小传与详细梗概，为改编创作提供完整素材基础</div>
       <div class="w-steps">
         <div class="w-step">
           <div class="w-step-n">01</div>
@@ -1210,12 +1248,12 @@ header {
     <!-- Tabs -->
     <div class="tabs-bar" id="tabsBar">
       <button class="tab-btn active" data-tab="subtitles">双语字幕 <span class="tab-badge" id="subBadge">0</span></button>
-      <button class="tab-btn" data-tab="summary">剧情简介</button>
-      <button class="tab-btn" data-tab="logic">结构逻辑</button>
-      <button class="tab-btn" data-tab="characters">人物小传</button>
-      <button class="tab-btn" data-tab="outline">万字详纲</button>
+      <button class="tab-btn" data-tab="overview">剧情概要</button>
+      <button class="tab-btn" data-tab="planning">策划逻辑</button>
+      <button class="tab-btn" data-tab="adaptation">改编建议</button>
+      <button class="tab-btn" data-tab="script">剧本推演</button>
     </div>
-    <button class="btn-sm btn-export" id="btnExportAll" onclick="exportFullWord()" style="display:none;margin:8px 16px 0 auto;white-space:nowrap;flex-shrink:0">⬇ 导出完整报告</button>
+    <button class="btn-sm btn-export" id="btnExportAll" onclick="exportFullWord()" style="display:none;margin:8px 16px 0 auto;white-space:nowrap;flex-shrink:0">⬇ 导出分析报告</button>
 
     <!-- Subtitle Pane -->
     <div class="tab-pane active" id="pane-subtitles">
@@ -1245,124 +1283,167 @@ header {
       </div>
     </div>
 
-    <!-- Summary Pane -->
-    <div class="tab-pane" id="pane-summary">
-      <div class="tab-empty" id="summaryEmpty">
-        <div class="tab-empty-icon">✦</div>
-        <div class="tab-empty-title">剧情简介</div>
-        <div class="tab-empty-desc">约 500 字的中文剧情概括，梳理故事起因、经过与结局，提炼核心主题与情感基调，帮你快速掌握全剧骨架，作为改编创作的第一块基石。</div>
+    <!-- Overview Pane：剧情概要 -->
+    <div class="tab-pane" id="pane-overview">
+      <div class="tab-empty" id="overviewEmpty">
+        <div class="tab-empty-icon">🎬</div>
+        <div class="tab-empty-title">剧情概要</div>
+        <div class="tab-empty-desc">基本信息、一句话简介、人物小传、人物关系图、剧情梗概，全面掌握原剧骨架。</div>
         <div class="tab-empty-badge">步骤 5 完成后自动生成</div>
       </div>
-      <div style="display:none;flex-direction:column;flex:1;overflow:hidden" id="summaryView">
+      <div style="display:none;flex-direction:column;flex:1;overflow:hidden" id="overviewView">
         <div class="analysis-toolbar">
-          <span class="edit-badge" id="summaryLangBadge">中文</span>
+          <span class="edit-badge" id="overviewLangBadge">中文</span>
           <div class="toolbar-divider"></div>
-          <button class="btn-sm btn-translate" id="summaryTransBtn" onclick="translateSection('summary')">⇄ 中 → 英</button>
-          <button class="btn-sm btn-translate" id="summaryRestoreBtn" onclick="restoreSection('summary')" style="display:none">↺ 恢复中文</button>
+          <button class="btn-sm btn-translate" id="overviewTransBtn" onclick="translateSection('overview')">⇄ 中 → 英</button>
+          <button class="btn-sm btn-translate" id="overviewRestoreBtn" onclick="restoreSection('overview')" style="display:none">↺ 恢复中文</button>
           <div class="toolbar-divider"></div>
-          <button class="btn-sm btn-export" onclick="copySection('summary')">⎘ 复制</button>
+          <button class="btn-sm btn-export" onclick="copySection('overview')">⎘ 复制</button>
         </div>
         <div class="analysis-scroll">
           <div class="analysis-body">
+            <!-- 01 基本信息 -->
+            <div class="a-block" style="animation-delay:.05s">
+              <div class="a-head"><div class="a-num">01</div><div class="a-title">基本信息</div><div class="a-line"></div></div>
+              <div class="info-grid" id="infoGrid"></div>
+            </div>
+            <!-- 02 一句话简介 -->
             <div class="a-block" style="animation-delay:.08s">
-              <div class="a-head"><div class="a-num">01</div><div class="a-title" id="summaryTabTitle">剧情简介</div><div class="a-line"></div></div>
-              <div class="a-body editable" id="summaryText" contenteditable="true" spellcheck="false"></div>
+              <div class="a-head"><div class="a-num">02</div><div class="a-title">一句话简介</div><div class="a-line"></div></div>
+              <div class="a-body editable" id="loglineText" contenteditable="true" spellcheck="false"></div>
             </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Logic Pane -->
-    <div class="tab-pane" id="pane-logic">
-      <div class="tab-empty" id="logicEmpty">
-        <div class="tab-empty-icon">⬡</div>
-        <div class="tab-empty-title">结构逻辑分析</div>
-        <div class="tab-empty-desc">从四个维度深度拆解：<strong>核心亮点</strong>（最吸引人的卖点）、<strong>叙事结构</strong>（三幕节奏与悬念设计）、<strong>人物逻辑</strong>（动机与行为一致性）、<strong>情感逻辑</strong>（情绪弧线与共鸣点），是改编时最有价值的参考层。</div>
-        <div class="tab-empty-badge">步骤 5 完成后自动生成</div>
-      </div>
-      <div style="display:none;flex-direction:column;flex:1;overflow:hidden" id="logicView">
-        <div class="analysis-toolbar">
-          <span class="edit-badge" id="logicLangBadge">中文</span>
-          <div class="toolbar-divider"></div>
-          <button class="btn-sm btn-translate" id="logicTransBtn" onclick="translateSection('logic')">⇄ 中 → 英</button>
-          <button class="btn-sm btn-translate" id="logicRestoreBtn" onclick="restoreSection('logic')" style="display:none">↺ 恢复中文</button>
-          <div class="toolbar-divider"></div>
-          <button class="btn-sm btn-export" onclick="copySection('logic')">⎘ 复制</button>
-        </div>
-        <div class="analysis-scroll">
-          <div class="analysis-body">
-            <div class="a-block" style="animation-delay:.08s">
-              <div class="a-head"><div class="a-num">02</div><div class="a-title">核心亮点</div><div class="a-line"></div></div>
-              <div class="a-body editable" id="highlightsText" contenteditable="true" spellcheck="false"></div>
-            </div>
-            <div class="a-block" style="animation-delay:.14s">
-              <div class="a-head"><div class="a-num">03</div><div class="a-title">叙事结构</div><div class="a-line"></div></div>
-              <div class="logic-grid" id="logicGrid"></div>
-            </div>
-            <div class="a-block" style="animation-delay:.2s">
-              <div class="a-head"><div class="a-num">04</div><div class="a-title">人物逻辑</div><div class="a-line"></div></div>
-              <div class="a-body editable" id="charLogicText" contenteditable="true" spellcheck="false"></div>
-            </div>
-            <div class="a-block" style="animation-delay:.26s">
-              <div class="a-head"><div class="a-num">05</div><div class="a-title">情感逻辑</div><div class="a-line"></div></div>
-              <div class="a-body editable" id="emotionText" contenteditable="true" spellcheck="false"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Characters Pane -->
-    <div class="tab-pane" id="pane-characters">
-      <div class="tab-empty" id="charEmpty">
-        <div class="tab-empty-icon">👤</div>
-        <div class="tab-empty-title">人物小传</div>
-        <div class="tab-empty-desc">自动识别全剧主要角色，每人生成 100–200 字中文小传，涵盖性格特点、核心动机、与其他角色的关系，以及贯穿全剧的成长弧线，为你的改编创作提供立体的人物原型参考。</div>
-        <div class="tab-empty-badge">步骤 5 完成后自动生成</div>
-      </div>
-      <div style="display:none;flex-direction:column;flex:1;overflow:hidden" id="charView">
-        <div class="analysis-toolbar">
-          <span class="edit-badge" id="charLangBadge">中文</span>
-          <div class="toolbar-divider"></div>
-          <button class="btn-sm btn-translate" id="charTransBtn" onclick="translateSection('characters')">⇄ 中 → 英</button>
-          <button class="btn-sm btn-translate" id="charRestoreBtn" onclick="restoreSection('characters')" style="display:none">↺ 恢复中文</button>
-          <div class="toolbar-divider"></div>
-          <button class="btn-sm btn-export" onclick="copySection('characters')">⎘ 复制</button>
-        </div>
-        <div class="analysis-scroll">
-          <div class="analysis-body">
-            <div class="a-block" style="animation-delay:.08s">
-              <div class="a-head"><div class="a-num">06</div><div class="a-title">人物小传</div><div class="a-line"></div></div>
+            <!-- 03 人物小传 -->
+            <div class="a-block" style="animation-delay:.11s">
+              <div class="a-head"><div class="a-num">03</div><div class="a-title">人物小传</div><div class="a-line"></div></div>
               <div class="char-grid" id="charGrid"></div>
             </div>
+            <!-- 04 人物关系图 -->
+            <div class="a-block" style="animation-delay:.14s">
+              <div class="a-head"><div class="a-num">04</div><div class="a-title">人物关系图</div><div class="a-line"></div></div>
+              <div id="relationGraph" style="width:100%;min-height:260px;"></div>
+            </div>
+            <!-- 05 剧情梗概 -->
+            <div class="a-block" style="animation-delay:.17s">
+              <div class="a-head"><div class="a-num">05</div><div class="a-title">剧情梗概</div><div class="a-line"></div></div>
+              <div class="outline-list" id="outlineList"></div>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Outline Pane -->
-    <div class="tab-pane" id="pane-outline">
-      <div class="tab-empty" id="outlineEmpty">
-        <div class="tab-empty-icon">📋</div>
-        <div class="tab-empty-title">万字详纲</div>
-        <div class="tab-empty-desc">按时间顺序拆解全剧 40+ 个剧情节点，每个节点 150–250 字，包含场景背景、人物行动、关键对白要点与情感冲突，并自动标注<strong>【转折】</strong>与<strong>【高潮】</strong>，是改编时最直接可用的素材底稿。</div>
+    <!-- Planning Pane：策划逻辑 -->
+    <div class="tab-pane" id="pane-planning">
+      <div class="tab-empty" id="planningEmpty">
+        <div class="tab-empty-icon">⬡</div>
+        <div class="tab-empty-title">策划逻辑</div>
+        <div class="tab-empty-desc">多维度深度拆解原剧的核心亮点、结构逻辑、人物逻辑、情感逻辑、节奏逻辑、卡点布局、高光情节与叙事技巧。</div>
         <div class="tab-empty-badge">步骤 5 完成后自动生成</div>
       </div>
-      <div style="display:none;flex-direction:column;flex:1;overflow:hidden" id="outlineView">
+      <div style="display:none;flex-direction:column;flex:1;overflow:hidden" id="planningView">
         <div class="analysis-toolbar">
-          <span class="edit-badge" id="outlineLangBadge">中文</span>
+          <span class="edit-badge" id="planningLangBadge">中文</span>
           <div class="toolbar-divider"></div>
-          <button class="btn-sm btn-translate" id="outlineTransBtn" onclick="translateSection('outline')">⇄ 中 → 英</button>
-          <button class="btn-sm btn-translate" id="outlineRestoreBtn" onclick="restoreSection('outline')" style="display:none">↺ 恢复中文</button>
+          <button class="btn-sm btn-translate" id="planningTransBtn" onclick="translateSection('planning')">⇄ 中 → 英</button>
+          <button class="btn-sm btn-translate" id="planningRestoreBtn" onclick="restoreSection('planning')" style="display:none">↺ 恢复中文</button>
           <div class="toolbar-divider"></div>
-          <button class="btn-sm btn-export" onclick="copySection('outline')">⎘ 复制</button>
+          <button class="btn-sm btn-export" onclick="copySection('planning')">⎘ 复制</button>
         </div>
         <div class="analysis-scroll">
           <div class="analysis-body">
+            <div class="a-block" style="animation-delay:.05s">
+              <div class="a-head"><div class="a-num">01</div><div class="a-title">核心亮点</div><div class="a-line"></div></div>
+              <div class="a-body editable" id="highlightsText" contenteditable="true" spellcheck="false"></div>
+            </div>
             <div class="a-block" style="animation-delay:.08s">
-              <div class="a-head"><div class="a-num">07</div><div class="a-title">全剧情万字详纲</div><div class="a-line"></div></div>
-              <div class="outline-list" id="outlineList"></div>
+              <div class="a-head"><div class="a-num">02</div><div class="a-title">结构逻辑</div><div class="a-line"></div></div>
+              <div class="logic-grid" id="logicGrid"></div>
+            </div>
+            <div class="a-block" style="animation-delay:.11s">
+              <div class="a-head"><div class="a-num">03</div><div class="a-title">人物逻辑</div><div class="a-line"></div></div>
+              <div class="a-body editable" id="charLogicText" contenteditable="true" spellcheck="false"></div>
+            </div>
+            <div class="a-block" style="animation-delay:.14s">
+              <div class="a-head"><div class="a-num">04</div><div class="a-title">情感逻辑</div><div class="a-line"></div></div>
+              <div class="a-body editable" id="emotionText" contenteditable="true" spellcheck="false"></div>
+            </div>
+            <div class="a-block" style="animation-delay:.17s">
+              <div class="a-head"><div class="a-num">05</div><div class="a-title">节奏逻辑</div><div class="a-line"></div></div>
+              <div class="a-body editable" id="rhythmText" contenteditable="true" spellcheck="false"></div>
+            </div>
+            <div class="a-block" style="animation-delay:.20s">
+              <div class="a-head"><div class="a-num">06</div><div class="a-title">卡点布局</div><div class="a-line"></div></div>
+              <div class="a-body editable" id="hookText" contenteditable="true" spellcheck="false"></div>
+            </div>
+            <div class="a-block" style="animation-delay:.23s">
+              <div class="a-head"><div class="a-num">07</div><div class="a-title">高光情节</div><div class="a-line"></div></div>
+              <div class="a-body editable" id="highlightScenesText" contenteditable="true" spellcheck="false"></div>
+            </div>
+            <div class="a-block" style="animation-delay:.26s">
+              <div class="a-head"><div class="a-num">08</div><div class="a-title">叙事技巧</div><div class="a-line"></div></div>
+              <div class="a-body editable" id="narrativeTechText" contenteditable="true" spellcheck="false"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Adaptation Pane：改编建议 -->
+    <div class="tab-pane" id="pane-adaptation">
+      <div class="tab-empty" id="adaptationEmpty">
+        <div class="tab-empty-icon">✦</div>
+        <div class="tab-empty-title">改编建议</div>
+        <div class="tab-empty-desc">基于原剧策划逻辑，生成改编总阐述与3-5个具体改编方案，稳抓爆款核心，创新外壳包装。</div>
+        <div class="tab-empty-badge">步骤 5 完成后自动生成</div>
+      </div>
+      <div style="display:none;flex-direction:column;flex:1;overflow:hidden" id="adaptationView">
+        <div class="analysis-toolbar">
+          <span class="edit-badge" id="adaptationLangBadge">中文</span>
+          <div class="toolbar-divider"></div>
+          <button class="btn-sm btn-translate" id="adaptationTransBtn" onclick="translateSection('adaptation')">⇄ 中 → 英</button>
+          <button class="btn-sm btn-translate" id="adaptationRestoreBtn" onclick="restoreSection('adaptation')" style="display:none">↺ 恢复中文</button>
+          <div class="toolbar-divider"></div>
+          <button class="btn-sm btn-export" onclick="copySection('adaptation')">⎘ 复制</button>
+        </div>
+        <div class="analysis-scroll">
+          <div class="analysis-body">
+            <div class="a-block" style="animation-delay:.05s">
+              <div class="a-head"><div class="a-num">01</div><div class="a-title">改编总阐述</div><div class="a-line"></div></div>
+              <div class="a-body editable" id="adaptSummaryText" contenteditable="true" spellcheck="false"></div>
+            </div>
+            <div class="a-block" style="animation-delay:.10s">
+              <div class="a-head"><div class="a-num">02</div><div class="a-title">改编方案</div><div class="a-line"></div></div>
+              <div id="adaptPlansGrid"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Script Pane：剧本推演 -->
+    <div class="tab-pane" id="pane-script">
+      <div class="tab-empty" id="scriptEmpty">
+        <div class="tab-empty-icon">📝</div>
+        <div class="tab-empty-title">剧本推演</div>
+        <div class="tab-empty-desc">基于台词转录和场景信息，生成标准格式剧本，支持在线编辑与一键翻译。</div>
+        <div class="tab-empty-badge">点击下方按钮手动生成</div>
+        <button class="btn-primary" id="btnGenScript" onclick="generateScript()" style="margin-top:16px;display:none">▶ 生成剧本推演</button>
+      </div>
+      <div style="display:none;flex-direction:column;flex:1;overflow:hidden" id="scriptView">
+        <div class="analysis-toolbar">
+          <span class="edit-badge" id="scriptLangBadge">原语言</span>
+          <div class="toolbar-divider"></div>
+          <button class="btn-sm btn-translate" id="scriptTransBtn" onclick="translateSection('script')">⇄ 翻译为中文</button>
+          <button class="btn-sm btn-translate" id="scriptRestoreBtn" onclick="restoreSection('script')" style="display:none">↺ 恢复原文</button>
+          <div class="toolbar-divider"></div>
+          <button class="btn-sm btn-export" onclick="copySection('script')">⎘ 复制</button>
+          <button class="btn-sm btn-export" onclick="exportScriptWord()" style="margin-left:4px">⬇ 导出剧本</button>
+        </div>
+        <div class="analysis-scroll" id="scriptScroll">
+          <div class="analysis-body">
+            <div class="a-block">
+              <div class="a-head"><div class="a-num">📝</div><div class="a-title">剧本推演</div><div class="a-line"></div></div>
+              <div class="script-body editable" id="scriptText" contenteditable="true" spellcheck="false"></div>
             </div>
           </div>
         </div>
@@ -1540,8 +1621,10 @@ async function doRunAnalysis() {
     renderSubs();
     setStep(4,'done'); setProg(70);
 
-    setStep(5,'active'); setLabel('内容拆解分析… (约2-3分钟)');
-    analysisData = await analyzeContent(asr.map(s=>s.text).join(' '), c.llmKey, c.model);
+    setStep(5,'active'); setLabel('截取视频场景帧…');
+    const scenes = await captureSceneFrames(videoFile || videoUrl, 15);
+    setLabel('内容拆解分析… (约2-3分钟)');
+    analysisData = await analyzeContent(asr.map(s=>s.text).join(' '), c.llmKey, c.model, scenes);
     renderAnalysis();
     setStep(5,'done'); setProg(100);
 
@@ -1674,44 +1757,154 @@ async function translateSubs(subs, key, model) {
 }
 
 // ── ANALYZE ──
-async function analyzeContent(text, key, model) {
-  const t = text.length>15000 ? text.slice(0,15000)+'…' : text;
+// ── 截取场景帧（Canvas，纯前端，无需后端）──
+async function captureSceneFrames(source, intervalSec = 15) {
+  return new Promise(resolve => {
+    const video = document.createElement('video');
+    video.muted = true;
+    video.preload = 'metadata';
+    video.crossOrigin = 'anonymous';
 
-  setLabel('分析剧情与结构…');
-  const r1=await callLLM(`你是专业影视改编策划。分析以下英文短剧对白（只输出JSON，不加说明）：
-{"summary":"500字中文剧情简介","highlights":"核心亮点200字","structure_acts":"三幕结构分析150字","structure_hooks":"悬念设计150字","character_logic":"人物逻辑200字","emotion":"情感逻辑200字"}
+    const src = (typeof source === 'string') ? source : URL.createObjectURL(source);
+    video.src = src;
 
-对白：\n${t}`,key,model,2500);
-  let p1; try{p1=JSON.parse(r1.replace(/```json|```/g,'').trim());}catch{p1={summary:r1.slice(0,500)};}
+    video.onloadedmetadata = async () => {
+      const duration = video.duration;
+      if (!duration || !isFinite(duration)) { resolve([]); return; }
 
-  setLabel('提取人物小传…');
-  const r2=await callLLM(`从以下英文短剧对白提取主要人物，每人100-200字中文小传。只输出JSON数组[{"name":"中英名","bio":"小传"}]：\n${t}`,key,model,2000);
-  let chars; try{chars=JSON.parse(r2.replace(/```json|```/g,'').trim());}catch{chars=[];}
+      const times = [];
+      for (let t = intervalSec / 2; t < duration; t += intervalSec) times.push(t);
+      // 最多20帧，避免过多
+      const capTimes = times.slice(0, 20);
 
-  setLabel('生成万字详纲…');
-  const r3=await callLLM(`根据以下英文短剧对白写全剧万字详纲。要求：
-- 至少40个节点，每节点150-250字
-- 每个节点格式为：【幕次标题】正文内容（含场景/行动/对白要点/情感）
-- 转折处标注【转折】，高潮处标注【高潮】
-- 直接输出纯文本，不要JSON，不要代码块，不要任何格式符号
-- 节点之间空一行分隔
+      const canvas = document.createElement('canvas');
+      canvas.width = 480; canvas.height = 270; // 16:9 缩略图
+      const ctx = canvas.getContext('2d');
+      const frames = [];
 
-对白：\n${t}`,key,model,4500);
+      for (const t of capTimes) {
+        await new Promise(r => {
+          video.currentTime = t;
+          video.onseeked = () => {
+            ctx.drawImage(video, 0, 0, 480, 270);
+            const b64 = canvas.toDataURL('image/jpeg', 0.7).split(',')[1];
+            frames.push({ time: Math.round(t), b64 });
+            r();
+          };
+        });
+        setLabel(`截取场景帧… ${frames.length}/${capTimes.length}`);
+      }
+
+      if (typeof source !== 'string') URL.revokeObjectURL(src);
+      resolve(frames);
+    };
+
+    video.onerror = () => resolve([]); // 截帧失败不影响主流程
+  });
+}
+
+async function analyzeContent(text, key, model, scenes = []) {
+  const t = text.length > 15000 ? text.slice(0, 15000) + '…' : text;
+
+  // ── 1. 基本信息 + 一句话简介 + 剧情梗概（分开两个调用避免太长）──
+  setLabel('分析基本信息与剧情…');
+  const r_info = await callLLM(`你是专业影视内容分析师。分析以下英文短剧对白，只输出JSON，不加任何说明：
+{
+  "genre": "题材类型，如：狼人/命运之吻/甜虐爱情/都市爱情等",
+  "format": "体裁体量，如：英文短剧，共X集（根据内容量估算），每集约X分钟",
+  "logline": "一句话简介，不超过100字，点明题材+主要冲突+情感核心",
+  "language_detected": "对白主要语言，如：英语/中文/双语"
+}
+对白：\n${t}`, key, model, 800);
+  let info; try { info = JSON.parse(r_info.replace(/```json|```/g,'').trim()); } catch { info = {}; }
+
+  // ── 2. 人物小传 + 人物关系 ──
+  setLabel('提取人物与关系…');
+  const r_chars = await callLLM(`从以下英文短剧对白提取主要人物。只输出JSON，不加任何说明：
+{
+  "characters": [{"name":"中英名","bio":"100-200字中文小传，含性格/动机/弧线"}],
+  "relations": [{"from":"人物A名","to":"人物B名","label":"关系描述，如：暗恋/命定伴侣/情敌/父女"}]
+}
+对白：\n${t}`, key, model, 2500);
+  let charData; try { charData = JSON.parse(r_chars.replace(/```json|```/g,'').trim()); } catch { charData = { characters: [], relations: [] }; }
+
+  // ── 3. 策划逻辑（核心亮点/结构/人物/情感/节奏/卡点/高光/叙事技巧）──
+  setLabel('拆解策划逻辑…');
+  const r_plan = await callLLM(`你是资深短剧策划。深度拆解以下英文短剧对白的策划逻辑，只输出JSON，不加任何说明：
+{
+  "highlights": "核心亮点200字：最吸引观众的核心卖点是什么",
+  "structure_acts": "三幕结构150字：开篇/发展/高潮/结局各阶段如何布局",
+  "structure_hooks": "悬念设计150字：用了哪些悬念钩子吸引持续追剧",
+  "character_logic": "人物逻辑150字：人物行为动机是否自洽，核心人物弧线",
+  "emotion": "情感逻辑150字：情绪弧线如何设计，共鸣点在哪里",
+  "rhythm": "节奏逻辑150字：张弛节奏、反转密度、信息释放节拍",
+  "hooks": "卡点布局150字：关键卡点分布在哪里，如何制造追看欲",
+  "highlight_scenes": "高光情节150字：最具爆点的3-5个情节场景",
+  "narrative_tech": "叙事技巧150字：用了哪些叙事手法，如倒叙/平行/视角切换等"
+}
+对白：\n${t}`, key, model, 3000);
+  let plan; try { plan = JSON.parse(r_plan.replace(/```json|```/g,'').trim()); } catch { plan = {}; }
+
+  // ── 4. 剧情梗概（含截帧视觉信息）──
+  setLabel('生成详细梗概…');
+  let r3;
+  if (scenes && scenes.length > 0) {
+    const prompt = `你是专业影视内容分析师。根据以下英文短剧的台词和视频截图，写全剧详细梗概（约2500字）。
+要求：以台词和截图为核心依据，忠实还原视频情节；可基于截图和台词上下文做合理推断补全场景氛围、人物神态，但推断必须有依据，不编造完全没有的情节走向；每个节点格式：【场景标题】正文；转折处标注【转折】，高潮处标注【高潮】；直接输出纯文本，节点间空行。
+台词：\n${t}`;
+    const selectedFrames = scenes.length > 8 ? scenes.filter((_, i) => i % Math.ceil(scenes.length / 8) === 0).slice(0, 8) : scenes;
+    const content = [{ type: 'text', text: prompt }];
+    selectedFrames.forEach(f => { content.push({ type: 'image_url', image_url: { url: `data:image/jpeg;base64,${f.b64}` } }); });
+    const vResp = await fetch('https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+      body: JSON.stringify({ model: 'doubao-1-5-vision-pro-32k-250115', max_tokens: 4500, temperature: 0.7, messages: [{ role: 'user', content }] })
+    });
+    r3 = vResp.ok ? ((await vResp.json()).choices?.[0]?.message?.content || '') : '';
+    if (!r3) r3 = await callLLM(`根据以下英文短剧台词写详细梗概（约2500字）。以台词为依据忠实还原情节，可做合理推断补全场景细节，不编造台词中没有的情节。每节点格式：【场景标题】正文，转折标注【转折】高潮标注【高潮】，纯文本节点间空行。\n台词：\n${t}`, key, model, 4500);
+  } else {
+    r3 = await callLLM(`根据以下英文短剧台词写详细梗概（约2500字）。以台词为依据忠实还原情节，可基于台词上下文做合理推断补全场景氛围与人物神态，但不编造完全没有依据的情节走向。每节点格式：【场景标题】正文，转折标注【转折】高潮标注【高潮】，直接输出纯文本，节点间空行。\n台词：\n${t}`, key, model, 4500);
+  }
   const outlineRaw = r3.replace(/```[\s\S]*?```/g,'').trim();
-  const outlineBlocks = outlineRaw.split(/\n\s*\n/).filter(b=>b.trim());
+  const outlineBlocks = outlineRaw.split(/\n\s*\n/).filter(b => b.trim());
   let outline = outlineBlocks.map(block => {
     const lines = block.trim().split('\n');
     const pointMatch = lines[0].match(/【([^】]+)】/);
-    const point = pointMatch ? pointMatch[1] : lines[0].replace(/^\d+[\.、]\s*/,'').slice(0,30);
+    const point = pointMatch ? pointMatch[1] : lines[0].replace(/^\d+[\.、]\s*/,'').slice(0, 30);
     const content = lines.join('\n').replace(/^【[^】]+】\s*/,'').trim();
     return { point, content };
   });
-  if(!outline.length) outline=[{point:'详纲',content:outlineRaw.slice(0,800)}];
+  if (!outline.length) outline = [{ point: '梗概', content: outlineRaw.slice(0, 800) }];
 
-  return { summary:p1.summary||'', highlights:p1.highlights||'',
-    structureActs:p1.structure_acts||'', structureHooks:p1.structure_hooks||'',
-    characterLogic:p1.character_logic||'', emotion:p1.emotion||'',
-    characters:chars, outline };
+  // ── 5. 改编建议（总阐述 + 3-5方案）──
+  setLabel('生成改编建议…');
+  const planSummary = `核心亮点：${plan.highlights||''}\n结构：${plan.structure_acts||''}\n悬念：${plan.structure_hooks||''}\n人物：${plan.character_logic||''}\n情感：${plan.emotion||''}\n节奏：${plan.rhythm||''}\n卡点：${plan.hooks||''}\n高光：${plan.highlight_scenes||''}`;
+  const r_adapt = await callLLM(`你是资深短剧改编策划。基于以下原剧策划逻辑分析，给出改编建议。只输出JSON，不加任何说明：
+{
+  "summary": "改编总阐述200字：说明原剧核心爆点所在，以及改编应遵循的核心原则——保留什么、改变什么",
+  "plans": [
+    {"title":"方案一标题（如：国风虐恋版）","description":"200字方案说明：故事背景/题材类型/人物身份设定如何改编，如何在新包装下保留原爆点"},
+    {"title":"方案二标题","description":"200字方案说明"},
+    {"title":"方案三标题","description":"200字方案说明"}
+  ]
+}
+
+原剧台词（供参考）：${t.slice(0,3000)}
+
+原剧策划逻辑：
+${planSummary}`, key, model, 3000);
+  let adapt; try { adapt = JSON.parse(r_adapt.replace(/```json|```/g,'').trim()); } catch { adapt = { summary: '', plans: [] }; }
+
+  return {
+    info, logline: info.logline || '',
+    characters: charData.characters || [], relations: charData.relations || [],
+    highlights: plan.highlights || '', structureActs: plan.structure_acts || '',
+    structureHooks: plan.structure_hooks || '', characterLogic: plan.character_logic || '',
+    emotion: plan.emotion || '', rhythm: plan.rhythm || '',
+    hooks: plan.hooks || '', highlightScenes: plan.highlight_scenes || '',
+    narrativeTech: plan.narrative_tech || '',
+    outline,
+    adaptSummary: adapt.summary || '', adaptPlans: adapt.plans || [],
+  };
 }
 
 async function callLLM(prompt, key, model, maxTok=1500) {
@@ -1772,7 +1965,12 @@ function renderSubs() {
       if (i === activeIdx) {
         if (!el.classList.contains('active')) {
           el.classList.add('active');
-          el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+          // 滚动到列表中央位置
+          const list = document.getElementById('subList');
+          const listRect = list.getBoundingClientRect();
+          const elRect = el.getBoundingClientRect();
+          const scrollTarget = list.scrollTop + (elRect.top - listRect.top) - listRect.height / 2 + elRect.height / 2;
+          list.scrollTo({ top: scrollTarget, behavior: 'smooth' });
         }
       } else { el.classList.remove('active'); }
     });
@@ -1788,58 +1986,176 @@ function renderAnalysis() {
   const d = analysisData;
   const toP = t => (t||'').split('\n').filter(Boolean).map(p=>`<p>${esc(p)}</p>`).join('');
 
-  // 重置所有语言状态
-  ['summary','logic','characters','outline'].forEach(sec => {
+  // 重置语言状态
+  ['overview','planning','adaptation','script'].forEach(sec => {
     sectionLang[sec] = 'zh';
     const badge = document.getElementById(sec+'LangBadge');
-    if(badge){ badge.textContent='中文'; badge.classList.remove('en'); }
+    if (badge) { badge.textContent = sec==='script' ? '原语言' : '中文'; badge.classList.remove('en'); }
     const tb = document.getElementById(sec+'TransBtn');
     const rb = document.getElementById(sec+'RestoreBtn');
-    if(tb) tb.style.display='';
-    if(rb) rb.style.display='none';
+    if (tb) tb.style.display = '';
+    if (rb) rb.style.display = 'none';
   });
 
-  document.getElementById('summaryText').innerHTML = toP(d.summary);
-  document.getElementById('summaryEmpty').style.display='none';
-  document.getElementById('summaryView').style.display='flex';
+  // ── 剧情概要 tab ──
+  // 基本信息
+  const ig = document.getElementById('infoGrid'); ig.innerHTML = '';
+  const infoItems = [
+    { label: '题材类型', value: d.info?.genre || '—' },
+    { label: '体裁体量', value: d.info?.format || '—' },
+    { label: '对白语言', value: d.info?.language_detected || '—' },
+  ];
+  infoItems.forEach(item => {
+    ig.innerHTML += `<div class="info-card"><div class="info-card-label">${item.label}</div><div class="info-card-value">${esc(item.value)}</div></div>`;
+  });
+  // 一句话简介
+  document.getElementById('loglineText').innerHTML = toP(d.logline);
+  // 人物小传
+  const cg = document.getElementById('charGrid'); cg.innerHTML = '';
+  (d.characters||[]).forEach(c => {
+    const card = document.createElement('div'); card.className = 'char-card';
+    card.innerHTML = `<div class="char-name" contenteditable="true" spellcheck="false">${esc(c.name)}</div><div class="char-bio" contenteditable="true" spellcheck="false">${esc(c.bio)}</div>`;
+    cg.appendChild(card);
+  });
+  // 人物关系图
+  renderRelationGraph(d.relations || [], d.characters || []);
+  // 剧情梗概
+  const ol = document.getElementById('outlineList'); ol.innerHTML = '';
+  (d.outline||[]).forEach((item, i) => {
+    const div = document.createElement('div'); div.className = 'outline-item';
+    const content = esc(item.content||'').replace(/【转折】/g,'<strong style="color:var(--red)">【转折】</strong>').replace(/【高潮】/g,'<strong style="color:var(--green-main)">【高潮】</strong>');
+    div.innerHTML = `<div class="outline-n">${String(i+1).padStart(2,'0')}</div>
+      <div class="outline-content"><span class="outline-pt" contenteditable="true" spellcheck="false">${esc(item.point||'')}</span><span contenteditable="true" spellcheck="false">${content}</span></div>`;
+    ol.appendChild(div);
+  });
+  document.getElementById('overviewEmpty').style.display = 'none';
+  document.getElementById('overviewView').style.display = 'flex';
 
+  // ── 策划逻辑 tab ──
   document.getElementById('highlightsText').innerHTML = toP(d.highlights);
   const lg = document.getElementById('logicGrid');
   lg.innerHTML = `
     <div class="logic-card"><div class="logic-card-tag">三幕结构</div><div class="logic-card-text editable" contenteditable="true" spellcheck="false">${esc(d.structureActs)}</div></div>
     <div class="logic-card"><div class="logic-card-tag">悬念设计</div><div class="logic-card-text editable" contenteditable="true" spellcheck="false">${esc(d.structureHooks)}</div></div>`;
   document.getElementById('charLogicText').innerHTML = toP(d.characterLogic);
-  document.getElementById('emotionText').innerHTML   = toP(d.emotion);
-  document.getElementById('logicEmpty').style.display='none';
-  document.getElementById('logicView').style.display='flex';
+  document.getElementById('emotionText').innerHTML = toP(d.emotion);
+  document.getElementById('rhythmText').innerHTML = toP(d.rhythm);
+  document.getElementById('hookText').innerHTML = toP(d.hooks);
+  document.getElementById('highlightScenesText').innerHTML = toP(d.highlightScenes);
+  document.getElementById('narrativeTechText').innerHTML = toP(d.narrativeTech);
+  document.getElementById('planningEmpty').style.display = 'none';
+  document.getElementById('planningView').style.display = 'flex';
 
-  const cg = document.getElementById('charGrid'); cg.innerHTML='';
-  (d.characters||[]).forEach(c => {
-    const card = document.createElement('div'); card.className='char-card';
-    card.innerHTML = `<div class="char-name" contenteditable="true" spellcheck="false">${esc(c.name)}</div><div class="char-bio" contenteditable="true" spellcheck="false">${esc(c.bio)}</div>`;
-    cg.appendChild(card);
+  // ── 改编建议 tab ──
+  document.getElementById('adaptSummaryText').innerHTML = toP(d.adaptSummary);
+  const apg = document.getElementById('adaptPlansGrid'); apg.innerHTML = '';
+  (d.adaptPlans||[]).forEach((plan, i) => {
+    const card = document.createElement('div'); card.className = 'adapt-plan-card';
+    card.innerHTML = `<div class="adapt-plan-num">方案 ${String(i+1).padStart(2,'0')}</div>
+      <div class="adapt-plan-title" contenteditable="true" spellcheck="false">${esc(plan.title||'')}</div>
+      <div class="adapt-plan-body" contenteditable="true" spellcheck="false">${esc(plan.description||'')}</div>`;
+    apg.appendChild(card);
   });
-  document.getElementById('charEmpty').style.display='none';
-  document.getElementById('charView').style.display='flex';
+  document.getElementById('adaptationEmpty').style.display = 'none';
+  document.getElementById('adaptationView').style.display = 'flex';
 
-  const ol = document.getElementById('outlineList'); ol.innerHTML='';
-  (d.outline||[]).forEach((item,i) => {
-    const div = document.createElement('div'); div.className='outline-item';
-    const content = esc(item.content||'').replace(/【转折】/g,'<strong style="color:var(--red)">【转折】</strong>').replace(/【高潮】/g,'<strong style="color:var(--green-main)">【高潮】</strong>');
-    div.innerHTML = `<div class="outline-n">${String(i+1).padStart(2,'0')}</div>
-      <div class="outline-content"><span class="outline-pt" contenteditable="true" spellcheck="false">${esc(item.point||'')}</span><span contenteditable="true" spellcheck="false">${content}</span></div>`;
-    ol.appendChild(div);
-  });
-  document.getElementById('outlineEmpty').style.display='none';
-  document.getElementById('outlineView').style.display='flex';
+  // ── 剧本推演 tab：显示生成按钮 ──
+  document.getElementById('btnGenScript').style.display = '';
 
   // 显示整合导出按钮
-  document.getElementById('btnExportAll').style.display='';
+  document.getElementById('btnExportAll').style.display = '';
+}
+
+// ── 人物关系可视化 ──
+function renderRelationGraph(relations, characters) {
+  const container = document.getElementById('relationGraph');
+  if (!relations.length && !characters.length) { container.innerHTML = '<div style="color:var(--text-ghost);font-size:12px;padding:16px">暂无人物关系数据</div>'; return; }
+
+  const W = 700, H = 260;
+  const nodes = characters.map((c, i) => {
+    const angle = (2 * Math.PI * i) / characters.length - Math.PI / 2;
+    const r = Math.min(W, H) * 0.35;
+    return { id: c.name, x: W/2 + r * Math.cos(angle), y: H/2 + r * Math.sin(angle) };
+  });
+  const nodeMap = Object.fromEntries(nodes.map(n => [n.id, n]));
+
+  let svg = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
+  // 连线
+  relations.forEach(rel => {
+    const a = nodeMap[rel.from], b = nodeMap[rel.to];
+    if (!a || !b) return;
+    const mx = (a.x+b.x)/2, my = (a.y+b.y)/2;
+    svg += `<g class="rel-edge"><line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"/>
+      <text x="${mx}" y="${my-4}" text-anchor="middle">${esc(rel.label||'')}</text></g>`;
+  });
+  // 节点
+  const colors = ['#1E5C3A','#2A6B45','#4A7A5A','#B8944A','#6B8070'];
+  nodes.forEach((n, i) => {
+    const color = colors[i % colors.length];
+    const shortName = n.id.split(/[·\/]/).pop()?.slice(0,4) || n.id.slice(0,4);
+    svg += `<g class="rel-node">
+      <circle cx="${n.x}" cy="${n.y}" r="28" fill="${color}" opacity=".15" stroke="${color}" stroke-width="1.5"/>
+      <text x="${n.x}" y="${n.y+4}" text-anchor="middle" fill="${color}" font-weight="600">${esc(shortName)}</text>
+    </g>`;
+  });
+  svg += '</svg>';
+  container.innerHTML = svg;
+}
+
+// ── 剧本推演 ──
+let scriptGenerated = false;
+async function generateScript() {
+  const cfg = getConfig();
+  if (!cfg.llmKey) { toast('请先配置 API Key','err'); return; }
+  if (!subtitleData.length) { toast('请先完成分析','err'); return; }
+
+  const btn = document.getElementById('btnGenScript');
+  btn.textContent = '生成中…'; btn.disabled = true;
+
+  try {
+    const dialogues = subtitleData.map(s => `${fmtTC(s.tc)}  ${s.en}`).join('\n');
+    const detectedLang = analysisData?.info?.language_detected || '英语';
+    const isEn = detectedLang.includes('英') || detectedLang.toLowerCase().includes('en');
+
+    const scriptRaw = await callLLM(`你是专业剧本编剧。根据以下短剧台词时间轴，还原成标准格式剧本。
+
+要求：
+- 输出${isEn ? '英文' : '中文'}标准剧本格式
+- 场景行：INT./EXT. 场景描述 - 时间（根据台词内容合理推断场景）
+- 动作行：描述人物动作、表情、场景氛围（基于台词内容合理推断）
+- 对白：人物名 + 台词（直接使用原台词，不要改动）
+- 括号注释：(emotion/action description) 标注情绪或动作
+- 保持台词100%忠实原文，场景和动作描述基于台词合理推断
+- 直接输出剧本正文，不要任何说明
+
+台词时间轴：\n${dialogues}`, cfg.llmKey, cfg.model, 4500);
+
+    document.getElementById('scriptText').textContent = scriptRaw;
+    document.getElementById('scriptEmpty').style.display = 'none';
+    document.getElementById('scriptView').style.display = 'flex';
+    scriptGenerated = true;
+    toast('剧本推演生成完成','ok');
+  } catch (e) {
+    toast('生成失败：' + e.message, 'err');
+  } finally {
+    btn.textContent = '▶ 重新生成'; btn.disabled = false;
+  }
+}
+
+function exportScriptWord() {
+  if (!scriptGenerated) { toast('请先生成剧本','err'); return; }
+  const title = videoFile?.name?.replace(/\.[^.]+$/,'') || videoUrl || '剧本推演';
+  const text = document.getElementById('scriptText').innerText || '';
+  const para = t => `{\\pard\\f1\\fs20 ${rtfEsc(t)}\\par}\n`;
+  let body = '';
+  text.split('\n').forEach(line => { body += para(line); });
+  dlRtf(`${title}_剧本推演.doc`, makeRtf(body, title + ' · 剧本推演'));
+  toast('剧本已下载','ok');
 }
 
 // ── TRANSLATE & EDIT ──
 // 每个 section 的语言状态：'zh' | 'en'
-const sectionLang = { summary:'zh', logic:'zh', characters:'zh', outline:'zh' };
+const sectionLang = { overview:'zh', planning:'zh', adaptation:'zh', script:'zh' };
 
 async function translateSection(sec) {
   const cfg = getConfig();
@@ -1881,144 +2197,101 @@ function restoreSection(sec) {
   const badge = document.getElementById(sec+'LangBadge');
   const transBtn = document.getElementById(sec+'TransBtn');
   const restoreBtn = document.getElementById(sec+'RestoreBtn');
-
-  // 重新渲染中文内容
   const d = analysisData;
   const toP = t => (t||'').split('\n').filter(Boolean).map(p=>`<p>${esc(p)}</p>`).join('');
 
-  if(sec === 'summary'){
-    document.getElementById('summaryText').innerHTML = toP(d.summary);
-  } else if(sec === 'logic'){
-    document.getElementById('highlightsText').innerHTML = toP(d.highlights);
-    document.getElementById('charLogicText').innerHTML = toP(d.characterLogic);
-    document.getElementById('emotionText').innerHTML = toP(d.emotion);
-    const lg = document.getElementById('logicGrid');
-    lg.innerHTML = `
-      <div class="logic-card"><div class="logic-card-tag">三幕结构</div><div class="logic-card-text editable" contenteditable="true" spellcheck="false">${esc(d.structureActs)}</div></div>
-      <div class="logic-card"><div class="logic-card-tag">悬念设计</div><div class="logic-card-text editable" contenteditable="true" spellcheck="false">${esc(d.structureHooks)}</div></div>`;
-  } else if(sec === 'characters'){
-    const cg = document.getElementById('charGrid'); cg.innerHTML='';
-    (d.characters||[]).forEach(c=>{
-      const card = document.createElement('div'); card.className='char-card';
+  if (sec === 'overview') {
+    document.getElementById('loglineText').innerHTML = toP(d.logline);
+    const cg = document.getElementById('charGrid'); cg.innerHTML = '';
+    (d.characters||[]).forEach(c => {
+      const card = document.createElement('div'); card.className = 'char-card';
       card.innerHTML = `<div class="char-name" contenteditable="true" spellcheck="false">${esc(c.name)}</div><div class="char-bio" contenteditable="true" spellcheck="false">${esc(c.bio)}</div>`;
       cg.appendChild(card);
     });
-  } else if(sec === 'outline'){
-    const ol = document.getElementById('outlineList'); ol.innerHTML='';
-    (d.outline||[]).forEach((item,i)=>{
-      const div = document.createElement('div'); div.className='outline-item';
+    const ol = document.getElementById('outlineList'); ol.innerHTML = '';
+    (d.outline||[]).forEach((item,i) => {
+      const div = document.createElement('div'); div.className = 'outline-item';
       const content = esc(item.content||'').replace(/【转折】/g,'<strong style="color:var(--red)">【转折】</strong>').replace(/【高潮】/g,'<strong style="color:var(--green-main)">【高潮】</strong>');
-      div.innerHTML = `<div class="outline-n">${String(i+1).padStart(2,'0')}</div>
-        <div class="outline-content"><span class="outline-pt" contenteditable="true" spellcheck="false">${esc(item.point||'')}</span><span contenteditable="true" spellcheck="false">${content}</span></div>`;
+      div.innerHTML = `<div class="outline-n">${String(i+1).padStart(2,'0')}</div><div class="outline-content"><span class="outline-pt" contenteditable="true" spellcheck="false">${esc(item.point||'')}</span><span contenteditable="true" spellcheck="false">${content}</span></div>`;
       ol.appendChild(div);
     });
+  } else if (sec === 'planning') {
+    document.getElementById('highlightsText').innerHTML = toP(d.highlights);
+    document.getElementById('charLogicText').innerHTML = toP(d.characterLogic);
+    document.getElementById('emotionText').innerHTML = toP(d.emotion);
+    document.getElementById('rhythmText').innerHTML = toP(d.rhythm);
+    document.getElementById('hookText').innerHTML = toP(d.hooks);
+    document.getElementById('highlightScenesText').innerHTML = toP(d.highlightScenes);
+    document.getElementById('narrativeTechText').innerHTML = toP(d.narrativeTech);
+    const lg = document.getElementById('logicGrid');
+    lg.innerHTML = `<div class="logic-card"><div class="logic-card-tag">三幕结构</div><div class="logic-card-text editable" contenteditable="true" spellcheck="false">${esc(d.structureActs)}</div></div>
+      <div class="logic-card"><div class="logic-card-tag">悬念设计</div><div class="logic-card-text editable" contenteditable="true" spellcheck="false">${esc(d.structureHooks)}</div></div>`;
+  } else if (sec === 'adaptation') {
+    document.getElementById('adaptSummaryText').innerHTML = toP(d.adaptSummary);
+    const apg = document.getElementById('adaptPlansGrid'); apg.innerHTML = '';
+    (d.adaptPlans||[]).forEach((plan,i) => {
+      const card = document.createElement('div'); card.className = 'adapt-plan-card';
+      card.innerHTML = `<div class="adapt-plan-num">方案 ${String(i+1).padStart(2,'0')}</div>
+        <div class="adapt-plan-title" contenteditable="true" spellcheck="false">${esc(plan.title||'')}</div>
+        <div class="adapt-plan-body" contenteditable="true" spellcheck="false">${esc(plan.description||'')}</div>`;
+      apg.appendChild(card);
+    });
+  } else if (sec === 'script') {
+    document.getElementById('scriptText').textContent = analysisData._scriptZh || document.getElementById('scriptText').textContent;
   }
 
   sectionLang[sec] = 'zh';
-  badge.textContent = '中文';
+  badge.textContent = sec === 'script' ? '原语言' : '中文';
   badge.classList.remove('en');
   transBtn.style.display = '';
   restoreBtn.style.display = 'none';
 }
 
 function extractSectionText(sec) {
-  // 从当前DOM里提取纯文本用于翻译
-  if(sec === 'summary') return document.getElementById('summaryText').innerText || '';
-  if(sec === 'logic') return [
-    '【核心亮点】\n' + (document.getElementById('highlightsText').innerText||''),
-    '【叙事结构】\n' + (document.getElementById('logicGrid').innerText||''),
-    '【人物逻辑】\n' + (document.getElementById('charLogicText').innerText||''),
-    '【情感逻辑】\n' + (document.getElementById('emotionText').innerText||''),
+  if (sec === 'overview') return [
+    '一句话简介\n'+(document.getElementById('loglineText').innerText||''),
+    '人物小传\n'+(document.getElementById('charGrid').innerText||''),
+    '剧情梗概\n'+(document.getElementById('outlineList').innerText||''),
   ].join('\n\n');
-  if(sec === 'characters') return document.getElementById('charGrid').innerText || '';
-  if(sec === 'outline') return document.getElementById('outlineList').innerText || '';
+  if (sec === 'planning') return [
+    '核心亮点\n'+(document.getElementById('highlightsText').innerText||''),
+    '结构逻辑\n'+(document.getElementById('logicGrid').innerText||''),
+    '人物逻辑\n'+(document.getElementById('charLogicText').innerText||''),
+    '情感逻辑\n'+(document.getElementById('emotionText').innerText||''),
+    '节奏逻辑\n'+(document.getElementById('rhythmText').innerText||''),
+    '卡点布局\n'+(document.getElementById('hookText').innerText||''),
+    '高光情节\n'+(document.getElementById('highlightScenesText').innerText||''),
+    '叙事技巧\n'+(document.getElementById('narrativeTechText').innerText||''),
+  ].join('\n\n');
+  if (sec === 'adaptation') return [
+    '改编总阐述\n'+(document.getElementById('adaptSummaryText').innerText||''),
+    '改编方案\n'+(document.getElementById('adaptPlansGrid').innerText||''),
+  ].join('\n\n');
+  if (sec === 'script') return document.getElementById('scriptText').innerText || '';
   return '';
 }
 
 function applySectionTranslation(sec, enText) {
-  // 将翻译结果按段落重新渲染到DOM
   const paras = enText.split('\n').filter(Boolean);
   const toP = arr => arr.map(p=>`<p>${esc(p)}</p>`).join('');
-
-  if(sec === 'summary'){
-    document.getElementById('summaryText').innerHTML = toP(paras);
-
-  } else if(sec === 'logic'){
-    // 按标记拆分各部分
-    const sections = { highlights:[], structure:[], charLogic:[], emotion:[] };
-    let current = 'highlights';
-    paras.forEach(p => {
-      const lp = p.toLowerCase();
-      if(lp.includes('core highlight') || lp.includes('【core')) current='highlights';
-      else if(lp.includes('structure') || lp.includes('three-act') || lp.includes('【narrat')) current='structure';
-      else if(lp.includes('character logic') || lp.includes('【character')) current='charLogic';
-      else if(lp.includes('emotion') || lp.includes('【emotion')) current='emotion';
-      else sections[current].push(p);
-    });
-    if(!sections.highlights.length && !sections.structure.length) {
-      // fallback: 均分四段
-      const chunk = Math.ceil(paras.length/4);
-      sections.highlights = paras.slice(0, chunk);
-      sections.structure  = paras.slice(chunk, chunk*2);
-      sections.charLogic  = paras.slice(chunk*2, chunk*3);
-      sections.emotion    = paras.slice(chunk*3);
-    }
-    document.getElementById('highlightsText').innerHTML = toP(sections.highlights);
-    document.getElementById('charLogicText').innerHTML  = toP(sections.charLogic);
-    document.getElementById('emotionText').innerHTML    = toP(sections.emotion);
-    const lg = document.getElementById('logicGrid');
-    const structText = sections.structure.join('\n');
-    const half = Math.ceil(sections.structure.length/2);
-    lg.innerHTML = `
-      <div class="logic-card"><div class="logic-card-tag">Three-Act Structure</div><div class="logic-card-text editable" contenteditable="true" spellcheck="false">${esc(sections.structure.slice(0,half).join('\n'))}</div></div>
-      <div class="logic-card"><div class="logic-card-tag">Suspense Design</div><div class="logic-card-text editable" contenteditable="true" spellcheck="false">${esc(sections.structure.slice(half).join('\n'))}</div></div>`;
-
-  } else if(sec === 'characters'){
-    const cg = document.getElementById('charGrid');
-    const cards = Array.from(cg.querySelectorAll('.char-card'));
-    // 按人物卡片数量分段
-    const cardCount = cards.length || 1;
-    const chunkSize = Math.ceil(paras.length / cardCount);
-    cards.forEach((card, i) => {
-      const bio = card.querySelector('.char-bio');
-      if(bio) bio.innerHTML = esc(paras.slice(i*chunkSize,(i+1)*chunkSize).join('\n'));
-    });
-
-  } else if(sec === 'outline'){
-    const items = document.querySelectorAll('#outlineList .outline-item');
-    const itemCount = items.length || 1;
-    const chunkSize = Math.ceil(paras.length / itemCount);
-    items.forEach((item, i) => {
-      const contentSpan = item.querySelectorAll('span')[1];
-      if(contentSpan) contentSpan.innerHTML = esc(paras.slice(i*chunkSize,(i+1)*chunkSize).join('\n'));
-    });
+  if (sec === 'overview') {
+    document.getElementById('loglineText').innerHTML = toP(paras.slice(0,2));
+  } else if (sec === 'planning') {
+    // 简单整体替换到highlights
+    document.getElementById('highlightsText').innerHTML = toP(paras);
+  } else if (sec === 'adaptation') {
+    document.getElementById('adaptSummaryText').innerHTML = toP(paras);
+  } else if (sec === 'script') {
+    // 保存原文，显示译文
+    analysisData._scriptZh = document.getElementById('scriptText').innerText;
+    document.getElementById('scriptText').textContent = enText;
+    document.getElementById('scriptLangBadge').textContent = '中文译本';
   }
 }
 
-// ── 导出（跟随当前显示语种）──
 // ── 复制板块 ──
 function copySection(sec) {
-  let text = '';
-  if (sec === 'summary') {
-    text = document.getElementById('summaryText').innerText || '';
-  } else if (sec === 'logic') {
-    text = ['核心亮点\n'+(document.getElementById('highlightsText').innerText||''),
-            '叙事结构\n'+(document.getElementById('logicGrid').innerText||''),
-            '人物逻辑\n'+(document.getElementById('charLogicText').innerText||''),
-            '情感逻辑\n'+(document.getElementById('emotionText').innerText||''),
-           ].join('\n\n');
-  } else if (sec === 'characters') {
-    text = Array.from(document.querySelectorAll('#charGrid .char-card')).map(c=>
-      (c.querySelector('.char-name')?.innerText||'')+'\n'+(c.querySelector('.char-bio')?.innerText||'')
-    ).join('\n\n');
-  } else if (sec === 'outline') {
-    text = Array.from(document.querySelectorAll('#outlineList .outline-item')).map((item,i)=>{
-      const pt = item.querySelector('.outline-pt')?.innerText||'';
-      const spans = item.querySelectorAll('span');
-      const content = spans[1]?.innerText||spans[0]?.innerText||'';
-      return `${String(i+1).padStart(2,'0')}. ${pt}\n${content}`;
-    }).join('\n\n');
-  }
+  const text = extractSectionText(sec);
   navigator.clipboard.writeText(text)
     .then(()=>toast('已复制到剪贴板','ok'))
     .catch(()=>{
@@ -2029,49 +2302,66 @@ function copySection(sec) {
     });
 }
 
-// ── 导出完整报告 Word ──
+// ── 导出分析报告 Word（不含剧本）──
 function exportFullWord() {
-  const title = videoFile?.name?.replace(/\.[^.]+$/,'') || videoUrl || '剧本分析';
+  const title = videoFile?.name?.replace(/\.[^.]+$/,'') || videoUrl || '内容分析';
   const para  = t => `{\\pard\\f0\\fs20 ${rtfEsc(t)}\\par}\n`;
   const heading = t => `{\\pard\\b\\f0\\fs26\\cf1 ${rtfEsc(t)}\\par}\n{\\pard\\par}\n`;
   const subH  = t => `{\\pard\\b\\f0\\fs22 ${rtfEsc(t)}\\par}\n`;
   const divider = () => `{\\pard\\brdrb\\brdrs\\brdrw5\\brsp100 \\par}\n{\\pard\\par}\n`;
   let body = '';
 
-  body += heading('01  剧情简介');
-  body += para(document.getElementById('summaryText').innerText||'');
-  body += divider();
-
-  body += heading('02  核心亮点');
-  body += para(document.getElementById('highlightsText').innerText||'');
-  body += heading('03  叙事结构');
-  body += para(document.getElementById('logicGrid').innerText||'');
-  body += heading('04  人物逻辑');
-  body += para(document.getElementById('charLogicText').innerText||'');
-  body += heading('05  情感逻辑');
-  body += para(document.getElementById('emotionText').innerText||'');
-  body += divider();
-
-  body += heading('06  人物小传');
+  // 剧情概要
+  const d = analysisData;
+  body += heading('一、剧情概要');
+  body += subH('基本信息');
+  body += para(`题材类型：${d.info?.genre||'—'}  体裁体量：${d.info?.format||'—'}  语言：${d.info?.language_detected||'—'}`);
+  body += subH('一句话简介');
+  body += para(document.getElementById('loglineText').innerText||'');
+  body += subH('人物小传');
   document.querySelectorAll('#charGrid .char-card').forEach(card => {
-    body += subH(card.querySelector('.char-name')?.innerText||'');
+    body += subH('  '+( card.querySelector('.char-name')?.innerText||''));
     body += para(card.querySelector('.char-bio')?.innerText||'');
-    body += `{\\pard\\par}\n`;
   });
-  body += divider();
-
-  body += heading('07  全剧情万字详纲');
+  body += subH('剧情梗概');
   document.querySelectorAll('#outlineList .outline-item').forEach((item,i) => {
     const pt = item.querySelector('.outline-pt')?.innerText||'';
     const spans = item.querySelectorAll('span');
     const content = spans[1]?.innerText||spans[0]?.innerText||'';
-    body += subH(`${String(i+1).padStart(2,'0')}.  ${pt}`);
+    body += subH(`  ${String(i+1).padStart(2,'0')}.  ${pt}`);
     body += para(content);
+  });
+  body += divider();
+
+  // 策划逻辑
+  body += heading('二、策划逻辑');
+  const planSections = [
+    ['核心亮点','highlightsText'],['人物逻辑','charLogicText'],
+    ['情感逻辑','emotionText'],['节奏逻辑','rhythmText'],
+    ['卡点布局','hookText'],['高光情节','highlightScenesText'],
+    ['叙事技巧','narrativeTechText'],
+  ];
+  body += subH('结构逻辑');
+  body += para(document.getElementById('logicGrid').innerText||'');
+  planSections.forEach(([label, id]) => {
+    body += subH(label);
+    body += para(document.getElementById(id).innerText||'');
+  });
+  body += divider();
+
+  // 改编建议
+  body += heading('三、改编建议');
+  body += subH('改编总阐述');
+  body += para(document.getElementById('adaptSummaryText').innerText||'');
+  body += subH('改编方案');
+  document.querySelectorAll('#adaptPlansGrid .adapt-plan-card').forEach((card,i) => {
+    body += subH(`  方案${i+1}：${card.querySelector('.adapt-plan-title')?.innerText||''}`);
+    body += para(card.querySelector('.adapt-plan-body')?.innerText||'');
     body += `{\\pard\\par}\n`;
   });
 
-  dlRtf(`${title}_完整分析报告.doc`, makeRtf(body, title+' · 完整分析报告'));
-  toast('完整报告已下载','ok');
+  dlRtf(`${title}_内容分析报告.doc`, makeRtf(body, title+' · 内容分析报告'));
+  toast('分析报告已下载','ok');
 }
 
 // ── RTF UTILS ──
