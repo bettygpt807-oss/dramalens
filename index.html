@@ -962,59 +962,88 @@ header {
 /* ── 双列布局基础 ── */
 .analysis-body { max-width: none; margin: 0; }
 .two-col-layout {
-  display: grid; grid-template-columns: 1fr 1fr;
-  gap: 0; height: 100%; min-height: 0;
+  display: flex; flex: 1; overflow: hidden; min-height: 0;
 }
 .two-col-left {
+  width: 50%; min-width: 200px; flex-shrink: 0;
   padding: 28px 24px 28px 32px;
-  border-right: 1px solid var(--border-soft);
-  overflow-y: auto; height: 100%;
+  overflow-y: auto;
 }
 .two-col-left::-webkit-scrollbar { width: 4px; }
 .two-col-left::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.two-col-divider {
+  width: 4px; flex-shrink: 0; cursor: col-resize;
+  background: var(--border-soft); transition: background .15s;
+}
+.two-col-divider:hover,
+.two-col-divider.dragging { background: var(--green-light); }
 .two-col-right {
+  flex: 1; min-width: 200px;
   padding: 28px 32px 28px 24px;
-  overflow-y: auto; height: 100%;
+  overflow-y: auto;
 }
 .two-col-right::-webkit-scrollbar { width: 4px; }
 .two-col-right::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
-/* ── 策划逻辑双列卡片网格 ── */
-.planning-grid {
-  display: grid; grid-template-columns: 1fr 1fr;
-  gap: 16px; padding: 28px 32px;
+/* ── 通用可拖拽双列容器 ── */
+.two-col-resizable {
+  display: flex; flex: 1; overflow: hidden; min-height: 0;
 }
-.planning-card {
-  background: var(--surface); border: 1px solid var(--border-soft);
-  border-radius: 10px; padding: 16px 18px;
-  transition: box-shadow .2s;
+.two-col-resizable .col-left {
+  width: 50%; min-width: 200px;
+  padding: 28px 24px 28px 32px;
+  overflow-y: auto; flex-shrink: 0;
 }
-.planning-card:hover { box-shadow: var(--shadow-sm); }
+.two-col-resizable .col-left::-webkit-scrollbar { width: 4px; }
+.two-col-resizable .col-left::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.two-col-resizable .col-divider {
+  width: 4px; flex-shrink: 0; cursor: col-resize;
+  background: var(--border-soft); transition: background .15s;
+}
+.two-col-resizable .col-divider:hover,
+.two-col-resizable .col-divider.dragging { background: var(--green-light); }
+.two-col-resizable .col-right {
+  flex: 1; min-width: 200px;
+  padding: 28px 32px 28px 24px;
+  overflow-y: auto;
+}
+.two-col-resizable .col-right::-webkit-scrollbar { width: 4px; }
+.two-col-resizable .col-right::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* ── 策划逻辑 — 去掉旧 planning-grid/card ── */
+.planning-grid { display: contents; }
+.planning-card { display: contents; }
+.planning-card.full-width { display: block; margin-bottom: 32px; }
 .planning-card-tag {
   font-size: 10px; font-weight: 600; color: var(--green-main);
-  text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px;
+  letter-spacing: .06em; margin-bottom: 6px;
+  font-family: 'DM Mono', monospace; text-transform: uppercase;
 }
 .planning-card-body {
-  font-size: 13px; line-height: 1.8; color: var(--text-body);
-  outline: none; min-height: 60px;
+  font-size: 13px; line-height: 1.85; color: var(--text-body);
+  outline: none;
 }
 .planning-card-body:focus { background: rgba(30,92,58,0.03); border-radius: 4px; }
-/* 核心亮点横跨两列 */
-.planning-card.full-width { grid-column: 1 / -1; }
 
-/* ── 改编建议双列 ── */
+/* ── 改编建议双列（复用 two-col-resizable）── */
 .adapt-two-col {
-  display: grid; grid-template-columns: 340px 1fr;
-  gap: 0; flex: 1; min-height: 0; overflow: hidden;
+  display: flex; flex: 1; min-height: 0; overflow: hidden;
 }
 .adapt-left {
+  width: 340px; min-width: 220px; flex-shrink: 0;
   padding: 24px 20px 24px 32px;
-  border-right: 1px solid var(--border-soft);
   overflow-y: auto;
 }
 .adapt-left::-webkit-scrollbar { width: 4px; }
 .adapt-left::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.adapt-divider {
+  width: 4px; flex-shrink: 0; cursor: col-resize;
+  background: var(--border-soft); transition: background .15s;
+}
+.adapt-divider:hover,
+.adapt-divider.dragging { background: var(--green-light); }
 .adapt-right {
+  flex: 1; min-width: 200px;
   padding: 24px 32px 24px 20px;
   overflow-y: auto; position: relative;
 }
@@ -1474,7 +1503,7 @@ header {
         </div>
         <div class="two-col-layout" style="flex:1;overflow:hidden">
           <!-- 左列：简介 + 人物小传 + 关系图 -->
-          <div class="two-col-left">
+          <div class="two-col-left" id="overviewLeft">
             <div class="a-block">
               <div class="a-head"><div class="a-num">01</div><div class="a-title">一句话简介</div><div class="a-line"></div></div>
               <div class="a-body editable" id="loglineText" contenteditable="true" spellcheck="false"></div>
@@ -1488,8 +1517,9 @@ header {
               <div class="char-grid" id="charGrid"></div>
             </div>
           </div>
+          <div class="two-col-divider" id="overviewDivider"></div>
           <!-- 右列：剧情梗概 -->
-          <div class="two-col-right">
+          <div class="two-col-right" id="overviewRight">
             <div class="a-block">
               <div class="a-head"><div class="a-num">04</div><div class="a-title">剧情梗概</div><div class="a-line"></div></div>
               <div class="outline-list" id="outlineList"></div>
@@ -1514,47 +1544,44 @@ header {
           <button class="btn-sm btn-export" onclick="copySection('planning')">⎘ 复制</button>
           <button class="btn-sm btn-export btn-export-report" onclick="exportFullWord()" style="display:none">⬇ 导出报告</button>
         </div>
-        <div class="analysis-scroll" style="flex:1;overflow-y:auto;">
-          <div class="planning-grid">
-            <!-- 核心亮点：横跨两列 -->
-            <div class="planning-card full-width">
-              <div class="planning-card-tag">核心亮点</div>
-              <div class="planning-card-body editable" id="highlightsText" contenteditable="true" spellcheck="false"></div>
+        <div class="two-col-layout" style="flex:1;overflow:hidden">
+          <!-- 左列：核心亮点 + 结构逻辑 + 人物逻辑 + 情感逻辑 -->
+          <div class="two-col-left" id="planningLeft">
+            <div class="a-block">
+              <div class="a-head"><div class="a-num">01</div><div class="a-title">核心亮点</div><div class="a-line"></div></div>
+              <div class="a-body editable" id="highlightsText" contenteditable="true" spellcheck="false"></div>
             </div>
-            <!-- 结构逻辑 -->
-            <div class="planning-card">
-              <div class="planning-card-tag">结构逻辑</div>
+            <div class="a-block">
+              <div class="a-head"><div class="a-num">02</div><div class="a-title">结构逻辑</div><div class="a-line"></div></div>
               <div class="logic-grid" id="logicGrid"></div>
             </div>
-            <!-- 人物逻辑 -->
-            <div class="planning-card">
-              <div class="planning-card-tag">人物逻辑</div>
-              <div class="planning-card-body editable" id="charLogicText" contenteditable="true" spellcheck="false"></div>
+            <div class="a-block">
+              <div class="a-head"><div class="a-num">03</div><div class="a-title">人物逻辑</div><div class="a-line"></div></div>
+              <div class="a-body editable" id="charLogicText" contenteditable="true" spellcheck="false"></div>
             </div>
-            <!-- 情感逻辑 -->
-            <div class="planning-card">
-              <div class="planning-card-tag">情感逻辑</div>
-              <div class="planning-card-body editable" id="emotionText" contenteditable="true" spellcheck="false"></div>
+            <div class="a-block">
+              <div class="a-head"><div class="a-num">04</div><div class="a-title">情感逻辑</div><div class="a-line"></div></div>
+              <div class="a-body editable" id="emotionText" contenteditable="true" spellcheck="false"></div>
             </div>
-            <!-- 节奏逻辑 -->
-            <div class="planning-card">
-              <div class="planning-card-tag">节奏逻辑</div>
-              <div class="planning-card-body editable" id="rhythmText" contenteditable="true" spellcheck="false"></div>
+          </div>
+          <div class="two-col-divider" id="planningDivider"></div>
+          <!-- 右列：节奏逻辑 + 悬念布局 + 叙事技巧 + 高光情节 -->
+          <div class="two-col-right" id="planningRight">
+            <div class="a-block">
+              <div class="a-head"><div class="a-num">05</div><div class="a-title">节奏逻辑</div><div class="a-line"></div></div>
+              <div class="a-body editable" id="rhythmText" contenteditable="true" spellcheck="false"></div>
             </div>
-            <!-- 悬念布局（原卡点布局）-->
-            <div class="planning-card">
-              <div class="planning-card-tag">悬念布局</div>
-              <div class="planning-card-body editable" id="hookText" contenteditable="true" spellcheck="false"></div>
+            <div class="a-block">
+              <div class="a-head"><div class="a-num">06</div><div class="a-title">悬念布局</div><div class="a-line"></div></div>
+              <div class="a-body editable" id="hookText" contenteditable="true" spellcheck="false"></div>
             </div>
-            <!-- 叙事技巧 -->
-            <div class="planning-card">
-              <div class="planning-card-tag">叙事技巧</div>
-              <div class="planning-card-body editable" id="narrativeTechText" contenteditable="true" spellcheck="false"></div>
+            <div class="a-block">
+              <div class="a-head"><div class="a-num">07</div><div class="a-title">叙事技巧</div><div class="a-line"></div></div>
+              <div class="a-body editable" id="narrativeTechText" contenteditable="true" spellcheck="false"></div>
             </div>
-            <!-- 高光情节 -->
-            <div class="planning-card">
-              <div class="planning-card-tag">高光情节</div>
-              <div class="planning-card-body editable" id="highlightScenesText" contenteditable="true" spellcheck="false"></div>
+            <div class="a-block">
+              <div class="a-head"><div class="a-num">08</div><div class="a-title">高光情节</div><div class="a-line"></div></div>
+              <div class="a-body editable" id="highlightScenesText" contenteditable="true" spellcheck="false"></div>
             </div>
           </div>
         </div>
@@ -1578,7 +1605,7 @@ header {
         </div>
         <div class="adapt-two-col" style="flex:1;">
           <!-- 左列：总阐述 + 需求表单 -->
-          <div class="adapt-left">
+          <div class="adapt-left" id="adaptLeft">
             <div class="a-block">
               <div class="a-head"><div class="a-num">01</div><div class="a-title">改编总阐述</div><div class="a-line"></div></div>
               <div class="a-body editable" id="adaptSummaryText" contenteditable="true" spellcheck="false"></div>
@@ -1626,6 +1653,7 @@ header {
               </div>
             </div>
           </div>
+          <div class="adapt-divider" id="adaptDivider"></div>
           <!-- 右列：改编方案列表 / 大纲面板 -->
           <div class="adapt-right" id="adaptRight">
             <!-- 方案列表（默认显示）-->
@@ -2872,7 +2900,40 @@ function dlRtf(filename,rtf){const b=new Blob([rtf],{type:'application/rtf'});co
     });
   })();
 })();
-function setStatus(s,t){document.getElementById('statusDot').className='status-dot '+s;document.getElementById('statusText').textContent=t;}
+// ── 内容区双列 RESIZE ──
+(function(){
+  function makeColResizer(handleId, leftId, minLeft, minRight) {
+    const handle = document.getElementById(handleId);
+    const leftEl = document.getElementById(leftId);
+    if (!handle || !leftEl) return;
+    let dragging = false, startX = 0, startW = 0;
+    handle.addEventListener('mousedown', e => {
+      e.preventDefault();
+      dragging = true; startX = e.clientX; startW = leftEl.offsetWidth;
+      handle.classList.add('dragging');
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+    });
+    document.addEventListener('mousemove', e => {
+      if (!dragging) return;
+      const container = leftEl.parentElement;
+      const maxW = container.offsetWidth - minRight - 4;
+      const newW = Math.min(maxW, Math.max(minLeft, startW + e.clientX - startX));
+      leftEl.style.width = newW + 'px';
+      leftEl.style.flexShrink = '0';
+    });
+    document.addEventListener('mouseup', () => {
+      if (!dragging) return;
+      dragging = false;
+      handle.classList.remove('dragging');
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    });
+  }
+  makeColResizer('overviewDivider',  'overviewLeft',  200, 200);
+  makeColResizer('planningDivider',  'planningLeft',  200, 200);
+  makeColResizer('adaptDivider',     'adaptLeft',     220, 260);
+})();document.getElementById('statusDot').className='status-dot '+s;document.getElementById('statusText').textContent=t;}
 function setProg(p){document.getElementById('progressBar').style.width=p+'%';}
 function setStep(n,s){document.getElementById('s'+n).className='p-step '+s;}
 function setLabel(t){document.getElementById('procLabel').textContent=t;}
