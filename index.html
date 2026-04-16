@@ -794,20 +794,39 @@ header {
 }
 .btn-sm:hover { border-color: var(--green-main); color: var(--green-main); background: var(--green-ghost); }
 
-/* Video + subtitle + script 三列布局 */
+/* 字幕区：上方视频 + 下方字幕/剧本 */
+.sub-video-bar {
+  height: 42%; min-height: 180px; max-height: 480px;
+  flex-shrink: 0; background: #000;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+.sub-video-placeholder {
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-ghost); font-size: 13px;
+  flex-direction: column; gap: 8px;
+}
+.sub-bottom {
+  flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0;
+}
+/* 三列布局：视频列高度完全由父容器决定，不被内容撑高 */
 .sub-split {
   display: flex; flex: 1; overflow: hidden; min-height: 0;
   align-items: stretch;
 }
 .sub-video-panel {
-  width: 38%; min-width: 200px; max-width: 560px;
-  background: #000; display: flex; flex-direction: column;
+  width: 36%; min-width: 200px; max-width: 520px;
   flex-shrink: 0; overflow: hidden;
-  align-self: stretch; height: 100%;
+  background: #000;
+  /* 关键：align-self stretch + overflow hidden 确保高度由父容器决定 */
+  align-self: stretch;
+  display: flex; flex-direction: column;
 }
 .sub-video-panel video {
-  width: 100%; height: 100%; min-height: 0;
-  object-fit: contain; display: block; flex-shrink: 0;
+  /* 视频填满面板，面板高度固定，视频不会撑开面板 */
+  width: 100%; flex: 1; min-height: 0;
+  object-fit: contain; display: block;
+  overflow: hidden;
 }
 .sub-video-placeholder {
   flex: 1; display: flex; align-items: center; justify-content: center;
@@ -816,6 +835,7 @@ header {
 }
 .sub-list {
   flex: 1; overflow-y: auto; min-width: 0;
+  /* overflow-y scroll 确保内容在列内滚动，不撑开父容器 */
   padding: 8px 12px;
 }
 .sub-list::-webkit-scrollbar { width: 4px; }
@@ -824,18 +844,18 @@ header {
 /* 字幕区列分隔条 */
 .sub-resize-handle {
   width: 4px; flex-shrink: 0; cursor: col-resize;
-  background: var(--border-soft);
-  transition: background 0.15s;
-  position: relative; z-index: 1;
+  background: var(--border-soft); transition: background 0.15s;
 }
 .sub-resize-handle:hover,
 .sub-resize-handle.dragging { background: var(--green-light); }
 
 /* 右侧剧本推演面板 */
 .sub-script-panel {
-  width: 320px; min-width: 160px; flex-shrink: 0;
+  width: 380px; min-width: 160px; flex-shrink: 0;
+  /* overflow hidden 确保面板不被内容撑高 */
   display: flex; flex-direction: column;
   background: var(--surface); overflow: hidden;
+  align-self: stretch;
 }
 .sub-script-header {
   padding: 10px 14px;
@@ -1813,7 +1833,7 @@ async function doRunAnalysis() {
 
     setStep(5,'active'); setLabel('截取视频场景帧…');
     const scenes = await captureSceneFrames(videoFile || videoUrl, 10);
-    setLabel('内容拆解分析… (约2-3分钟)');
+    setLabel('内容拆解分析… (约1-2分钟，共3步)');
     const rawText = asr.map(s=>s.text).join(' ');
     analysisData = await analyzeContent(rawText, c.llmKey, c.model, scenes);
     analysisData._rawText = rawText;
@@ -1998,47 +2018,7 @@ async function captureSceneFrames(source, intervalSec = 15) {
 async function analyzeContent(text, key, model, scenes = []) {
   const t = text.length > 15000 ? text.slice(0, 15000) + '…' : text;
 
-  // ── 1. 基本信息 + 一句话简介 + 剧情梗概（分开两个调用避免太长）──
-  setLabel('分析基本信息与剧情…');
-  const r_info = await callLLM(`你是专业影视内容分析师。分析以下英文短剧对白，只输出JSON，不加任何说明：
-{
-  "genre": "题材类型，如：狼人/命运之吻/甜虐爱情/都市爱情等",
-  "format": "体裁体量，如：英文短剧，共X集（根据内容量估算），每集约X分钟",
-  "logline": "一句话简介，不超过100字，点明题材+主要冲突+情感核心",
-  "language_detected": "对白主要语言，如：英语/中文/双语"
-}
-对白：\n${t}`, key, model, 800);
-  let info; try { info = JSON.parse(r_info.replace(/```json|```/g,'').trim()); } catch { info = {}; }
-
-  // ── 2. 人物小传 + 人物关系 ──
-  setLabel('提取人物与关系…');
-  const r_chars = await callLLM(`从以下英文短剧对白提取主要人物。只输出JSON，不加任何说明：
-{
-  "characters": [{"name":"中英名","bio":"100-200字中文小传，含性格/动机/弧线"}],
-  "relations": [{"from":"人物A名","to":"人物B名","label":"关系描述，如：暗恋/命定伴侣/情敌/父女"}]
-}
-对白：\n${t}`, key, model, 2500);
-  let charData; try { charData = JSON.parse(r_chars.replace(/```json|```/g,'').trim()); } catch { charData = { characters: [], relations: [] }; }
-
-  // ── 3. 策划逻辑（核心亮点/结构/人物/情感/节奏/卡点/高光/叙事技巧）──
-  setLabel('拆解策划逻辑…');
-  const r_plan = await callLLM(`你是资深短剧策划。深度拆解以下英文短剧对白的策划逻辑，只输出JSON，不加任何说明：
-{
-  "highlights": "核心亮点200字：最吸引观众的核心卖点是什么",
-  "structure_acts": "三幕结构150字：开篇/发展/高潮/结局各阶段如何布局",
-  "structure_hooks": "已整合至悬念布局模块",
-  "character_logic": "人物逻辑150字：人物行为动机是否自洽，核心人物弧线",
-  "emotion": "情感逻辑150字：情绪弧线如何设计，共鸣点在哪里",
-  "rhythm": "节奏逻辑150字：张弛节奏、反转密度、信息释放节拍",
-  "hooks": "悬念布局150字：关键卡点和悬念钩子分布在哪里，如何制造追看欲",
-  "highlight_scenes": "高光情节150字：最具爆点的3-5个情节场景",
-  "narrative_tech": "叙事技巧150字：用了哪些叙事手法，如倒叙/平行/视角切换等"
-}
-每个字段的值直接输出分析内容，不要重复字段名称作为开头（如不要输出"核心亮点：xxx"，直接输出"xxx"）。
-对白：\n${t}`, key, model, 3000);
-  let plan; try { plan = JSON.parse(r_plan.replace(/```json|```/g,'').trim()); } catch { plan = {}; }
-
-  // ── 4. 剧情梗概（含截帧视觉信息）──
+  // ── 1. 详细梗概（台词 + 截帧，信息最完整，先生成作为后续分析的基础）──
   setLabel('生成详细梗概…');
   let r3;
   if (scenes && scenes.length > 0) {
@@ -2087,8 +2067,38 @@ ${t}`, key, model, 4500);
   });
   if (!outline.length) outline = [{ point: '梗概', content: outlineRaw.slice(0, 800) }];
 
-  // ── 5. 改编总阐述（仅生成总体原则，方案由用户触发）──
-  setLabel('生成改编总阐述…');
+  // 梗概摘要（供后续两步使用，取前3000字避免token过多）
+  const outlineSummary = outlineRaw.slice(0, 3000);
+
+  // ── 2. 人物小传 + 人物关系 + 一句话简介（基于梗概，信息更完整准确）──
+  setLabel('提取人物与关系…');
+  const r_chars = await callLLM(`根据以下中文剧情梗概，提取主要人物和一句话简介。只输出JSON，不加任何说明：
+{
+  "logline": "一句话简介，不超过100字，点明题材+主要冲突+情感核心",
+  "characters": [{"name":"中英名","bio":"100-200字中文小传，含性格/动机/弧线"}],
+  "relations": [{"from":"人物A名","to":"人物B名","label":"关系描述，如：暗恋/命定伴侣/情敌/父女"}]
+}
+剧情梗概：\n${outlineSummary}`, key, model, 2500);
+  let charData; try { charData = JSON.parse(r_chars.replace(/```json|```/g,'').trim()); } catch { charData = { logline: '', characters: [], relations: [] }; }
+
+  // ── 3. 策划逻辑（基于梗概，分析更有依据）──
+  setLabel('拆解策划逻辑…');
+  const r_plan = await callLLM(`你是资深短剧策划。根据以下中文剧情梗概，深度拆解策划逻辑，只输出JSON，不加任何说明：
+{
+  "highlights": "核心亮点200字：最吸引观众的核心卖点是什么",
+  "structure_acts": "三幕结构150字：开篇/发展/高潮/结局各阶段如何布局",
+  "character_logic": "人物逻辑150字：人物行为动机是否自洽，核心人物弧线",
+  "emotion": "情感逻辑150字：情绪弧线如何设计，共鸣点在哪里",
+  "rhythm": "节奏逻辑150字：张弛节奏、反转密度、信息释放节拍",
+  "hooks": "悬念布局150字：关键卡点和悬念钩子分布在哪里，如何制造追看欲",
+  "highlight_scenes": "高光情节150字：最具爆点的3-5个情节场景",
+  "narrative_tech": "叙事技巧150字：用了哪些叙事手法，如倒叙/平行/视角切换等"
+}
+每个字段直接输出分析内容，不要重复字段名称作为开头。
+剧情梗概：\n${outlineSummary}`, key, model, 3000);
+  let plan; try { plan = JSON.parse(r_plan.replace(/```json|```/g,'').trim()); } catch { plan = {}; }
+
+  // ── 5. 构建策划逻辑摘要（供改编方案使用，不调用 LLM）──
   const planSummary = [
     `【核心亮点】${plan.highlights||''}`,
     `【结构逻辑】${plan.structure_acts||''}`,
@@ -2099,26 +2109,17 @@ ${t}`, key, model, 4500);
     `【叙事技巧】${plan.narrative_tech||''}`,
     `【高光情节】${plan.highlight_scenes||''}`,
   ].join('\n');
-  const r_adapt = await callLLM(`你是资深短剧改编策划。基于以下原剧策划逻辑，写一段改编总阐述（200字左右）。直接输出文字，不加标题和说明。
-
-内容要求：
-1. 指出原剧的核心爆款基因是什么（哪些冲突结构、情感爆点、节奏设计是让它爆的根本原因）
-2. 说明改编的核心原则：题材/背景/世界观/人物身份这些外壳可以全部换新，但核心冲突结构和情感爆点必须保留
-3. 提示改编方向上的空间和可能性
-
-原剧策划逻辑：
-${planSummary}`, key, model, 1000);
 
   return {
-    info, logline: info.logline || '',
+    logline: charData.logline || '',
     characters: charData.characters || [], relations: charData.relations || [],
     highlights: plan.highlights || '', structureActs: plan.structure_acts || '',
-    structureHooks: plan.structure_hooks || '', characterLogic: plan.character_logic || '',
+    characterLogic: plan.character_logic || '',
     emotion: plan.emotion || '', rhythm: plan.rhythm || '',
     hooks: plan.hooks || '', highlightScenes: plan.highlight_scenes || '',
     narrativeTech: plan.narrative_tech || '',
     outline,
-    adaptSummary: r_adapt || '', adaptPlans: [],
+    adaptPlans: [],
     _planSummary: planSummary,
   };
 }
@@ -2701,8 +2702,6 @@ function exportFullWord() {
   // 剧情概要
   const d = analysisData;
   body += heading('一、剧情概要');
-  body += subH('基本信息');
-  body += para(`题材类型：${d.info?.genre||'—'}  体裁体量：${d.info?.format||'—'}  语言：${d.info?.language_detected||'—'}`);
   body += subH('一句话简介');
   body += para(document.getElementById('loglineText').innerText||'');
   body += subH('人物小传');
@@ -2782,81 +2781,56 @@ function dlRtf(filename,rtf){const b=new Blob([rtf],{type:'application/rtf'});co
 
 // ── 字幕区三列 RESIZE ──
 (function(){
-  function makeSubResizer(handleId, getPanelFn, getMinFn, getMaxFn) {
-    const handle = document.getElementById(handleId);
-    if (!handle) return;
-    let dragging = false, startX = 0, startW = 0;
-    handle.addEventListener('mousedown', e => {
-      e.preventDefault();
-      const panel = getPanelFn();
-      if (!panel) return;
-      dragging = true;
-      startX = e.clientX;
-      startW = panel.offsetWidth;
-      handle.classList.add('dragging');
-      document.body.style.cursor = 'col-resize';
-      document.body.style.userSelect = 'none';
-    });
-    document.addEventListener('mousemove', e => {
-      if (!dragging) return;
-      const panel = getPanelFn();
-      if (!panel) return;
-      const delta = e.clientX - startX;
-      const newW = Math.min(getMaxFn(), Math.max(getMinFn(), startW + delta));
-      panel.style.width = newW + 'px';
-      panel.style.maxWidth = 'none';
-      panel.style.minWidth = '0';
-    });
-    document.addEventListener('mouseup', () => {
-      if (!dragging) return;
-      dragging = false;
-      handle.classList.remove('dragging');
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
-    });
-  }
-
-  // 分隔条1：控制视频面板宽度
-  makeSubResizer(
-    'subResize1',
-    () => document.getElementById('subVideoPanel'),
-    () => 180,
-    () => window.innerWidth * 0.6
-  );
-
-  // 分隔条2：控制剧本面板宽度（向左拖=扩大，向右拖=缩小）
+  // 分隔条1：控制视频面板宽度（向右拖=扩大视频）
   (function(){
-    const handle = document.getElementById('subResize2');
-    if (!handle) return;
+    const handle = document.getElementById('subResize1');
+    const panel = document.getElementById('subVideoPanel');
+    if (!handle || !panel) return;
     let dragging = false, startX = 0, startW = 0;
     handle.addEventListener('mousedown', e => {
       e.preventDefault();
-      const panel = document.getElementById('subScriptPanel');
-      if (!panel) return;
-      dragging = true;
-      startX = e.clientX;
-      startW = panel.offsetWidth;
+      dragging = true; startX = e.clientX; startW = panel.offsetWidth;
       handle.classList.add('dragging');
       document.body.style.cursor = 'col-resize';
       document.body.style.userSelect = 'none';
     });
     document.addEventListener('mousemove', e => {
       if (!dragging) return;
-      const panel = document.getElementById('subScriptPanel');
-      if (!panel) return;
-      const delta = startX - e.clientX; // 反向
-      const newW = Math.min(window.innerWidth * 0.5, Math.max(160, startW + delta));
+      const newW = Math.min(window.innerWidth * 0.6, Math.max(160, startW + e.clientX - startX));
       panel.style.width = newW + 'px';
-      panel.style.maxWidth = 'none';
-      panel.style.minWidth = '0';
       panel.style.flexShrink = '0';
     });
     document.addEventListener('mouseup', () => {
-      if (!dragging) return;
-      dragging = false;
+      if (!dragging) return; dragging = false;
       handle.classList.remove('dragging');
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
+      document.body.style.cursor = ''; document.body.style.userSelect = '';
+    });
+  })();
+
+  // 分隔条2：控制剧本面板宽度（向左拖=扩大剧本）
+  (function(){
+    const handle = document.getElementById('subResize2');
+    const panel = document.getElementById('subScriptPanel');
+    if (!handle || !panel) return;
+    let dragging = false, startX = 0, startW = 0;
+    handle.addEventListener('mousedown', e => {
+      e.preventDefault();
+      dragging = true; startX = e.clientX; startW = panel.offsetWidth;
+      handle.classList.add('dragging');
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+    });
+    document.addEventListener('mousemove', e => {
+      if (!dragging) return;
+      const delta = startX - e.clientX; // 反向
+      const newW = Math.min(window.innerWidth * 0.55, Math.max(160, startW + delta));
+      panel.style.width = newW + 'px';
+      panel.style.flexShrink = '0';
+    });
+    document.addEventListener('mouseup', () => {
+      if (!dragging) return; dragging = false;
+      handle.classList.remove('dragging');
+      document.body.style.cursor = ''; document.body.style.userSelect = '';
     });
   })();
 })();
