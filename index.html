@@ -1022,9 +1022,8 @@ header {
         <div class="cfg-field">
           <div class="cfg-label">模型</div>
           <select class="cfg-input" id="cfgModel">
-            <option value="Doubao-Seed-2.0-pro">Doubao-Seed-2.0-pro（推荐）</option>
-            <option value="Doubao-Seed-2.0-lite">Doubao-Seed-2.0-lite（轻量）</option>
-            <option value="Doubao-Seed-1.8">Doubao-Seed-1.8</option>
+            <option value="doubao-seed-2-0-pro-260215">doubao-seed-2-0-pro-260215（推荐）</option>
+            <option value="doubao-seed-2-0-lite-250115">doubao-seed-2-0-lite-250115（轻量）</option>
           </select>
         </div>
       </div>
@@ -1359,7 +1358,7 @@ function saveSettings() {
 function loadSettings() {
   const c = getConfig();
   document.getElementById('cfgLlmKey').value = c.llmKey||'';
-  document.getElementById('cfgModel').value  = c.model||'doubao-seed-2.0-pro';
+  document.getElementById('cfgModel').value  = c.model||'doubao-seed-2-0-pro-260215';
 }
 
 function getConfig() { return JSON.parse(localStorage.getItem('dlcfg')||'{}'); }
@@ -1568,7 +1567,7 @@ async function transcribeAudio(blob, appId, token) {
       'Authorization': `Bearer ${cfg.llmKey}`,
     },
     body: JSON.stringify({
-      model: cfg.model || 'Doubao-Seed-2.0-pro',
+      model: cfg.model || 'doubao-seed-2-0-pro-260215',
       messages: [{
         role: 'user',
         content: [
