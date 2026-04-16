@@ -797,15 +797,17 @@ header {
 /* Video + subtitle + script 三列布局 */
 .sub-split {
   display: flex; flex: 1; overflow: hidden; min-height: 0;
+  align-items: stretch;
 }
 .sub-video-panel {
   width: 38%; min-width: 200px; max-width: 560px;
   background: #000; display: flex; flex-direction: column;
   flex-shrink: 0; overflow: hidden;
+  align-self: stretch; height: 100%;
 }
 .sub-video-panel video {
-  width: 100%; flex: 1; min-height: 0; max-height: 100%;
-  object-fit: contain; display: block;
+  width: 100%; height: 100%; min-height: 0;
+  object-fit: contain; display: block; flex-shrink: 0;
 }
 .sub-video-placeholder {
   flex: 1; display: flex; align-items: center; justify-content: center;
@@ -1366,7 +1368,7 @@ header {
     <div id="urlArea" style="display:none">
       <div class="url-area">
         <input type="url" class="url-input" id="videoUrl" placeholder="粘贴视频直链 URL…">
-        <div class="url-hint">⚠ 仅支持可公开访问的直链视频 URL，B站等平台链接需后端支持。单次最长支持 5 小时视频。</div>
+        <div class="url-hint">⚠ 仅支持可公开访问的直链视频 URL（如 .mp4 直链）。YouTube、TikTok、B站等平台链接暂不支持。单次最长支持 5 小时视频。</div>
       </div>
     </div>
 
@@ -1403,7 +1405,7 @@ header {
     <!-- Welcome -->
     <div id="welcomeScreen">
       <div class="w-badge">✦ AI 驱动 · 全自动拆解</div>
-      <div class="w-title">一部剧，<em>三分钟</em>读透它</div>
+      <div class="w-title">不到十分钟，<em>深度拆解</em>一部剧</div>
       <div class="w-sub">上传英文短剧视频，自动生成双语字幕时间轴、剧情简介、结构逻辑、人物小传与详细梗概，为改编创作提供完整素材基础</div>
       <div class="w-steps">
         <div class="w-step">
@@ -1419,7 +1421,7 @@ header {
         <div class="w-step">
           <div class="w-step-n">03</div>
           <div class="w-step-t">开始分析</div>
-          <div class="w-step-d">约 10–15 分钟全自动处理，输出完整拆解文档</div>
+          <div class="w-step-d">约 5–10 分钟全自动处理，输出完整拆解文档</div>
         </div>
       </div>
     </div>
@@ -2028,10 +2030,11 @@ async function analyzeContent(text, key, model, scenes = []) {
   "character_logic": "人物逻辑150字：人物行为动机是否自洽，核心人物弧线",
   "emotion": "情感逻辑150字：情绪弧线如何设计，共鸣点在哪里",
   "rhythm": "节奏逻辑150字：张弛节奏、反转密度、信息释放节拍",
-  "hooks": "卡点布局150字：关键卡点分布在哪里，如何制造追看欲",
+  "hooks": "悬念布局150字：关键卡点和悬念钩子分布在哪里，如何制造追看欲",
   "highlight_scenes": "高光情节150字：最具爆点的3-5个情节场景",
   "narrative_tech": "叙事技巧150字：用了哪些叙事手法，如倒叙/平行/视角切换等"
 }
+每个字段的值直接输出分析内容，不要重复字段名称作为开头（如不要输出"核心亮点：xxx"，直接输出"xxx"）。
 对白：\n${t}`, key, model, 3000);
   let plan; try { plan = JSON.parse(r_plan.replace(/```json|```/g,'').trim()); } catch { plan = {}; }
 
@@ -2088,13 +2091,13 @@ ${t}`, key, model, 4500);
   setLabel('生成改编总阐述…');
   const planSummary = [
     `【核心亮点】${plan.highlights||''}`,
-    `【结构逻辑】三幕：${plan.structure_acts||''}  悬念：${plan.structure_hooks||''}`,
+    `【结构逻辑】${plan.structure_acts||''}`,
     `【人物逻辑】${plan.character_logic||''}`,
     `【情感逻辑】${plan.emotion||''}`,
     `【节奏逻辑】${plan.rhythm||''}`,
-    `【卡点布局】${plan.hooks||''}`,
-    `【高光情节】${plan.highlight_scenes||''}`,
+    `【悬念布局】${plan.hooks||''}`,
     `【叙事技巧】${plan.narrative_tech||''}`,
+    `【高光情节】${plan.highlight_scenes||''}`,
   ].join('\n');
   const r_adapt = await callLLM(`你是资深短剧改编策划。基于以下原剧策划逻辑，写一段改编总阐述（200字左右）。直接输出文字，不加标题和说明。
 
@@ -2235,7 +2238,7 @@ async function generateAdaptPlans() {
 [
   {
     "title": "方案标题（含题材风格关键词）",
-    "description": "250字方案说明，必须覆盖以下内容：①新题材/世界观/人物身份设定 ②如何在新包装下承载原剧的核心冲突结构 ③情感爆点和人物关系张力如何对应迁移 ④节奏逻辑和卡点布局如何保留 ⑤叙事技巧如何复用"
+    "description": "250字方案说明，必须覆盖以下内容：①新题材/世界观/人物身份设定 ②如何在新包装下承载原剧的核心冲突结构 ③情感爆点和人物关系张力如何对应迁移 ④节奏逻辑和悬念布局如何保留 ⑤叙事技巧如何复用"
   }
 ]
 
@@ -2258,7 +2261,6 @@ ${fullOutline}`, cfg.llmKey, cfg.model, 4000);
     analysisData.adaptPlans = plans;
 
     const apg = document.getElementById('adaptPlansGrid'); apg.innerHTML = '';
-    document.getElementById('adaptPlansPlaceholder').style.display = 'none';
     plans.forEach((plan, i) => {
       const card = document.createElement('div'); card.className = 'adapt-plan-card';
       card.innerHTML = `<div class="adapt-plan-num">方案 ${String(i+1).padStart(2,'0')}</div>
@@ -2394,15 +2396,20 @@ function renderAnalysis() {
   document.getElementById('overviewView').style.display = 'flex';
 
   // ── 策划逻辑 tab ──
-  document.getElementById('highlightsText').innerHTML = toP(d.highlights);
+  // 剥掉 LLM 返回内容里重复的标题前缀（如「核心亮点：」）
+  const stripPrefix = (text, label) => {
+    if (!text) return '';
+    return text.replace(new RegExp(`^[\\s\\u3000]*${label}[：:：\\s]*`, 'i'), '').trim();
+  };
+  document.getElementById('highlightsText').innerHTML = toP(stripPrefix(d.highlights, '核心亮点'));
   const lg = document.getElementById('logicGrid');
-  lg.innerHTML = toP(d.structureActs);
-  document.getElementById('charLogicText').innerHTML = toP(d.characterLogic);
-  document.getElementById('emotionText').innerHTML = toP(d.emotion);
-  document.getElementById('rhythmText').innerHTML = toP(d.rhythm);
-  document.getElementById('hookText').innerHTML = toP(d.hooks);
-  document.getElementById('highlightScenesText').innerHTML = toP(d.highlightScenes);
-  document.getElementById('narrativeTechText').innerHTML = toP(d.narrativeTech);
+  lg.innerHTML = toP(stripPrefix(d.structureActs, '(三幕结构|结构逻辑)'));
+  document.getElementById('charLogicText').innerHTML = toP(stripPrefix(d.characterLogic, '人物逻辑'));
+  document.getElementById('emotionText').innerHTML = toP(stripPrefix(d.emotion, '情感逻辑'));
+  document.getElementById('rhythmText').innerHTML = toP(stripPrefix(d.rhythm, '节奏逻辑'));
+  document.getElementById('hookText').innerHTML = toP(stripPrefix(d.hooks, '(悬念布局|卡点布局)'));
+  document.getElementById('highlightScenesText').innerHTML = toP(stripPrefix(d.highlightScenes, '高光情节'));
+  document.getElementById('narrativeTechText').innerHTML = toP(stripPrefix(d.narrativeTech, '叙事技巧'));
   document.getElementById('planningEmpty').style.display = 'none';
   document.getElementById('planningView').style.display = 'flex';
 
@@ -2605,15 +2612,19 @@ function restoreSection(sec) {
       ol.appendChild(div);
     });
   } else if (sec === 'planning') {
-    document.getElementById('highlightsText').innerHTML = toP(d.highlights);
-    document.getElementById('charLogicText').innerHTML = toP(d.characterLogic);
-    document.getElementById('emotionText').innerHTML = toP(d.emotion);
-    document.getElementById('rhythmText').innerHTML = toP(d.rhythm);
-    document.getElementById('hookText').innerHTML = toP(d.hooks);
-    document.getElementById('highlightScenesText').innerHTML = toP(d.highlightScenes);
-    document.getElementById('narrativeTechText').innerHTML = toP(d.narrativeTech);
+    const stripPrefix = (text, label) => {
+      if (!text) return '';
+      return text.replace(new RegExp(`^[\\s\\u3000]*${label}[：:：\\s]*`, 'i'), '').trim();
+    };
+    document.getElementById('highlightsText').innerHTML = toP(stripPrefix(d.highlights, '核心亮点'));
+    document.getElementById('charLogicText').innerHTML = toP(stripPrefix(d.characterLogic, '人物逻辑'));
+    document.getElementById('emotionText').innerHTML = toP(stripPrefix(d.emotion, '情感逻辑'));
+    document.getElementById('rhythmText').innerHTML = toP(stripPrefix(d.rhythm, '节奏逻辑'));
+    document.getElementById('hookText').innerHTML = toP(stripPrefix(d.hooks, '(悬念布局|卡点布局)'));
+    document.getElementById('highlightScenesText').innerHTML = toP(stripPrefix(d.highlightScenes, '高光情节'));
+    document.getElementById('narrativeTechText').innerHTML = toP(stripPrefix(d.narrativeTech, '叙事技巧'));
     const lg = document.getElementById('logicGrid');
-    lg.innerHTML = toP(d.structureActs);
+    lg.innerHTML = toP(stripPrefix(d.structureActs, '(三幕结构|结构逻辑)'));
   } else if (sec === 'script') {
     const orig = analysisData._scriptOriginal;
     if (orig) document.getElementById('subScriptContent').textContent = orig;
@@ -2638,7 +2649,7 @@ function extractSectionText(sec) {
     '人物逻辑\n'+(document.getElementById('charLogicText').innerText||''),
     '情感逻辑\n'+(document.getElementById('emotionText').innerText||''),
     '节奏逻辑\n'+(document.getElementById('rhythmText').innerText||''),
-    '卡点布局\n'+(document.getElementById('hookText').innerText||''),
+    '悬念布局\n'+(document.getElementById('hookText').innerText||''),
     '高光情节\n'+(document.getElementById('highlightScenesText').innerText||''),
     '叙事技巧\n'+(document.getElementById('narrativeTechText').innerText||''),
     '改编方案\n'+(document.getElementById('adaptPlansGrid').innerText||''),
@@ -2714,7 +2725,7 @@ function exportFullWord() {
   const planSections = [
     ['核心亮点','highlightsText'],['人物逻辑','charLogicText'],
     ['情感逻辑','emotionText'],['节奏逻辑','rhythmText'],
-    ['卡点布局','hookText'],['高光情节','highlightScenesText'],
+    ['悬念布局','hookText'],['高光情节','highlightScenesText'],
     ['叙事技巧','narrativeTechText'],
   ];
   body += subH('结构逻辑');
@@ -2881,7 +2892,6 @@ function dlRtf(filename,rtf){const b=new Blob([rtf],{type:'application/rtf'});co
   }
   makeColResizer('overviewDivider',  'overviewLeft',  200, 200);
   makeColResizer('planningDivider',  'planningLeft',  200, 200);
-  makeColResizer('adaptDivider',     'adaptLeft',     220, 260);
 })();
 function setStatus(s,t){document.getElementById('statusDot').className='status-dot '+s;document.getElementById('statusText').textContent=t;}
 function setProg(p){document.getElementById('progressBar').style.width=p+'%';}
