@@ -798,11 +798,9 @@ header {
   display: flex; flex: 1; overflow: hidden; min-height: 0;
 }
 .sub-video-panel {
-  width: 45%; min-width: 280px; max-width: 560px;
-  background: #000;
-  display: flex; flex-direction: column;
-  border-right: 1px solid var(--border-soft);
-  flex-shrink: 0;
+  width: 45%; min-width: 260px; max-width: 520px;
+  background: #000; display: flex; flex-direction: column;
+  border-right: 1px solid var(--border-soft); flex-shrink: 0;
 }
 .sub-video-panel video {
   width: 100%; flex: 1; min-height: 0;
@@ -810,7 +808,8 @@ header {
 }
 .sub-video-placeholder {
   flex: 1; display: flex; align-items: center; justify-content: center;
-  color: var(--text-ghost); font-size: 13px; flex-direction: column; gap: 8px;
+  color: var(--text-ghost); font-size: 13px;
+  flex-direction: column; gap: 8px;
 }
 .sub-list {
   flex: 1; overflow-y: auto;
@@ -819,10 +818,9 @@ header {
 .sub-list::-webkit-scrollbar { width: 4px; }
 .sub-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
-
 .sub-item {
   display: grid;
-  grid-template-columns: 60px 1fr;
+  grid-template-columns: 56px 1fr;
   gap: 10px;
   padding: 8px 10px;
   border-radius: 8px;
@@ -1033,9 +1031,23 @@ header {
     </div>
     <div class="modal-body">
       <div class="cfg-section">
-        <div class="cfg-section-title">🧠 豆包大模型 · 转录 + 内容分析</div>
+        <div class="cfg-section-title">🎙️ 豆包语音识别 · 音频转录</div>
         <div class="cfg-hint">
-          前往 <a href="https://console.volcengine.com/ark" target="_blank">火山方舟控制台</a> → 「API Key 管理」→ 新建 Key。语音转录和内容分析全部使用同一个 Key。
+          前往 <a href="https://console.volcengine.com/speech/service/8" target="_blank">豆包语音控制台</a> → 「录音文件识别」→ 服务接口认证信息，获取 APP ID 和 Access Token。
+        </div>
+        <div class="cfg-field">
+          <div class="cfg-label">APP ID <span class="cfg-tag">必填</span></div>
+          <input type="password" class="cfg-input" id="cfgAsrAppId" placeholder="8xxxxxxx">
+        </div>
+        <div class="cfg-field">
+          <div class="cfg-label">Access Token <span class="cfg-tag">必填</span></div>
+          <input type="password" class="cfg-input" id="cfgAsrToken" placeholder="OI...zLxSL">
+        </div>
+      </div>
+      <div class="cfg-section">
+        <div class="cfg-section-title">🧠 豆包大模型 · 内容分析</div>
+        <div class="cfg-hint">
+          前往 <a href="https://console.volcengine.com/ark" target="_blank">火山方舟控制台</a> → 「API Key 管理」→ 新建 Key。用于字幕翻译和剧情拆解分析。
         </div>
         <div class="cfg-field">
           <div class="cfg-label">API Key <span class="cfg-tag">必填</span></div>
@@ -1203,6 +1215,7 @@ header {
       <button class="tab-btn" data-tab="characters">人物小传</button>
       <button class="tab-btn" data-tab="outline">万字详纲</button>
     </div>
+    <button class="btn-sm btn-export" id="btnExportAll" onclick="exportFullWord()" style="display:none;margin:8px 16px 0 auto;white-space:nowrap;flex-shrink:0">⬇ 导出完整报告</button>
 
     <!-- Subtitle Pane -->
     <div class="tab-pane active" id="pane-subtitles">
@@ -1220,7 +1233,6 @@ header {
           <button class="btn-sm" onclick="exportSubWord('bi')">⬇ 双语 Word</button>
         </div>
         <div class="sub-split">
-          <!-- 左：视频播放器 -->
           <div class="sub-video-panel" id="subVideoPanel">
             <div class="sub-video-placeholder" id="subVideoPlaceholder">
               <span style="font-size:32px">🎬</span>
@@ -1228,7 +1240,6 @@ header {
             </div>
             <video id="subVideoPlayer" controls style="display:none"></video>
           </div>
-          <!-- 右：字幕列表 -->
           <div class="sub-list" id="subList"></div>
         </div>
       </div>
@@ -1249,7 +1260,7 @@ header {
           <button class="btn-sm btn-translate" id="summaryTransBtn" onclick="translateSection('summary')">⇄ 中 → 英</button>
           <button class="btn-sm btn-translate" id="summaryRestoreBtn" onclick="restoreSection('summary')" style="display:none">↺ 恢复中文</button>
           <div class="toolbar-divider"></div>
-          <button class="btn-sm btn-export" onclick="exportSectionWord('summary')">⬇ 导出 Word</button>
+          <button class="btn-sm btn-export" onclick="copySection('summary')">⎘ 复制</button>
         </div>
         <div class="analysis-scroll">
           <div class="analysis-body">
@@ -1277,7 +1288,7 @@ header {
           <button class="btn-sm btn-translate" id="logicTransBtn" onclick="translateSection('logic')">⇄ 中 → 英</button>
           <button class="btn-sm btn-translate" id="logicRestoreBtn" onclick="restoreSection('logic')" style="display:none">↺ 恢复中文</button>
           <div class="toolbar-divider"></div>
-          <button class="btn-sm btn-export" onclick="exportSectionWord('logic')">⬇ 导出 Word</button>
+          <button class="btn-sm btn-export" onclick="copySection('logic')">⎘ 复制</button>
         </div>
         <div class="analysis-scroll">
           <div class="analysis-body">
@@ -1317,7 +1328,7 @@ header {
           <button class="btn-sm btn-translate" id="charTransBtn" onclick="translateSection('characters')">⇄ 中 → 英</button>
           <button class="btn-sm btn-translate" id="charRestoreBtn" onclick="restoreSection('characters')" style="display:none">↺ 恢复中文</button>
           <div class="toolbar-divider"></div>
-          <button class="btn-sm btn-export" onclick="exportSectionWord('characters')">⬇ 导出 Word</button>
+          <button class="btn-sm btn-export" onclick="copySection('characters')">⎘ 复制</button>
         </div>
         <div class="analysis-scroll">
           <div class="analysis-body">
@@ -1345,7 +1356,7 @@ header {
           <button class="btn-sm btn-translate" id="outlineTransBtn" onclick="translateSection('outline')">⇄ 中 → 英</button>
           <button class="btn-sm btn-translate" id="outlineRestoreBtn" onclick="restoreSection('outline')" style="display:none">↺ 恢复中文</button>
           <div class="toolbar-divider"></div>
-          <button class="btn-sm btn-export" onclick="exportSectionWord('outline')">⬇ 导出 Word</button>
+          <button class="btn-sm btn-export" onclick="copySection('outline')">⎘ 复制</button>
         </div>
         <div class="analysis-scroll">
           <div class="analysis-body">
@@ -1378,6 +1389,8 @@ document.getElementById('settingsModal').addEventListener('click', e => { if(e.t
 
 function saveSettings() {
   localStorage.setItem('dlcfg', JSON.stringify({
+    asrAppId: document.getElementById('cfgAsrAppId').value.trim(),
+    asrToken: document.getElementById('cfgAsrToken').value.trim(),
     llmKey: document.getElementById('cfgLlmKey').value.trim(),
     model:  document.getElementById('cfgModel').value,
   }));
@@ -1390,6 +1403,8 @@ function saveSettings() {
 
 function loadSettings() {
   const c = getConfig();
+  document.getElementById('cfgAsrAppId').value = c.asrAppId||'';
+  document.getElementById('cfgAsrToken').value  = c.asrToken||'';
   document.getElementById('cfgLlmKey').value = c.llmKey||'';
   document.getElementById('cfgModel').value  = c.model||'doubao-seed-2-0-pro-260215';
 }
@@ -1397,7 +1412,7 @@ function loadSettings() {
 function getConfig() { return JSON.parse(localStorage.getItem('dlcfg')||'{}'); }
 
 function checkConfig() {
-  const c = getConfig(), ok = !!(c.llmKey);
+  const c = getConfig(), ok = !!(c.llmKey && c.asrAppId && c.asrToken);
   document.getElementById('cfgWarn').style.display = ok ? 'none' : 'flex';
   document.getElementById('cfgOk').style.display   = ok ? 'flex' : 'none';
   updateBtn();
@@ -1418,7 +1433,6 @@ document.getElementById('videoFile').addEventListener('change', e => {
   videoFile = f;
   document.getElementById('fileName').textContent = f.name;
   document.getElementById('fileMeta').textContent = fmtSize(f.size);
-  // 保存 objectURL 供后续播放器使用
   if(videoObjectURL) URL.revokeObjectURL(videoObjectURL);
   videoObjectURL = URL.createObjectURL(f);
   const v = document.createElement('video');
@@ -1518,7 +1532,7 @@ async function doRunAnalysis() {
     setStep(1,'done'); setProg(18);
 
     setStep(2,'active'); setStep(3,'active'); setLabel('上传并转录语音… (约3-8分钟)');
-    const asr = await transcribeAudio(audio, c.asrAppId, c.asrToken);
+    const asr = await transcribeAudio(audio);
     setStep(2,'done'); setStep(3,'done'); setProg(50);
 
     setStep(4,'active'); setLabel('生成双语字幕…');
@@ -1583,56 +1597,66 @@ function encodeWAV(s,sr) {
 }
 
 // ── ASR ──
-async function transcribeAudio(blob, appId, token) {
+async function transcribeAudio(blob) {
   const cfg = getConfig();
-  setLabel('音频转文字中…');
+  if (!cfg.asrAppId || !cfg.asrToken) throw new Error('请先在设置中填写 ASR APP ID 和 Access Token');
 
-  // 把音频转为base64
-  const audioBase64 = await new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result.split(',')[1]);
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
-
-  const resp = await fetch('/api/asr', {
+  // ── 步骤1：上传音频到 Vercel Blob，拿公开 URL ──
+  setLabel('上传音频文件…');
+  const uploadResp = await fetch('/api/upload', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${cfg.llmKey}`,
-    },
-    body: JSON.stringify({
-      model: cfg.model || 'doubao-seed-2-0-pro-260215',
-      messages: [{
-        role: 'user',
-        content: [
-          {
-            type: 'audio_url',
-            audio_url: { url: `data:audio/wav;base64,${audioBase64}` }
-          },
-          {
-            type: 'text',
-            text: 'Please transcribe this audio exactly as spoken. Output only the transcript, no commentary.'
-          }
-        ]
-      }],
-      max_tokens: 8000,
-    })
+    headers: { 'Content-Type': 'audio/wav' },
+    body: blob,
   });
+  if (!uploadResp.ok) throw new Error('音频上传失败: ' + await uploadResp.text());
+  const { url: audioUrl, pathname } = await uploadResp.json();
 
-  if (!resp.ok) throw new Error('转录失败: ' + await resp.text());
-  const data = await resp.json();
-  const fullText = data.choices?.[0]?.message?.content || '';
-  if (!fullText) throw new Error('转录返回内容为空');
+  // ── 步骤2：提交 ASR 任务 ──
+  setLabel('提交转录任务…');
+  const submitResp = await fetch('/api/asr-submit', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ audioUrl, appId: cfg.asrAppId, token: cfg.asrToken }),
+  });
+  if (!submitResp.ok) throw new Error('提交任务失败: ' + await submitResp.text());
+  const { taskId } = await submitResp.json();
 
-  // 按句子切分，模拟时间戳
-  const sentences = fullText.split(/(?<=[.!?])\s+/).filter(s => s.trim());
-  const avgDur = blob.size / 32000 / (sentences.length || 1);
-  return sentences.map((s, i) => ({
-    start: i * avgDur,
-    end: (i + 1) * avgDur,
-    text: s.trim()
-  }));
+  // ── 步骤3：前端每5秒轮询结果（最多等10分钟）──
+  let elapsed = 0;
+  while (elapsed < 600) {
+    await new Promise(r => setTimeout(r, 5000));
+    elapsed += 5;
+    setLabel(`转录中… 已等待 ${elapsed}s`);
+
+    const queryResp = await fetch('/api/asr-query', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ taskId, appId: cfg.asrAppId, token: cfg.asrToken }),
+    });
+    if (!queryResp.ok) continue;
+    const result = await queryResp.json();
+
+    if (result.status === 'done') {
+      // 清理：静默删除 Blob 文件（失败不影响主流程）
+      fetch('/api/upload-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pathname }),
+      }).catch(() => {});
+
+      if (!result.utterances || result.utterances.length === 0) {
+        throw new Error('转录返回内容为空，请检查音频文件是否有效');
+      }
+      return result.utterances;
+    }
+
+    if (result.status === 'error') {
+      throw new Error('ASR 转录失败: ' + (result.error || '未知错误'));
+    }
+    // status === 'pending'，继续等待
+  }
+
+  throw new Error('转录超时（超过10分钟），请重试');
 }
 
 // ── TRANSLATE ──
@@ -1665,8 +1689,24 @@ async function analyzeContent(text, key, model) {
   let chars; try{chars=JSON.parse(r2.replace(/```json|```/g,'').trim());}catch{chars=[];}
 
   setLabel('生成万字详纲…');
-  const r3=await callLLM(`根据以下英文短剧对白写全剧万字详纲。至少40个节点，每节点150-250字，含场景/行动/对白要点/情感。转折标注【转折】，高潮标注【高潮】。只输出JSON数组[{"point":"幕次标题","content":"描述"}]：\n${t}`,key,model,4500);
-  let outline; try{outline=JSON.parse(r3.replace(/```json|```/g,'').trim());}catch{outline=[{point:'详纲',content:r3.slice(0,800)}];}
+  const r3=await callLLM(`根据以下英文短剧对白写全剧万字详纲。要求：
+- 至少40个节点，每节点150-250字
+- 每个节点格式为：【幕次标题】正文内容（含场景/行动/对白要点/情感）
+- 转折处标注【转折】，高潮处标注【高潮】
+- 直接输出纯文本，不要JSON，不要代码块，不要任何格式符号
+- 节点之间空一行分隔
+
+对白：\n${t}`,key,model,4500);
+  const outlineRaw = r3.replace(/```[\s\S]*?```/g,'').trim();
+  const outlineBlocks = outlineRaw.split(/\n\s*\n/).filter(b=>b.trim());
+  let outline = outlineBlocks.map(block => {
+    const lines = block.trim().split('\n');
+    const pointMatch = lines[0].match(/【([^】]+)】/);
+    const point = pointMatch ? pointMatch[1] : lines[0].replace(/^\d+[\.、]\s*/,'').slice(0,30);
+    const content = lines.join('\n').replace(/^【[^】]+】\s*/,'').trim();
+    return { point, content };
+  });
+  if(!outline.length) outline=[{point:'详纲',content:outlineRaw.slice(0,800)}];
 
   return { summary:p1.summary||'', highlights:p1.highlights||'',
     structureActs:p1.structure_acts||'', structureHooks:p1.structure_hooks||'',
@@ -1690,7 +1730,7 @@ function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
 function renderSubs() {
   const list = document.getElementById('subList'); list.innerHTML = '';
 
-  // ── 挂载视频到播放器 ──
+  // 挂载视频播放器
   const player = document.getElementById('subVideoPlayer');
   const placeholder = document.getElementById('subVideoPlaceholder');
   const src = videoObjectURL || (inputMode === 'url' ? videoUrl : '');
@@ -1701,49 +1741,43 @@ function renderSubs() {
   } else {
     player.style.display = 'none';
     placeholder.style.display = 'flex';
-    placeholder.innerHTML = '<span style="font-size:28px">📎</span><span style="font-size:12px;color:var(--text-ghost)">本地视频可在此预览</span>';
+    placeholder.innerHTML = '<span style="font-size:28px">📎</span><span style="font-size:12px">本地视频可在此预览</span>';
   }
 
-  // ── 渲染字幕行 ──
+  // 渲染字幕行
   subtitleData.forEach((item, idx) => {
-    const d = document.createElement('div');
-    d.className = 'sub-item';
-    d.dataset.start = item.tc;
+    const d = document.createElement('div'); d.className = 'sub-item';
     d.dataset.idx = idx;
     d.innerHTML = `<div class="sub-tc">${fmtTC(item.tc)}</div>
-      <div class="sub-texts">
-        <div class="sub-en">${esc(item.en)}</div>
-        <div class="sub-zh">${esc(item.zh)}</div>
-      </div>`;
-    // 点击跳转视频
+      <div class="sub-texts"><div class="sub-en">${esc(item.en)}</div><div class="sub-zh">${esc(item.zh)}</div></div>`;
     d.addEventListener('click', () => {
-      if (player.src) {
-        player.currentTime = item.tc;
-        player.play();
-      }
+      if (player.src) { player.currentTime = item.tc; player.play(); }
       document.querySelectorAll('.sub-item').forEach(el => el.classList.remove('active'));
       d.classList.add('active');
     });
     list.appendChild(d);
   });
 
-  // ── 播放时自动高亮当前字幕 ──
-  player.addEventListener('timeupdate', () => {
+  // 播放时自动高亮字幕
+  player.removeEventListener('timeupdate', player._syncFn);
+  player._syncFn = () => {
     const t = player.currentTime;
     const items = document.querySelectorAll('.sub-item');
-    let activeEl = null;
+    let activeIdx = -1;
     subtitleData.forEach((item, idx) => {
-      const next = subtitleData[idx + 1];
-      const end = next ? next.tc : item.tc + 5;
-      if (t >= item.tc && t < end) activeEl = items[idx];
+      const end = subtitleData[idx+1] ? subtitleData[idx+1].tc : item.tc + 5;
+      if (t >= item.tc && t < end) activeIdx = idx;
     });
-    items.forEach(el => el.classList.remove('active'));
-    if (activeEl) {
-      activeEl.classList.add('active');
-      // 自动滚动到可见区域
-      activeEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-    }
-  });
+    items.forEach((el, i) => {
+      if (i === activeIdx) {
+        if (!el.classList.contains('active')) {
+          el.classList.add('active');
+          el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        }
+      } else { el.classList.remove('active'); }
+    });
+  };
+  player.addEventListener('timeupdate', player._syncFn);
 
   document.getElementById('subBadge').textContent = subtitleData.length;
   document.getElementById('subEmpty').style.display = 'none';
@@ -1798,6 +1832,9 @@ function renderAnalysis() {
   });
   document.getElementById('outlineEmpty').style.display='none';
   document.getElementById('outlineView').style.display='flex';
+
+  // 显示整合导出按钮
+  document.getElementById('btnExportAll').style.display='';
 }
 
 // ── TRANSLATE & EDIT ──
@@ -1959,66 +1996,83 @@ function applySectionTranslation(sec, enText) {
 }
 
 // ── 导出（跟随当前显示语种）──
-function exportSectionWord(sec) {
-  const d = analysisData;
-  const lang = sectionLang[sec]; // 'zh' | 'en'
-  const title = videoFile?.name?.replace(/\.[^.]+$/,'') || videoUrl || '剧本分析';
-  const langLabel = lang === 'en' ? 'EN' : 'ZH';
-  const isEn = lang === 'en';
-
-  let body = '', docTitle = '';
-  const para = (text, font) => `{\\pard\\${font||'f0'}\\fs20 ${rtfEsc(text)}\\par}\n`;
-  const heading = (text) => `{\\pard\\b\\f0\\fs24\\cf1 ${rtfEsc(text)}\\par}\n{\\pard\\par}\n`;
-  const subH = (text) => `{\\pard\\b\\f0\\fs22 ${rtfEsc(text)}\\par}\n`;
-
-  if(sec === 'summary'){
-    docTitle = title + (isEn ? ' — Story Synopsis' : ' — 剧情简介');
-    body += para(document.getElementById('summaryText').innerText||'');
-
-  } else if(sec === 'logic'){
-    docTitle = title + (isEn ? ' — Story Analysis' : ' — 结构逻辑分析');
-    const sections = [
-      { label: isEn ? 'Core Highlights' : '核心亮点', el: 'highlightsText' },
-      { label: isEn ? 'Narrative Structure' : '叙事结构', grid: true },
-      { label: isEn ? 'Character Logic' : '人物逻辑', el: 'charLogicText' },
-      { label: isEn ? 'Emotional Logic' : '情感逻辑', el: 'emotionText' },
-    ];
-    sections.forEach(s => {
-      body += heading(s.label);
-      if(s.grid) {
-        body += para(document.getElementById('logicGrid').innerText||'');
-      } else {
-        body += para(document.getElementById(s.el).innerText||'');
-      }
-    });
-
-  } else if(sec === 'characters'){
-    docTitle = title + (isEn ? ' — Character Profiles' : ' — 人物小传');
-    document.querySelectorAll('#charGrid .char-card').forEach(card => {
-      const name = card.querySelector('.char-name')?.innerText||'';
-      const bio  = card.querySelector('.char-bio')?.innerText||'';
-      body += subH(name);
-      body += para(bio);
-      body += `{\\pard\\par}\n`;
-    });
-
-  } else if(sec === 'outline'){
-    docTitle = title + (isEn ? ' — Full Story Outline' : ' — 万字详纲');
-    document.querySelectorAll('#outlineList .outline-item').forEach((item, i) => {
+// ── 复制板块 ──
+function copySection(sec) {
+  let text = '';
+  if (sec === 'summary') {
+    text = document.getElementById('summaryText').innerText || '';
+  } else if (sec === 'logic') {
+    text = ['核心亮点\n'+(document.getElementById('highlightsText').innerText||''),
+            '叙事结构\n'+(document.getElementById('logicGrid').innerText||''),
+            '人物逻辑\n'+(document.getElementById('charLogicText').innerText||''),
+            '情感逻辑\n'+(document.getElementById('emotionText').innerText||''),
+           ].join('\n\n');
+  } else if (sec === 'characters') {
+    text = Array.from(document.querySelectorAll('#charGrid .char-card')).map(c=>
+      (c.querySelector('.char-name')?.innerText||'')+'\n'+(c.querySelector('.char-bio')?.innerText||'')
+    ).join('\n\n');
+  } else if (sec === 'outline') {
+    text = Array.from(document.querySelectorAll('#outlineList .outline-item')).map((item,i)=>{
       const pt = item.querySelector('.outline-pt')?.innerText||'';
       const spans = item.querySelectorAll('span');
-      const content = spans[1]?.innerText || spans[0]?.innerText || '';
-      body += subH(`${String(i+1).padStart(2,'0')}. ${pt}`);
-      body += para(content, isEn ? 'f1' : 'f0');
-      body += `{\\pard\\par}\n`;
-    });
+      const content = spans[1]?.innerText||spans[0]?.innerText||'';
+      return `${String(i+1).padStart(2,'0')}. ${pt}\n${content}`;
+    }).join('\n\n');
   }
-
-  dlRtf(`${title}_${sec}_${langLabel}.doc`, makeRtf(body, docTitle));
-  toast('Word 已下载','ok');
+  navigator.clipboard.writeText(text)
+    .then(()=>toast('已复制到剪贴板','ok'))
+    .catch(()=>{
+      const ta=document.createElement('textarea'); ta.value=text;
+      ta.style.cssText='position:fixed;opacity:0'; document.body.appendChild(ta);
+      ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+      toast('已复制到剪贴板','ok');
+    });
 }
 
-function exportAnalysisWord(){} // 兼容旧引用
+// ── 导出完整报告 Word ──
+function exportFullWord() {
+  const title = videoFile?.name?.replace(/\.[^.]+$/,'') || videoUrl || '剧本分析';
+  const para  = t => `{\\pard\\f0\\fs20 ${rtfEsc(t)}\\par}\n`;
+  const heading = t => `{\\pard\\b\\f0\\fs26\\cf1 ${rtfEsc(t)}\\par}\n{\\pard\\par}\n`;
+  const subH  = t => `{\\pard\\b\\f0\\fs22 ${rtfEsc(t)}\\par}\n`;
+  const divider = () => `{\\pard\\brdrb\\brdrs\\brdrw5\\brsp100 \\par}\n{\\pard\\par}\n`;
+  let body = '';
+
+  body += heading('01  剧情简介');
+  body += para(document.getElementById('summaryText').innerText||'');
+  body += divider();
+
+  body += heading('02  核心亮点');
+  body += para(document.getElementById('highlightsText').innerText||'');
+  body += heading('03  叙事结构');
+  body += para(document.getElementById('logicGrid').innerText||'');
+  body += heading('04  人物逻辑');
+  body += para(document.getElementById('charLogicText').innerText||'');
+  body += heading('05  情感逻辑');
+  body += para(document.getElementById('emotionText').innerText||'');
+  body += divider();
+
+  body += heading('06  人物小传');
+  document.querySelectorAll('#charGrid .char-card').forEach(card => {
+    body += subH(card.querySelector('.char-name')?.innerText||'');
+    body += para(card.querySelector('.char-bio')?.innerText||'');
+    body += `{\\pard\\par}\n`;
+  });
+  body += divider();
+
+  body += heading('07  全剧情万字详纲');
+  document.querySelectorAll('#outlineList .outline-item').forEach((item,i) => {
+    const pt = item.querySelector('.outline-pt')?.innerText||'';
+    const spans = item.querySelectorAll('span');
+    const content = spans[1]?.innerText||spans[0]?.innerText||'';
+    body += subH(`${String(i+1).padStart(2,'0')}.  ${pt}`);
+    body += para(content);
+    body += `{\\pard\\par}\n`;
+  });
+
+  dlRtf(`${title}_完整分析报告.doc`, makeRtf(body, title+' · 完整分析报告'));
+  toast('完整报告已下载','ok');
+}
 
 // ── RTF UTILS ──
 function rtfEsc(t){return String(t||'').replace(/\\/g,'\\\\').replace(/\{/g,'\\{').replace(/\}/g,'\\}').replace(/[\u0080-\uffff]/g,c=>`\\u${c.charCodeAt(0)}?`);}
