@@ -759,12 +759,13 @@ header {
 
 /* Subtitle view */
 .sub-toolbar {
-  padding: 10px 20px;
+  padding: 8px 16px;
   background: var(--surface);
   border-bottom: 1px solid var(--border-soft);
-  display: flex; align-items: center; gap: 8px;
-  flex-wrap: wrap;
+  display: flex; align-items: center;
 }
+.sub-toolbar .search-field { flex: 1; }
+.sub-toolbar .btn-sm { margin-left: 8px; flex-shrink: 0; }
 .search-field {
   flex: 1; min-width: 140px; max-width: 220px;
   background: var(--surface-2);
@@ -884,10 +885,12 @@ header {
   padding: 8px 24px;
   background: var(--surface);
   border-bottom: 1px solid var(--border-soft);
-  display: flex; align-items: center; gap: 8px;
+  display: flex; align-items: center; gap: 6px;
   flex-wrap: nowrap;
 }
-.analysis-toolbar .btn-export { margin-left: auto; }
+/* badge 撑满左侧空间，按钮自然靠右紧凑排列 */
+.analysis-toolbar .edit-badge { margin-right: auto; }
+.analysis-toolbar .btn-export { margin-left: 0; }
 .edit-badge {
   font-family: 'DM Mono', monospace;
   font-size: 10px;
@@ -956,7 +959,105 @@ header {
 .analysis-scroll::-webkit-scrollbar { width: 4px; }
 .analysis-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
-.analysis-body { max-width: 720px; margin: 0 auto; }
+/* ── 双列布局基础 ── */
+.analysis-body { max-width: none; margin: 0; }
+.two-col-layout {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 0; height: 100%; min-height: 0;
+}
+.two-col-left {
+  padding: 28px 24px 28px 32px;
+  border-right: 1px solid var(--border-soft);
+  overflow-y: auto; height: 100%;
+}
+.two-col-left::-webkit-scrollbar { width: 4px; }
+.two-col-left::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.two-col-right {
+  padding: 28px 32px 28px 24px;
+  overflow-y: auto; height: 100%;
+}
+.two-col-right::-webkit-scrollbar { width: 4px; }
+.two-col-right::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* ── 策划逻辑双列卡片网格 ── */
+.planning-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 16px; padding: 28px 32px;
+}
+.planning-card {
+  background: var(--surface); border: 1px solid var(--border-soft);
+  border-radius: 10px; padding: 16px 18px;
+  transition: box-shadow .2s;
+}
+.planning-card:hover { box-shadow: var(--shadow-sm); }
+.planning-card-tag {
+  font-size: 10px; font-weight: 600; color: var(--green-main);
+  text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px;
+}
+.planning-card-body {
+  font-size: 13px; line-height: 1.8; color: var(--text-body);
+  outline: none; min-height: 60px;
+}
+.planning-card-body:focus { background: rgba(30,92,58,0.03); border-radius: 4px; }
+/* 核心亮点横跨两列 */
+.planning-card.full-width { grid-column: 1 / -1; }
+
+/* ── 改编建议双列 ── */
+.adapt-two-col {
+  display: grid; grid-template-columns: 340px 1fr;
+  gap: 0; flex: 1; min-height: 0; overflow: hidden;
+}
+.adapt-left {
+  padding: 24px 20px 24px 32px;
+  border-right: 1px solid var(--border-soft);
+  overflow-y: auto;
+}
+.adapt-left::-webkit-scrollbar { width: 4px; }
+.adapt-left::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.adapt-right {
+  padding: 24px 32px 24px 20px;
+  overflow-y: auto; position: relative;
+}
+.adapt-right::-webkit-scrollbar { width: 4px; }
+.adapt-right::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* 改编方案卡片新样式 */
+.adapt-plan-card {
+  border: 1.5px solid var(--border-soft); border-radius: 10px;
+  padding: 16px 18px; margin-bottom: 12px; transition: border-color .2s;
+}
+.adapt-plan-card:hover { border-color: var(--green-light); box-shadow: var(--shadow-sm); }
+.adapt-plan-actions {
+  display: flex; gap: 6px; margin-top: 12px; padding-top: 10px;
+  border-top: 1px solid var(--border-soft);
+}
+
+/* 大纲面板 */
+.outline-panel {
+  display: none; flex-direction: column; height: 100%;
+}
+.outline-panel.active { display: flex; }
+.outline-panel-header {
+  display: flex; align-items: center; gap: 8px;
+  padding-bottom: 14px; border-bottom: 1px solid var(--border-soft); margin-bottom: 16px;
+  flex-shrink: 0;
+}
+.outline-panel-title {
+  font-size: 12px; font-weight: 600; color: var(--ink);
+  flex: 1; line-height: 1.4;
+}
+.outline-panel-content {
+  flex: 1; overflow-y: auto; min-height: 0;
+  font-size: 13px; line-height: 1.85; color: var(--text-body);
+  outline: none; white-space: pre-wrap;
+}
+.outline-panel-content::-webkit-scrollbar { width: 4px; }
+.outline-panel-content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.outline-panel-placeholder {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  height: 100%; gap: 10px; color: var(--text-ghost);
+}
+.outline-panel-placeholder-text { font-size: 12px; text-align: center; line-height: 1.6; }
 
 .a-block {
   margin-bottom: 36px;
@@ -1366,32 +1467,30 @@ header {
       </div>
       <div style="display:none;flex-direction:column;flex:1;overflow:hidden" id="overviewView">
         <div class="analysis-toolbar">
-          <span class="edit-badge" id="overviewLangBadge">中文</span>
-          <div class="toolbar-divider"></div>
-          <button class="btn-sm btn-translate" id="overviewTransBtn" onclick="translateSection('overview')">⇄ 中 → 英</button>
+          <span class="edit-badge" id="overviewLangBadge">中文</span>          <button class="btn-sm btn-translate" id="overviewTransBtn" onclick="translateSection('overview')">⇄ 中 → 英</button>
           <button class="btn-sm btn-translate" id="overviewRestoreBtn" onclick="restoreSection('overview')" style="display:none">↺ 恢复中文</button>
           <button class="btn-sm btn-export" onclick="copySection('overview')">⎘ 复制</button>
           <button class="btn-sm btn-export" id="btnExportAll" onclick="exportFullWord()" style="display:none">⬇ 导出报告</button>
         </div>
-        <div class="analysis-scroll">
-          <div class="analysis-body">
-            <!-- 01 一句话简介 -->
-            <div class="a-block" style="animation-delay:.08s">
+        <div class="two-col-layout" style="flex:1;overflow:hidden">
+          <!-- 左列：简介 + 人物小传 + 关系图 -->
+          <div class="two-col-left">
+            <div class="a-block">
               <div class="a-head"><div class="a-num">01</div><div class="a-title">一句话简介</div><div class="a-line"></div></div>
               <div class="a-body editable" id="loglineText" contenteditable="true" spellcheck="false"></div>
             </div>
-            <!-- 03 人物小传 -->
-            <div class="a-block" style="animation-delay:.11s">
-              <div class="a-head"><div class="a-num">02</div><div class="a-title">人物小传</div><div class="a-line"></div></div>
+            <div class="a-block">
+              <div class="a-head"><div class="a-num">02</div><div class="a-title">人物关系图</div><div class="a-line"></div></div>
+              <div id="relationGraph" style="width:100%;min-height:220px;"></div>
+            </div>
+            <div class="a-block">
+              <div class="a-head"><div class="a-num">03</div><div class="a-title">人物小传</div><div class="a-line"></div></div>
               <div class="char-grid" id="charGrid"></div>
             </div>
-            <!-- 04 人物关系图 -->
-            <div class="a-block" style="animation-delay:.14s">
-              <div class="a-head"><div class="a-num">03</div><div class="a-title">人物关系图</div><div class="a-line"></div></div>
-              <div id="relationGraph" style="width:100%;min-height:260px;"></div>
-            </div>
-            <!-- 05 剧情梗概 -->
-            <div class="a-block" style="animation-delay:.17s">
+          </div>
+          <!-- 右列：剧情梗概 -->
+          <div class="two-col-right">
+            <div class="a-block">
               <div class="a-head"><div class="a-num">04</div><div class="a-title">剧情梗概</div><div class="a-line"></div></div>
               <div class="outline-list" id="outlineList"></div>
             </div>
@@ -1410,46 +1509,52 @@ header {
       </div>
       <div style="display:none;flex-direction:column;flex:1;overflow:hidden" id="planningView">
         <div class="analysis-toolbar">
-          <span class="edit-badge" id="planningLangBadge">中文</span>
-          <div class="toolbar-divider"></div>
-          <button class="btn-sm btn-translate" id="planningTransBtn" onclick="translateSection('planning')">⇄ 中 → 英</button>
+          <span class="edit-badge" id="planningLangBadge">中文</span>          <button class="btn-sm btn-translate" id="planningTransBtn" onclick="translateSection('planning')">⇄ 中 → 英</button>
           <button class="btn-sm btn-translate" id="planningRestoreBtn" onclick="restoreSection('planning')" style="display:none">↺ 恢复中文</button>
           <button class="btn-sm btn-export" onclick="copySection('planning')">⎘ 复制</button>
           <button class="btn-sm btn-export btn-export-report" onclick="exportFullWord()" style="display:none">⬇ 导出报告</button>
         </div>
-        <div class="analysis-scroll">
-          <div class="analysis-body">
-            <div class="a-block" style="animation-delay:.05s">
-              <div class="a-head"><div class="a-num">01</div><div class="a-title">核心亮点</div><div class="a-line"></div></div>
-              <div class="a-body editable" id="highlightsText" contenteditable="true" spellcheck="false"></div>
+        <div class="analysis-scroll" style="flex:1;overflow-y:auto;">
+          <div class="planning-grid">
+            <!-- 核心亮点：横跨两列 -->
+            <div class="planning-card full-width">
+              <div class="planning-card-tag">核心亮点</div>
+              <div class="planning-card-body editable" id="highlightsText" contenteditable="true" spellcheck="false"></div>
             </div>
-            <div class="a-block" style="animation-delay:.08s">
-              <div class="a-head"><div class="a-num">02</div><div class="a-title">结构逻辑</div><div class="a-line"></div></div>
+            <!-- 结构逻辑 -->
+            <div class="planning-card">
+              <div class="planning-card-tag">结构逻辑</div>
               <div class="logic-grid" id="logicGrid"></div>
             </div>
-            <div class="a-block" style="animation-delay:.11s">
-              <div class="a-head"><div class="a-num">03</div><div class="a-title">人物逻辑</div><div class="a-line"></div></div>
-              <div class="a-body editable" id="charLogicText" contenteditable="true" spellcheck="false"></div>
+            <!-- 人物逻辑 -->
+            <div class="planning-card">
+              <div class="planning-card-tag">人物逻辑</div>
+              <div class="planning-card-body editable" id="charLogicText" contenteditable="true" spellcheck="false"></div>
             </div>
-            <div class="a-block" style="animation-delay:.14s">
-              <div class="a-head"><div class="a-num">04</div><div class="a-title">情感逻辑</div><div class="a-line"></div></div>
-              <div class="a-body editable" id="emotionText" contenteditable="true" spellcheck="false"></div>
+            <!-- 情感逻辑 -->
+            <div class="planning-card">
+              <div class="planning-card-tag">情感逻辑</div>
+              <div class="planning-card-body editable" id="emotionText" contenteditable="true" spellcheck="false"></div>
             </div>
-            <div class="a-block" style="animation-delay:.17s">
-              <div class="a-head"><div class="a-num">05</div><div class="a-title">节奏逻辑</div><div class="a-line"></div></div>
-              <div class="a-body editable" id="rhythmText" contenteditable="true" spellcheck="false"></div>
+            <!-- 节奏逻辑 -->
+            <div class="planning-card">
+              <div class="planning-card-tag">节奏逻辑</div>
+              <div class="planning-card-body editable" id="rhythmText" contenteditable="true" spellcheck="false"></div>
             </div>
-            <div class="a-block" style="animation-delay:.20s">
-              <div class="a-head"><div class="a-num">06</div><div class="a-title">卡点布局</div><div class="a-line"></div></div>
-              <div class="a-body editable" id="hookText" contenteditable="true" spellcheck="false"></div>
+            <!-- 悬念布局（原卡点布局）-->
+            <div class="planning-card">
+              <div class="planning-card-tag">悬念布局</div>
+              <div class="planning-card-body editable" id="hookText" contenteditable="true" spellcheck="false"></div>
             </div>
-            <div class="a-block" style="animation-delay:.23s">
-              <div class="a-head"><div class="a-num">07</div><div class="a-title">叙事技巧</div><div class="a-line"></div></div>
-              <div class="a-body editable" id="narrativeTechText" contenteditable="true" spellcheck="false"></div>
+            <!-- 叙事技巧 -->
+            <div class="planning-card">
+              <div class="planning-card-tag">叙事技巧</div>
+              <div class="planning-card-body editable" id="narrativeTechText" contenteditable="true" spellcheck="false"></div>
             </div>
-            <div class="a-block" style="animation-delay:.26s">
-              <div class="a-head"><div class="a-num">08</div><div class="a-title">高光情节</div><div class="a-line"></div></div>
-              <div class="a-body editable" id="highlightScenesText" contenteditable="true" spellcheck="false"></div>
+            <!-- 高光情节 -->
+            <div class="planning-card">
+              <div class="planning-card-tag">高光情节</div>
+              <div class="planning-card-body editable" id="highlightScenesText" contenteditable="true" spellcheck="false"></div>
             </div>
           </div>
         </div>
@@ -1466,25 +1571,22 @@ header {
       </div>
       <div style="display:none;flex-direction:column;flex:1;overflow:hidden" id="adaptationView">
         <div class="analysis-toolbar">
-          <span class="edit-badge" id="adaptationLangBadge">中文</span>
-          <div class="toolbar-divider"></div>
-          <button class="btn-sm btn-translate" id="adaptationTransBtn" onclick="translateSection('adaptation')">⇄ 中 → 英</button>
+          <span class="edit-badge" id="adaptationLangBadge">中文</span>          <button class="btn-sm btn-translate" id="adaptationTransBtn" onclick="translateSection('adaptation')">⇄ 中 → 英</button>
           <button class="btn-sm btn-translate" id="adaptationRestoreBtn" onclick="restoreSection('adaptation')" style="display:none">↺ 恢复中文</button>
           <button class="btn-sm btn-export" onclick="copySection('adaptation')">⎘ 复制</button>
           <button class="btn-sm btn-export btn-export-report" onclick="exportFullWord()" style="display:none">⬇ 导出报告</button>
         </div>
-        <div class="analysis-scroll">
-          <div class="analysis-body">
-            <!-- 改编总阐述（自动生成）-->
-            <div class="a-block" style="animation-delay:.05s">
+        <div class="adapt-two-col" style="flex:1;">
+          <!-- 左列：总阐述 + 需求表单 -->
+          <div class="adapt-left">
+            <div class="a-block">
               <div class="a-head"><div class="a-num">01</div><div class="a-title">改编总阐述</div><div class="a-line"></div></div>
               <div class="a-body editable" id="adaptSummaryText" contenteditable="true" spellcheck="false"></div>
             </div>
-            <!-- 改编需求表单 -->
-            <div class="a-block" style="animation-delay:.10s" id="adaptFormBlock">
-              <div class="a-head"><div class="a-num">02</div><div class="a-title">改编方案</div><div class="a-line"></div></div>
+            <div class="a-block" id="adaptFormBlock">
+              <div class="a-head"><div class="a-num">02</div><div class="a-title">生成改编方案</div><div class="a-line"></div></div>
               <div class="adapt-form" id="adaptForm">
-                <div class="adapt-form-desc">请选择改编方向，系统将基于原剧策划逻辑生成专属改编方案</div>
+                <div class="adapt-form-desc">选择改编方向，基于原剧策划逻辑生成专属方案</div>
                 <div class="adapt-form-grid">
                   <div class="adapt-form-item">
                     <label class="adapt-form-label">目标市场</label>
@@ -1505,7 +1607,7 @@ header {
                   <div class="adapt-form-item">
                     <label class="adapt-form-label">体量规划</label>
                     <select class="adapt-form-select" id="adaptVolume">
-                      <option value="40集60分钟">短剧·40集/约60分钟</option>
+                      <option value="40集60分钟">短篇·40集/约60分钟</option>
                       <option value="60集90分钟">中篇·60集/约90分钟</option>
                       <option value="80集120分钟">长篇·80集/约120分钟</option>
                     </select>
@@ -1520,9 +1622,28 @@ header {
                     </select>
                   </div>
                 </div>
-                <button class="btn-primary" id="btnGenAdapt" onclick="generateAdaptPlans()" style="margin-top:16px">▶ 生成改编方案</button>
+                <button class="btn-primary" id="btnGenAdapt" onclick="generateAdaptPlans()" style="margin-top:14px;font-size:12px;padding:8px 18px">▶ 生成改编方案</button>
+              </div>
+            </div>
+          </div>
+          <!-- 右列：改编方案列表 / 大纲面板 -->
+          <div class="adapt-right" id="adaptRight">
+            <!-- 方案列表（默认显示）-->
+            <div id="adaptPlansView">
+              <div class="outline-panel-placeholder" id="adaptPlansPlaceholder">
+                <span style="font-size:28px">✦</span>
+                <div class="outline-panel-placeholder-text">填写左侧改编需求<br>点击「生成改编方案」</div>
               </div>
               <div id="adaptPlansGrid"></div>
+            </div>
+            <!-- 大纲面板（生成后显示）-->
+            <div class="outline-panel" id="outlinePanelView">
+              <div class="outline-panel-header">
+                <div class="outline-panel-title" id="outlinePanelTitle">方案大纲</div>
+                <button class="btn-sm" onclick="copyOutlinePanel()">⎘ 复制</button>
+                <button class="btn-sm btn-translate" onclick="closeOutlinePanel()">← 返回方案</button>
+              </div>
+              <div class="outline-panel-content editable" id="outlinePanelContent" contenteditable="true" spellcheck="false"></div>
             </div>
           </div>
         </div>
@@ -1915,7 +2036,7 @@ async function analyzeContent(text, key, model, scenes = []) {
 {
   "highlights": "核心亮点200字：最吸引观众的核心卖点是什么",
   "structure_acts": "三幕结构150字：开篇/发展/高潮/结局各阶段如何布局",
-  "structure_hooks": "悬念设计150字：用了哪些悬念钩子吸引持续追剧",
+  "structure_hooks": "已整合至悬念布局模块",
   "character_logic": "人物逻辑150字：人物行为动机是否自洽，核心人物弧线",
   "emotion": "情感逻辑150字：情绪弧线如何设计，共鸣点在哪里",
   "rhythm": "节奏逻辑150字：张弛节奏、反转密度、信息释放节拍",
@@ -1977,8 +2098,22 @@ ${t}`, key, model, 4500);
 
   // ── 5. 改编总阐述（仅生成总体原则，方案由用户触发）──
   setLabel('生成改编总阐述…');
-  const planSummary = `核心亮点：${plan.highlights||''}\n结构：${plan.structure_acts||''}\n悬念：${plan.structure_hooks||''}\n人物：${plan.character_logic||''}\n情感：${plan.emotion||''}\n节奏：${plan.rhythm||''}\n卡点：${plan.hooks||''}\n高光：${plan.highlight_scenes||''}`;
-  const r_adapt = await callLLM(`你是资深短剧改编策划。基于以下原剧策划逻辑，写一段改编总阐述（200字左右）：说明原剧核心爆点所在，以及改编应遵循的核心原则——保留什么、改变什么。直接输出文字，不加标题和说明。
+  const planSummary = [
+    `【核心亮点】${plan.highlights||''}`,
+    `【结构逻辑】三幕：${plan.structure_acts||''}  悬念：${plan.structure_hooks||''}`,
+    `【人物逻辑】${plan.character_logic||''}`,
+    `【情感逻辑】${plan.emotion||''}`,
+    `【节奏逻辑】${plan.rhythm||''}`,
+    `【卡点布局】${plan.hooks||''}`,
+    `【高光情节】${plan.highlight_scenes||''}`,
+    `【叙事技巧】${plan.narrative_tech||''}`,
+  ].join('\n');
+  const r_adapt = await callLLM(`你是资深短剧改编策划。基于以下原剧策划逻辑，写一段改编总阐述（200字左右）。直接输出文字，不加标题和说明。
+
+内容要求：
+1. 指出原剧的核心爆款基因是什么（哪些冲突结构、情感爆点、节奏设计是让它爆的根本原因）
+2. 说明改编的核心原则：题材/背景/世界观/人物身份这些外壳可以全部换新，但核心冲突结构和情感爆点必须保留
+3. 提示改编方向上的空间和可能性
 
 原剧台词（供参考）：${t.slice(0,2000)}
 
@@ -1999,7 +2134,86 @@ ${planSummary}`, key, model, 1000);
   };
 }
 
-// ── 独立生成改编方案（用户填写需求后触发）──
+// ── 复制单个改编方案 ──
+function copyAdaptPlan(btn) {
+  const card = btn.closest('.adapt-plan-card');
+  const title = card.querySelector('.adapt-plan-title')?.innerText || '';
+  const body  = card.querySelector('.adapt-plan-body')?.innerText || '';
+  const text  = title + '\n\n' + body;
+  navigator.clipboard.writeText(text)
+    .then(() => toast('方案已复制','ok'))
+    .catch(() => {
+      const ta = document.createElement('textarea'); ta.value = text;
+      ta.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(ta);
+      ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+      toast('方案已复制','ok');
+    });
+}
+
+// ── 为某方案生成千字大纲 ──
+async function generateAdaptOutline(btn) {
+  const cfg = getConfig();
+  if (!cfg.llmKey) { toast('请先配置 API Key','err'); return; }
+
+  const card = btn.closest('.adapt-plan-card');
+  const title = card.querySelector('.adapt-plan-title')?.innerText || '改编方案';
+  const desc  = card.querySelector('.adapt-plan-body')?.innerText || '';
+
+  const originalBtn = btn.textContent;
+  btn.textContent = '生成中…'; btn.disabled = true;
+
+  // 切换右侧到大纲面板
+  document.getElementById('adaptPlansView').style.display = 'none';
+  const panel = document.getElementById('outlinePanelView');
+  panel.classList.add('active');
+  document.getElementById('outlinePanelTitle').textContent = title;
+  document.getElementById('outlinePanelContent').textContent = '大纲生成中…';
+
+  try {
+    const t = analysisData._rawText || subtitleData.map(s => s.en).join(' ');
+    const outline = await callLLM(`你是资深短剧编剧。根据以下改编方案，生成一份约1000字的分场大纲。
+
+改编方案：
+【${title}】
+${desc}
+
+原剧策划逻辑（爆款基因，必须保留）：
+${analysisData._planSummary || ''}
+
+要求：
+- 按幕次/场次结构组织，标注开篇/发展/转折/高潮/结局
+- 每场约50-80字，描述核心事件、人物行动、情感冲突
+- 保留原剧的节奏卡点和情感爆点，用新题材的语言表达
+- 直接输出大纲正文，不要任何说明
+
+原剧台词背景（供参考）：${t.slice(0,1500)}`, cfg.llmKey, cfg.model, 3000);
+
+    document.getElementById('outlinePanelContent').textContent = outline;
+    toast('大纲生成完成','ok');
+  } catch(e) {
+    document.getElementById('outlinePanelContent').textContent = '生成失败：' + e.message;
+    toast('生成失败：' + e.message, 'err');
+  } finally {
+    btn.textContent = originalBtn; btn.disabled = false;
+  }
+}
+
+function closeOutlinePanel() {
+  document.getElementById('outlinePanelView').classList.remove('active');
+  document.getElementById('adaptPlansView').style.display = '';
+}
+
+function copyOutlinePanel() {
+  const text = document.getElementById('outlinePanelContent').innerText || '';
+  navigator.clipboard.writeText(text)
+    .then(() => toast('大纲已复制','ok'))
+    .catch(() => {
+      const ta = document.createElement('textarea'); ta.value = text;
+      ta.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(ta);
+      ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+      toast('大纲已复制','ok');
+    });
+}
 async function generateAdaptPlans() {
   const cfg = getConfig();
   if (!cfg.llmKey) { toast('请先配置 API Key','err'); return; }
@@ -2016,27 +2230,41 @@ async function generateAdaptPlans() {
   const t = analysisData._rawText || subtitleData.map(s=>s.en).join(' ');
 
   try {
-    const r = await callLLM(`你是资深短剧改编策划。基于以下原剧策划逻辑，为用户指定的改编方向生成3-5个具体改编方案。只输出JSON，不加任何说明：
+    const r = await callLLM(`你是资深短剧改编策划。基于原剧策划逻辑的全部维度，为用户生成3-5个差异化改编方案。只输出JSON，不加任何说明：
 [
-  {"title":"方案标题（含风格关键词）","description":"200字方案说明：故事背景/题材类型/人物身份如何改编，如何在新包装下保留原爆点与核心冲突"}
+  {
+    "title": "方案标题（含题材风格关键词，如：民国谍战版/古风修仙版/都市霸总版）",
+    "description": "250字方案说明，必须覆盖以下内容：①新题材/世界观/人物身份设定 ②如何在新包装下承载原剧的核心冲突结构 ③情感爆点和人物关系张力如何对应迁移 ④节奏逻辑和卡点布局如何保留 ⑤叙事技巧如何复用"
+  }
 ]
+
+改编铁律：
+- 题材/背景/世界观/人物身份【必须换新】——这是外壳
+- 核心冲突结构/情感爆点/节奏卡点/叙事技巧【必须保留】——这是爆款基因
+- 每个方案题材彼此不同，不能出现与原剧相同的世界观设定
+- 方案说明中必须明确说明：用什么新设定来承载原来的每一个核心策划要素
 
 用户改编需求：目标市场【${market}】，内容类型【${type}】，体量规划【${volume}】，目标受众【${audience}】
 
-原剧策划逻辑：
+原剧完整策划逻辑（每一条都是爆款基因，改编方案必须逐一对应保留）：
 ${analysisData._planSummary}
 
-原剧台词（供参考）：${t.slice(0,2000)}`, cfg.llmKey, cfg.model, 3000);
+原剧台词（仅供了解故事结构，禁止照搬题材）：${t.slice(0,1500)}`, cfg.llmKey, cfg.model, 3500);
 
     let plans; try { plans = JSON.parse(r.replace(/```json|```/g,'').trim()); } catch { plans = []; }
     analysisData.adaptPlans = plans;
 
     const apg = document.getElementById('adaptPlansGrid'); apg.innerHTML = '';
+    document.getElementById('adaptPlansPlaceholder').style.display = 'none';
     plans.forEach((plan, i) => {
       const card = document.createElement('div'); card.className = 'adapt-plan-card';
       card.innerHTML = `<div class="adapt-plan-num">方案 ${String(i+1).padStart(2,'0')}</div>
         <div class="adapt-plan-title" contenteditable="true" spellcheck="false">${esc(plan.title||'')}</div>
-        <div class="adapt-plan-body" contenteditable="true" spellcheck="false">${esc(plan.description||'')}</div>`;
+        <div class="adapt-plan-body" contenteditable="true" spellcheck="false">${esc(plan.description||'')}</div>
+        <div class="adapt-plan-actions">
+          <button class="btn-sm" onclick="copyAdaptPlan(this)">⎘ 复制方案</button>
+          <button class="btn-sm btn-translate" onclick="generateAdaptOutline(this)">📋 生成大纲</button>
+        </div>`;
       apg.appendChild(card);
     });
 
@@ -2167,7 +2395,7 @@ function renderAnalysis() {
   const lg = document.getElementById('logicGrid');
   lg.innerHTML = `
     <div class="logic-card"><div class="logic-card-tag">三幕结构</div><div class="logic-card-text editable" contenteditable="true" spellcheck="false">${esc(d.structureActs)}</div></div>
-    <div class="logic-card"><div class="logic-card-tag">悬念设计</div><div class="logic-card-text editable" contenteditable="true" spellcheck="false">${esc(d.structureHooks)}</div></div>`;
+    <div class="logic-card"><div class="logic-card-tag">三幕节奏</div><div class="logic-card-text editable" contenteditable="true" spellcheck="false">${esc(d.structureHooks)}</div></div>`;
   document.getElementById('charLogicText').innerHTML = toP(d.characterLogic);
   document.getElementById('emotionText').innerHTML = toP(d.emotion);
   document.getElementById('rhythmText').innerHTML = toP(d.rhythm);
@@ -2179,8 +2407,10 @@ function renderAnalysis() {
 
   // ── 改编建议 tab ──
   document.getElementById('adaptSummaryText').innerHTML = toP(d.adaptSummary);
-  // 清空旧方案，显示表单等待用户操作
   document.getElementById('adaptPlansGrid').innerHTML = '';
+  document.getElementById('adaptPlansPlaceholder').style.display = '';
+  document.getElementById('adaptPlansView').style.display = '';
+  document.getElementById('outlinePanelView').classList.remove('active');
   document.getElementById('adaptForm').style.display = '';
   const btn = document.getElementById('btnGenAdapt');
   if (btn) { btn.textContent = '▶ 生成改编方案'; btn.disabled = false; }
@@ -2386,7 +2616,7 @@ function restoreSection(sec) {
     document.getElementById('narrativeTechText').innerHTML = toP(d.narrativeTech);
     const lg = document.getElementById('logicGrid');
     lg.innerHTML = `<div class="logic-card"><div class="logic-card-tag">三幕结构</div><div class="logic-card-text editable" contenteditable="true" spellcheck="false">${esc(d.structureActs)}</div></div>
-      <div class="logic-card"><div class="logic-card-tag">悬念设计</div><div class="logic-card-text editable" contenteditable="true" spellcheck="false">${esc(d.structureHooks)}</div></div>`;
+      <div class="logic-card"><div class="logic-card-tag">三幕节奏</div><div class="logic-card-text editable" contenteditable="true" spellcheck="false">${esc(d.structureHooks)}</div></div>`;
   } else if (sec === 'adaptation') {
     document.getElementById('adaptSummaryText').innerHTML = toP(d.adaptSummary);
     const apg = document.getElementById('adaptPlansGrid'); apg.innerHTML = '';
