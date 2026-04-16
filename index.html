@@ -2933,7 +2933,8 @@ function dlRtf(filename,rtf){const b=new Blob([rtf],{type:'application/rtf'});co
   makeColResizer('overviewDivider',  'overviewLeft',  200, 200);
   makeColResizer('planningDivider',  'planningLeft',  200, 200);
   makeColResizer('adaptDivider',     'adaptLeft',     220, 260);
-})();document.getElementById('statusDot').className='status-dot '+s;document.getElementById('statusText').textContent=t;}
+})();
+function setStatus(s,t){document.getElementById('statusDot').className='status-dot '+s;document.getElementById('statusText').textContent=t;}
 function setProg(p){document.getElementById('progressBar').style.width=p+'%';}
 function setStep(n,s){document.getElementById('s'+n).className='p-step '+s;}
 function setLabel(t){document.getElementById('procLabel').textContent=t;}
