@@ -1553,6 +1553,7 @@ async function transcribeAudio(blob, appId, token) {
   const cfg = getConfig();
   setLabel('音频转文字中…');
 
+  // 把音频转为base64
   const audioBase64 = await new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result.split(',')[1]);
@@ -1560,36 +1561,47 @@ async function transcribeAudio(blob, appId, token) {
     reader.readAsDataURL(blob);
   });
 
+  // 用豆包大模型多模态接口转录音频
+  // 走 /api/asr 代理，避免CORS
   const resp = await fetch('/api/asr', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${cfg.llmKey}`,
       'Content-Type': 'application/json',
+      'Authorization': `Bearer ${cfg.llmKey}`,
     },
     body: JSON.stringify({
-      model: 'doubao-asr-pro',
-      audio: { format: 'wav', data: audioBase64 },
-      language: 'en',
+      model: cfg.model || 'doubao-seed-2.0-pro',
+      messages: [{
+        role: 'user',
+        content: [
+          {
+            type: 'audio_url',
+            audio_url: {
+              url: `data:audio/wav;base64,${audioBase64}`
+            }
+          },
+          {
+            type: 'text',
+            text: 'Please transcribe this audio exactly as spoken, output only the transcript text with no extra commentary, preserve sentence boundaries with periods.'
+          }
+        ]
+      }],
+      max_tokens: 8000,
     })
   });
 
-  if (!resp.ok) throw new Error('ASR 转录失败: ' + await resp.text());
+  if (!resp.ok) throw new Error('转录失败: ' + await resp.text());
   const data = await resp.json();
+  const fullText = data.choices?.[0]?.message?.content || '';
+  if (!fullText) throw new Error('转录返回内容为空');
 
-  if (data.utterances && data.utterances.length) {
-    return data.utterances.map(u => ({
-      start: (u.start_time || 0) / 1000,
-      end: (u.end_time || 0) / 1000,
-      text: u.text
-    }));
-  }
-
-  const fullText = data.text || data.result || '';
-  if (!fullText) throw new Error('ASR 返回内容为空');
-
-  const sentences = fullText.match(/[^.!?]+[.!?]*/g) || [fullText];
+  // 按句子切分，模拟时间戳
+  const sentences = fullText.split(/(?<=[.!?])\s+/).filter(s => s.trim());
+  const avgDur = blob.size / 32000 / (sentences.length || 1);
   return sentences.map((s, i) => ({
-    start: i * 3, end: (i + 1) * 3, text: s.trim()
+    start: i * avgDur,
+    end: (i + 1) * avgDur,
+    text: s.trim()
   }));
 }
 
