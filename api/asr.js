@@ -6,7 +6,7 @@ module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', '*');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  const authHeader = req.headers['authorization'];
+  const auth = req.headers['authorization'];
   const chunks = [];
   await new Promise((resolve, reject) => {
     req.on('data', c => chunks.push(c));
@@ -18,11 +18,11 @@ module.exports = async function handler(req, res) {
   const response = await new Promise((resolve, reject) => {
     const r = https.request({
       hostname: 'ark.cn-beijing.volces.com',
-      path: '/api/v3/audio/transcriptions',
+      path: '/api/v3/chat/completions',
       method: 'POST',
       headers: {
-        'Authorization': authHeader,
-        'Content-Type': req.headers['content-type'],
+        'Authorization': auth,
+        'Content-Type': 'application/json',
         'Content-Length': body.length,
       }
     }, resolve);
@@ -38,7 +38,10 @@ module.exports = async function handler(req, res) {
     response.on('error', reject);
   });
 
-  res.status(response.statusCode).json(
-    JSON.parse(Buffer.concat(respChunks).toString())
-  );
+  const raw = Buffer.concat(respChunks).toString();
+  try {
+    res.status(response.statusCode).json(JSON.parse(raw));
+  } catch(e) {
+    res.status(500).json({ error: 'parse failed', raw: raw.slice(0, 300) });
+  }
 };
