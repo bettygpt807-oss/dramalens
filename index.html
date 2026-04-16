@@ -1022,9 +1022,9 @@ header {
         <div class="cfg-field">
           <div class="cfg-label">模型</div>
           <select class="cfg-input" id="cfgModel">
-            <option value="doubao-seed-2.0-pro">doubao-seed-2.0-pro（推荐）</option>
-            <option value="doubao-pro-32k">doubao-pro-32k（快速）</option>
-            <option value="doubao-pro-128k">doubao-pro-128k（超长）</option>
+            <option value="Doubao-Seed-2.0-pro">Doubao-Seed-2.0-pro（推荐）</option>
+            <option value="Doubao-Seed-2.0-lite">Doubao-Seed-2.0-lite（轻量）</option>
+            <option value="Doubao-Seed-1.8">Doubao-Seed-1.8</option>
           </select>
         </div>
       </div>
@@ -1570,7 +1570,7 @@ async function transcribeAudio(blob, appId, token) {
       'Authorization': `Bearer ${cfg.llmKey}`,
     },
     body: JSON.stringify({
-      model: cfg.model || 'doubao-seed-2.0-pro',
+      model: cfg.model || 'Doubao-Seed-2.0-pro',
       messages: [{
         role: 'user',
         content: [
