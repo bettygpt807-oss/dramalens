@@ -13,7 +13,13 @@ module.exports = async function handler(req, res) {
     req.on('end', resolve);
     req.on('error', reject);
   });
-  const body = Buffer.concat(chunks);
+
+  // 解析请求body，强制加上 stream: false
+  let bodyObj;
+  try { bodyObj = JSON.parse(Buffer.concat(chunks).toString()); }
+  catch(e) { return res.status(400).json({ error: 'invalid json' }); }
+  bodyObj.stream = false;
+  const body = Buffer.from(JSON.stringify(bodyObj));
 
   const response = await new Promise((resolve, reject) => {
     const r = https.request({
@@ -42,6 +48,6 @@ module.exports = async function handler(req, res) {
   try {
     res.status(response.statusCode).json(JSON.parse(raw));
   } catch(e) {
-    res.status(500).json({ error: 'parse failed', raw: raw.slice(0, 300) });
+    res.status(500).json({ error: 'parse failed', raw: raw.slice(0, 500) });
   }
 };
