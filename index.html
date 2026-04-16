@@ -793,12 +793,12 @@ header {
 }
 .btn-sm:hover { border-color: var(--green-main); color: var(--green-main); background: var(--green-ghost); }
 
-/* Video + subtitle split layout */
+/* Video + subtitle + script 三列布局 */
 .sub-split {
   display: flex; flex: 1; overflow: hidden; min-height: 0;
 }
 .sub-video-panel {
-  width: 45%; min-width: 260px; max-width: 520px;
+  width: 38%; min-width: 240px; max-width: 480px;
   background: #000; display: flex; flex-direction: column;
   border-right: 1px solid var(--border-soft); flex-shrink: 0;
 }
@@ -812,11 +812,43 @@ header {
   flex-direction: column; gap: 8px;
 }
 .sub-list {
-  flex: 1; overflow-y: auto;
-  padding: 8px 16px;
+  flex: 1; overflow-y: auto; min-width: 0;
+  padding: 8px 12px;
+  border-right: 1px solid var(--border-soft);
 }
 .sub-list::-webkit-scrollbar { width: 4px; }
 .sub-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* 右侧剧本推演面板 */
+.sub-script-panel {
+  width: 320px; flex-shrink: 0;
+  display: flex; flex-direction: column;
+  background: var(--surface);
+}
+.sub-script-header {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-soft);
+  display: flex; align-items: center; gap: 8px;
+  background: var(--surface);
+}
+.sub-script-header-title {
+  font-size: 12px; font-weight: 600; color: var(--ink);
+  flex: 1;
+}
+.sub-script-content {
+  flex: 1; overflow-y: auto; padding: 12px 14px;
+  font-family: 'DM Mono','Courier New',monospace;
+  font-size: 11.5px; line-height: 1.9; color: var(--ink);
+  white-space: pre-wrap;
+}
+.sub-script-content::-webkit-scrollbar { width: 3px; }
+.sub-script-content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.sub-script-empty {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 10px; padding: 20px;
+}
+.sub-script-empty-text { font-size: 12px; color: var(--text-ghost); text-align: center; line-height: 1.6; }
 
 .sub-item {
   display: grid;
@@ -840,11 +872,13 @@ header {
 
 /* Analysis views */
 .analysis-toolbar {
-  padding: 10px 24px;
+  padding: 8px 24px;
   background: var(--surface);
   border-bottom: 1px solid var(--border-soft);
   display: flex; align-items: center; gap: 8px;
+  flex-wrap: nowrap;
 }
+.analysis-toolbar .btn-export { margin-left: auto; }
 .edit-badge {
   font-family: 'DM Mono', monospace;
   font-size: 10px;
@@ -1025,6 +1059,19 @@ header {
 .rel-node text { font-size: 11px; font-family: 'Noto Sans SC',sans-serif; pointer-events: none; }
 .rel-edge line { stroke: var(--border); stroke-width: 1.5; }
 .rel-edge text { font-size: 10px; fill: var(--text-ghost); font-family: 'Noto Sans SC',sans-serif; }
+
+/* Adapt Form */
+.adapt-form { background: var(--surface-2); border: 1px solid var(--border-soft); border-radius: 10px; padding: 18px 20px; margin-bottom: 16px; }
+.adapt-form-desc { font-size: 12px; color: var(--text-light); margin-bottom: 14px; }
+.adapt-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.adapt-form-item { display: flex; flex-direction: column; gap: 5px; }
+.adapt-form-label { font-size: 11px; color: var(--text-ghost); font-weight: 500; }
+.adapt-form-select {
+  padding: 7px 10px; border-radius: 6px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--ink); font-size: 12px; font-family: inherit;
+  cursor: pointer; outline: none;
+}
+.adapt-form-select:focus { border-color: var(--green-light); }
 
 /* Adapt Plans */
 .adapt-plan-card { border: 1.5px solid var(--border-soft); border-radius: 10px; padding: 16px 18px; margin-bottom: 12px; transition: border-color .2s; }
@@ -1251,26 +1298,23 @@ header {
       <button class="tab-btn" data-tab="overview">剧情概要</button>
       <button class="tab-btn" data-tab="planning">策划逻辑</button>
       <button class="tab-btn" data-tab="adaptation">改编建议</button>
-      <button class="tab-btn" data-tab="script">剧本推演</button>
     </div>
-    <button class="btn-sm btn-export" id="btnExportAll" onclick="exportFullWord()" style="display:none;margin:8px 16px 0 auto;white-space:nowrap;flex-shrink:0">⬇ 导出分析报告</button>
 
     <!-- Subtitle Pane -->
     <div class="tab-pane active" id="pane-subtitles">
       <div class="tab-empty" id="subEmpty">
         <div class="tab-empty-icon">📜</div>
         <div class="tab-empty-title">双语字幕时间轴</div>
-        <div class="tab-empty-desc">分析完成后，左侧在线播放视频，右侧字幕随播放自动高亮；点击任意字幕行可跳转到对应时间点。</div>
+        <div class="tab-empty-desc">分析完成后，左侧播放视频，中间字幕同步高亮，右侧可生成剧本推演。</div>
         <div class="tab-empty-badge">步骤 4 完成后自动生成</div>
       </div>
       <div style="display:none;flex-direction:column;flex:1;overflow:hidden" id="subView">
         <div class="sub-toolbar">
           <input type="text" class="search-field" id="subSearch" placeholder="搜索台词…">
-          <button class="btn-sm" onclick="exportSubWord('en')">⬇ 英文 Word</button>
-          <button class="btn-sm" onclick="exportSubWord('zh')">⬇ 中文 Word</button>
-          <button class="btn-sm" onclick="exportSubWord('bi')">⬇ 双语 Word</button>
+          <button class="btn-sm" onclick="copySection('subtitles')">⎘ 复制字幕</button>
         </div>
         <div class="sub-split">
+          <!-- 左：视频 -->
           <div class="sub-video-panel" id="subVideoPanel">
             <div class="sub-video-placeholder" id="subVideoPlaceholder">
               <span style="font-size:32px">🎬</span>
@@ -1278,7 +1322,23 @@ header {
             </div>
             <video id="subVideoPlayer" controls style="display:none"></video>
           </div>
+          <!-- 中：字幕列表 -->
           <div class="sub-list" id="subList"></div>
+          <!-- 右：剧本推演 -->
+          <div class="sub-script-panel" id="subScriptPanel">
+            <div class="sub-script-header">
+              <span class="sub-script-header-title">剧本推演</span>
+              <button class="btn-sm btn-translate" id="scriptTransBtn" onclick="translateSection('script')" style="display:none">⇄ 译中文</button>
+              <button class="btn-sm btn-translate" id="scriptRestoreBtn" onclick="restoreSection('script')" style="display:none">↺ 恢复</button>
+              <button class="btn-sm btn-export" id="btnExportScript" onclick="exportScriptWord()" style="display:none">⬇</button>
+            </div>
+            <div class="sub-script-empty" id="subScriptEmpty">
+              <span style="font-size:28px">📝</span>
+              <div class="sub-script-empty-text">基于台词和截帧生成标准格式剧本<br>算力消耗较大，按需生成</div>
+              <button class="btn-primary" id="btnGenScript" onclick="generateScript()" style="display:none;font-size:12px;padding:8px 16px">▶ 生成剧本推演</button>
+            </div>
+            <div id="subScriptContent" class="sub-script-content" contenteditable="true" spellcheck="false" style="display:none"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -1297,34 +1357,29 @@ header {
           <div class="toolbar-divider"></div>
           <button class="btn-sm btn-translate" id="overviewTransBtn" onclick="translateSection('overview')">⇄ 中 → 英</button>
           <button class="btn-sm btn-translate" id="overviewRestoreBtn" onclick="restoreSection('overview')" style="display:none">↺ 恢复中文</button>
-          <div class="toolbar-divider"></div>
           <button class="btn-sm btn-export" onclick="copySection('overview')">⎘ 复制</button>
+          <button class="btn-sm btn-export" id="btnExportAll" onclick="exportFullWord()" style="display:none">⬇ 导出报告</button>
         </div>
         <div class="analysis-scroll">
           <div class="analysis-body">
-            <!-- 01 基本信息 -->
-            <div class="a-block" style="animation-delay:.05s">
-              <div class="a-head"><div class="a-num">01</div><div class="a-title">基本信息</div><div class="a-line"></div></div>
-              <div class="info-grid" id="infoGrid"></div>
-            </div>
-            <!-- 02 一句话简介 -->
+            <!-- 01 一句话简介 -->
             <div class="a-block" style="animation-delay:.08s">
-              <div class="a-head"><div class="a-num">02</div><div class="a-title">一句话简介</div><div class="a-line"></div></div>
+              <div class="a-head"><div class="a-num">01</div><div class="a-title">一句话简介</div><div class="a-line"></div></div>
               <div class="a-body editable" id="loglineText" contenteditable="true" spellcheck="false"></div>
             </div>
             <!-- 03 人物小传 -->
             <div class="a-block" style="animation-delay:.11s">
-              <div class="a-head"><div class="a-num">03</div><div class="a-title">人物小传</div><div class="a-line"></div></div>
+              <div class="a-head"><div class="a-num">02</div><div class="a-title">人物小传</div><div class="a-line"></div></div>
               <div class="char-grid" id="charGrid"></div>
             </div>
             <!-- 04 人物关系图 -->
             <div class="a-block" style="animation-delay:.14s">
-              <div class="a-head"><div class="a-num">04</div><div class="a-title">人物关系图</div><div class="a-line"></div></div>
+              <div class="a-head"><div class="a-num">03</div><div class="a-title">人物关系图</div><div class="a-line"></div></div>
               <div id="relationGraph" style="width:100%;min-height:260px;"></div>
             </div>
             <!-- 05 剧情梗概 -->
             <div class="a-block" style="animation-delay:.17s">
-              <div class="a-head"><div class="a-num">05</div><div class="a-title">剧情梗概</div><div class="a-line"></div></div>
+              <div class="a-head"><div class="a-num">04</div><div class="a-title">剧情梗概</div><div class="a-line"></div></div>
               <div class="outline-list" id="outlineList"></div>
             </div>
           </div>
@@ -1346,8 +1401,8 @@ header {
           <div class="toolbar-divider"></div>
           <button class="btn-sm btn-translate" id="planningTransBtn" onclick="translateSection('planning')">⇄ 中 → 英</button>
           <button class="btn-sm btn-translate" id="planningRestoreBtn" onclick="restoreSection('planning')" style="display:none">↺ 恢复中文</button>
-          <div class="toolbar-divider"></div>
           <button class="btn-sm btn-export" onclick="copySection('planning')">⎘ 复制</button>
+          <button class="btn-sm btn-export btn-export-report" onclick="exportFullWord()" style="display:none">⬇ 导出报告</button>
         </div>
         <div class="analysis-scroll">
           <div class="analysis-body">
@@ -1376,12 +1431,12 @@ header {
               <div class="a-body editable" id="hookText" contenteditable="true" spellcheck="false"></div>
             </div>
             <div class="a-block" style="animation-delay:.23s">
-              <div class="a-head"><div class="a-num">07</div><div class="a-title">高光情节</div><div class="a-line"></div></div>
-              <div class="a-body editable" id="highlightScenesText" contenteditable="true" spellcheck="false"></div>
+              <div class="a-head"><div class="a-num">07</div><div class="a-title">叙事技巧</div><div class="a-line"></div></div>
+              <div class="a-body editable" id="narrativeTechText" contenteditable="true" spellcheck="false"></div>
             </div>
             <div class="a-block" style="animation-delay:.26s">
-              <div class="a-head"><div class="a-num">08</div><div class="a-title">叙事技巧</div><div class="a-line"></div></div>
-              <div class="a-body editable" id="narrativeTechText" contenteditable="true" spellcheck="false"></div>
+              <div class="a-head"><div class="a-num">08</div><div class="a-title">高光情节</div><div class="a-line"></div></div>
+              <div class="a-body editable" id="highlightScenesText" contenteditable="true" spellcheck="false"></div>
             </div>
           </div>
         </div>
@@ -1402,48 +1457,59 @@ header {
           <div class="toolbar-divider"></div>
           <button class="btn-sm btn-translate" id="adaptationTransBtn" onclick="translateSection('adaptation')">⇄ 中 → 英</button>
           <button class="btn-sm btn-translate" id="adaptationRestoreBtn" onclick="restoreSection('adaptation')" style="display:none">↺ 恢复中文</button>
-          <div class="toolbar-divider"></div>
           <button class="btn-sm btn-export" onclick="copySection('adaptation')">⎘ 复制</button>
+          <button class="btn-sm btn-export btn-export-report" onclick="exportFullWord()" style="display:none">⬇ 导出报告</button>
         </div>
         <div class="analysis-scroll">
           <div class="analysis-body">
+            <!-- 改编总阐述（自动生成）-->
             <div class="a-block" style="animation-delay:.05s">
               <div class="a-head"><div class="a-num">01</div><div class="a-title">改编总阐述</div><div class="a-line"></div></div>
               <div class="a-body editable" id="adaptSummaryText" contenteditable="true" spellcheck="false"></div>
             </div>
-            <div class="a-block" style="animation-delay:.10s">
+            <!-- 改编需求表单 -->
+            <div class="a-block" style="animation-delay:.10s" id="adaptFormBlock">
               <div class="a-head"><div class="a-num">02</div><div class="a-title">改编方案</div><div class="a-line"></div></div>
+              <div class="adapt-form" id="adaptForm">
+                <div class="adapt-form-desc">请选择改编方向，系统将基于原剧策划逻辑生成专属改编方案</div>
+                <div class="adapt-form-grid">
+                  <div class="adapt-form-item">
+                    <label class="adapt-form-label">目标市场</label>
+                    <select class="adapt-form-select" id="adaptMarket">
+                      <option value="国内">国内市场</option>
+                      <option value="海外">海外市场</option>
+                      <option value="国内+海外">国内+海外双市场</option>
+                    </select>
+                  </div>
+                  <div class="adapt-form-item">
+                    <label class="adapt-form-label">内容类型</label>
+                    <select class="adapt-form-select" id="adaptType">
+                      <option value="女频">女频（甜宠/虐恋/逆袭）</option>
+                      <option value="男频">男频（爽文/战神/赘婿）</option>
+                      <option value="通用">男女通用</option>
+                    </select>
+                  </div>
+                  <div class="adapt-form-item">
+                    <label class="adapt-form-label">体量规划</label>
+                    <select class="adapt-form-select" id="adaptVolume">
+                      <option value="40集60分钟">短剧·40集/约60分钟</option>
+                      <option value="60集90分钟">中篇·60集/约90分钟</option>
+                      <option value="80集120分钟">长篇·80集/约120分钟</option>
+                    </select>
+                  </div>
+                  <div class="adapt-form-item">
+                    <label class="adapt-form-label">目标受众</label>
+                    <select class="adapt-form-select" id="adaptAudience">
+                      <option value="18-29岁">18-29岁（Z世代）</option>
+                      <option value="30-50岁">30-50岁（主力消费）</option>
+                      <option value="50岁以上">50岁以上（银发市场）</option>
+                      <option value="不限">不限受众</option>
+                    </select>
+                  </div>
+                </div>
+                <button class="btn-primary" id="btnGenAdapt" onclick="generateAdaptPlans()" style="margin-top:16px">▶ 生成改编方案</button>
+              </div>
               <div id="adaptPlansGrid"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Script Pane：剧本推演 -->
-    <div class="tab-pane" id="pane-script">
-      <div class="tab-empty" id="scriptEmpty">
-        <div class="tab-empty-icon">📝</div>
-        <div class="tab-empty-title">剧本推演</div>
-        <div class="tab-empty-desc">基于台词转录和场景信息，生成标准格式剧本，支持在线编辑与一键翻译。</div>
-        <div class="tab-empty-badge">点击下方按钮手动生成</div>
-        <button class="btn-primary" id="btnGenScript" onclick="generateScript()" style="margin-top:16px;display:none">▶ 生成剧本推演</button>
-      </div>
-      <div style="display:none;flex-direction:column;flex:1;overflow:hidden" id="scriptView">
-        <div class="analysis-toolbar">
-          <span class="edit-badge" id="scriptLangBadge">原语言</span>
-          <div class="toolbar-divider"></div>
-          <button class="btn-sm btn-translate" id="scriptTransBtn" onclick="translateSection('script')">⇄ 翻译为中文</button>
-          <button class="btn-sm btn-translate" id="scriptRestoreBtn" onclick="restoreSection('script')" style="display:none">↺ 恢复原文</button>
-          <div class="toolbar-divider"></div>
-          <button class="btn-sm btn-export" onclick="copySection('script')">⎘ 复制</button>
-          <button class="btn-sm btn-export" onclick="exportScriptWord()" style="margin-left:4px">⬇ 导出剧本</button>
-        </div>
-        <div class="analysis-scroll" id="scriptScroll">
-          <div class="analysis-body">
-            <div class="a-block">
-              <div class="a-head"><div class="a-num">📝</div><div class="a-title">剧本推演</div><div class="a-line"></div></div>
-              <div class="script-body editable" id="scriptText" contenteditable="true" spellcheck="false"></div>
             </div>
           </div>
         </div>
@@ -1622,9 +1688,11 @@ async function doRunAnalysis() {
     setStep(4,'done'); setProg(70);
 
     setStep(5,'active'); setLabel('截取视频场景帧…');
-    const scenes = await captureSceneFrames(videoFile || videoUrl, 15);
+    const scenes = await captureSceneFrames(videoFile || videoUrl, 10);
     setLabel('内容拆解分析… (约2-3分钟)');
-    analysisData = await analyzeContent(asr.map(s=>s.text).join(' '), c.llmKey, c.model, scenes);
+    const rawText = asr.map(s=>s.text).join(' ');
+    analysisData = await analyzeContent(rawText, c.llmKey, c.model, scenes);
+    analysisData._rawText = rawText;
     renderAnalysis();
     setStep(5,'done'); setProg(100);
 
@@ -1850,7 +1918,15 @@ async function analyzeContent(text, key, model, scenes = []) {
   let r3;
   if (scenes && scenes.length > 0) {
     const prompt = `你是专业影视内容分析师。根据以下英文短剧的台词和视频截图，写全剧详细梗概（约2500字）。
-要求：以台词和截图为核心依据，忠实还原视频情节；可基于截图和台词上下文做合理推断补全场景氛围、人物神态，但推断必须有依据，不编造完全没有的情节走向；每个节点格式：【场景标题】正文；转折处标注【转折】，高潮处标注【高潮】；直接输出纯文本，节点间空行。
+
+严格要求：
+- 只还原视频中实际发生的情节，台词结束即梗概结束，绝对不要补充原视频之后的新剧情
+- 可基于截图画面和台词上下文做合理推断，补全人物神态、场景氛围、行为动机等细节——但推断必须以现有台词或截图为依据
+- 节点数量与视频实际内容匹配，不要凑数量
+- 每个节点格式：【场景标题】正文（结合截图画面 + 台词 + 情绪分析）
+- 转折处标注【转折】，高潮处标注【高潮】
+- 直接输出纯文本，节点间空行
+
 台词：\n${t}`;
     const selectedFrames = scenes.length > 8 ? scenes.filter((_, i) => i % Math.ceil(scenes.length / 8) === 0).slice(0, 8) : scenes;
     const content = [{ type: 'text', text: prompt }];
@@ -1860,9 +1936,20 @@ async function analyzeContent(text, key, model, scenes = []) {
       body: JSON.stringify({ model: 'doubao-1-5-vision-pro-32k-250115', max_tokens: 4500, temperature: 0.7, messages: [{ role: 'user', content }] })
     });
     r3 = vResp.ok ? ((await vResp.json()).choices?.[0]?.message?.content || '') : '';
-    if (!r3) r3 = await callLLM(`根据以下英文短剧台词写详细梗概（约2500字）。以台词为依据忠实还原情节，可做合理推断补全场景细节，不编造台词中没有的情节。每节点格式：【场景标题】正文，转折标注【转折】高潮标注【高潮】，纯文本节点间空行。\n台词：\n${t}`, key, model, 4500);
+    if (!r3) r3 = await callLLM(`根据以下英文短剧台词写详细梗概（约2500字）。只还原台词中实际出现的情节，台词结束即梗概结束，不补充原视频之外的新剧情。可基于台词上下文合理推断补全细节，节点数量与内容匹配。每节点格式：【场景标题】正文，转折标注【转折】高潮标注【高潮】，纯文本节点间空行。\n台词：\n${t}`, key, model, 4500);
   } else {
-    r3 = await callLLM(`根据以下英文短剧台词写详细梗概（约2500字）。以台词为依据忠实还原情节，可基于台词上下文做合理推断补全场景氛围与人物神态，但不编造完全没有依据的情节走向。每节点格式：【场景标题】正文，转折标注【转折】高潮标注【高潮】，直接输出纯文本，节点间空行。\n台词：\n${t}`, key, model, 4500);
+    r3 = await callLLM(`你是专业影视内容分析师。根据以下英文短剧台词写详细梗概（约2500字）。
+
+严格要求：
+- 只还原台词中实际出现的情节，台词结束即梗概结束，绝对不要补充原视频之外的新剧情
+- 可基于台词上下文合理推断，补全场景氛围、人物神态与动机——推断必须以现有台词为依据
+- 节点数量与台词内容匹配，不要凑数量
+- 每个节点格式：【场景标题】正文（含场景/台词/情感）
+- 转折处标注【转折】，高潮处标注【高潮】
+- 直接输出纯文本，不要JSON，节点间空行
+
+台词：
+${t}`, key, model, 4500);
   }
   const outlineRaw = r3.replace(/```[\s\S]*?```/g,'').trim();
   const outlineBlocks = outlineRaw.split(/\n\s*\n/).filter(b => b.trim());
@@ -1875,24 +1962,15 @@ async function analyzeContent(text, key, model, scenes = []) {
   });
   if (!outline.length) outline = [{ point: '梗概', content: outlineRaw.slice(0, 800) }];
 
-  // ── 5. 改编建议（总阐述 + 3-5方案）──
-  setLabel('生成改编建议…');
+  // ── 5. 改编总阐述（仅生成总体原则，方案由用户触发）──
+  setLabel('生成改编总阐述…');
   const planSummary = `核心亮点：${plan.highlights||''}\n结构：${plan.structure_acts||''}\n悬念：${plan.structure_hooks||''}\n人物：${plan.character_logic||''}\n情感：${plan.emotion||''}\n节奏：${plan.rhythm||''}\n卡点：${plan.hooks||''}\n高光：${plan.highlight_scenes||''}`;
-  const r_adapt = await callLLM(`你是资深短剧改编策划。基于以下原剧策划逻辑分析，给出改编建议。只输出JSON，不加任何说明：
-{
-  "summary": "改编总阐述200字：说明原剧核心爆点所在，以及改编应遵循的核心原则——保留什么、改变什么",
-  "plans": [
-    {"title":"方案一标题（如：国风虐恋版）","description":"200字方案说明：故事背景/题材类型/人物身份设定如何改编，如何在新包装下保留原爆点"},
-    {"title":"方案二标题","description":"200字方案说明"},
-    {"title":"方案三标题","description":"200字方案说明"}
-  ]
-}
+  const r_adapt = await callLLM(`你是资深短剧改编策划。基于以下原剧策划逻辑，写一段改编总阐述（200字左右）：说明原剧核心爆点所在，以及改编应遵循的核心原则——保留什么、改变什么。直接输出文字，不加标题和说明。
 
-原剧台词（供参考）：${t.slice(0,3000)}
+原剧台词（供参考）：${t.slice(0,2000)}
 
 原剧策划逻辑：
-${planSummary}`, key, model, 3000);
-  let adapt; try { adapt = JSON.parse(r_adapt.replace(/```json|```/g,'').trim()); } catch { adapt = { summary: '', plans: [] }; }
+${planSummary}`, key, model, 1000);
 
   return {
     info, logline: info.logline || '',
@@ -1903,8 +1981,58 @@ ${planSummary}`, key, model, 3000);
     hooks: plan.hooks || '', highlightScenes: plan.highlight_scenes || '',
     narrativeTech: plan.narrative_tech || '',
     outline,
-    adaptSummary: adapt.summary || '', adaptPlans: adapt.plans || [],
+    adaptSummary: r_adapt || '', adaptPlans: [],
+    _planSummary: planSummary,
   };
+}
+
+// ── 独立生成改编方案（用户填写需求后触发）──
+async function generateAdaptPlans() {
+  const cfg = getConfig();
+  if (!cfg.llmKey) { toast('请先配置 API Key','err'); return; }
+  if (!analysisData._planSummary) { toast('请先完成内容分析','err'); return; }
+
+  const btn = document.getElementById('btnGenAdapt');
+  btn.textContent = '生成中…'; btn.disabled = true;
+
+  const market   = document.getElementById('adaptMarket').value;
+  const type     = document.getElementById('adaptType').value;
+  const volume   = document.getElementById('adaptVolume').value;
+  const audience = document.getElementById('adaptAudience').value;
+
+  const t = analysisData._rawText || subtitleData.map(s=>s.en).join(' ');
+
+  try {
+    const r = await callLLM(`你是资深短剧改编策划。基于以下原剧策划逻辑，为用户指定的改编方向生成3-5个具体改编方案。只输出JSON，不加任何说明：
+[
+  {"title":"方案标题（含风格关键词）","description":"200字方案说明：故事背景/题材类型/人物身份如何改编，如何在新包装下保留原爆点与核心冲突"}
+]
+
+用户改编需求：目标市场【${market}】，内容类型【${type}】，体量规划【${volume}】，目标受众【${audience}】
+
+原剧策划逻辑：
+${analysisData._planSummary}
+
+原剧台词（供参考）：${t.slice(0,2000)}`, cfg.llmKey, cfg.model, 3000);
+
+    let plans; try { plans = JSON.parse(r.replace(/```json|```/g,'').trim()); } catch { plans = []; }
+    analysisData.adaptPlans = plans;
+
+    const apg = document.getElementById('adaptPlansGrid'); apg.innerHTML = '';
+    plans.forEach((plan, i) => {
+      const card = document.createElement('div'); card.className = 'adapt-plan-card';
+      card.innerHTML = `<div class="adapt-plan-num">方案 ${String(i+1).padStart(2,'0')}</div>
+        <div class="adapt-plan-title" contenteditable="true" spellcheck="false">${esc(plan.title||'')}</div>
+        <div class="adapt-plan-body" contenteditable="true" spellcheck="false">${esc(plan.description||'')}</div>`;
+      apg.appendChild(card);
+    });
+
+    toast('改编方案生成完成','ok');
+  } catch(e) {
+    toast('生成失败：'+e.message,'err');
+  } finally {
+    btn.textContent = '▶ 重新生成'; btn.disabled = false;
+  }
 }
 
 async function callLLM(prompt, key, model, maxTok=1500) {
@@ -2048,56 +2176,68 @@ function renderAnalysis() {
 
   // ── 改编建议 tab ──
   document.getElementById('adaptSummaryText').innerHTML = toP(d.adaptSummary);
-  const apg = document.getElementById('adaptPlansGrid'); apg.innerHTML = '';
-  (d.adaptPlans||[]).forEach((plan, i) => {
-    const card = document.createElement('div'); card.className = 'adapt-plan-card';
-    card.innerHTML = `<div class="adapt-plan-num">方案 ${String(i+1).padStart(2,'0')}</div>
-      <div class="adapt-plan-title" contenteditable="true" spellcheck="false">${esc(plan.title||'')}</div>
-      <div class="adapt-plan-body" contenteditable="true" spellcheck="false">${esc(plan.description||'')}</div>`;
-    apg.appendChild(card);
-  });
+  // 清空旧方案，显示表单等待用户操作
+  document.getElementById('adaptPlansGrid').innerHTML = '';
+  document.getElementById('adaptForm').style.display = '';
+  const btn = document.getElementById('btnGenAdapt');
+  if (btn) { btn.textContent = '▶ 生成改编方案'; btn.disabled = false; }
   document.getElementById('adaptationEmpty').style.display = 'none';
   document.getElementById('adaptationView').style.display = 'flex';
 
-  // ── 剧本推演 tab：显示生成按钮 ──
+  // ── 剧本推演：显示生成按钮 ──
   document.getElementById('btnGenScript').style.display = '';
 
-  // 显示整合导出按钮
+  // 显示三个 tab 里的导出报告按钮
   document.getElementById('btnExportAll').style.display = '';
+  document.querySelectorAll('.btn-export-report').forEach(btn => btn.style.display = '');
 }
 
-// ── 人物关系可视化 ──
 function renderRelationGraph(relations, characters) {
   const container = document.getElementById('relationGraph');
-  if (!relations.length && !characters.length) { container.innerHTML = '<div style="color:var(--text-ghost);font-size:12px;padding:16px">暂无人物关系数据</div>'; return; }
+  if (!relations.length && !characters.length) {
+    container.innerHTML = '<div style="color:var(--text-ghost);font-size:12px;padding:16px">暂无人物关系数据</div>';
+    return;
+  }
 
-  const W = 700, H = 260;
+  const W = 700, H = 280;
+  // 环形布局
   const nodes = characters.map((c, i) => {
-    const angle = (2 * Math.PI * i) / characters.length - Math.PI / 2;
-    const r = Math.min(W, H) * 0.35;
+    const angle = (2 * Math.PI * i) / Math.max(characters.length, 1) - Math.PI / 2;
+    const r = characters.length <= 2 ? 120 : Math.min(W, H) * 0.33;
     return { id: c.name, x: W/2 + r * Math.cos(angle), y: H/2 + r * Math.sin(angle) };
   });
   const nodeMap = Object.fromEntries(nodes.map(n => [n.id, n]));
 
   let svg = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
-  // 连线
+
+  // 连线 + 关系标签
   relations.forEach(rel => {
     const a = nodeMap[rel.from], b = nodeMap[rel.to];
     if (!a || !b) return;
-    const mx = (a.x+b.x)/2, my = (a.y+b.y)/2;
-    svg += `<g class="rel-edge"><line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"/>
-      <text x="${mx}" y="${my-4}" text-anchor="middle">${esc(rel.label||'')}</text></g>`;
-  });
-  // 节点
-  const colors = ['#1E5C3A','#2A6B45','#4A7A5A','#B8944A','#6B8070'];
-  nodes.forEach((n, i) => {
-    const color = colors[i % colors.length];
-    const shortName = n.id.split(/[·\/]/).pop()?.slice(0,4) || n.id.slice(0,4);
-    svg += `<g class="rel-node">
-      <circle cx="${n.x}" cy="${n.y}" r="28" fill="${color}" opacity=".15" stroke="${color}" stroke-width="1.5"/>
-      <text x="${n.x}" y="${n.y+4}" text-anchor="middle" fill="${color}" font-weight="600">${esc(shortName)}</text>
+    const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+    const label = rel.label || '';
+    svg += `<g>
+      <line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="var(--border)" stroke-width="1.5" stroke-dasharray="4 3"/>
+      <rect x="${mx - label.length*4}" y="${my - 10}" width="${label.length*8}" height="16" rx="4" fill="var(--surface)" stroke="var(--border-soft)"/>
+      <text x="${mx}" y="${my + 3}" text-anchor="middle" font-size="10" fill="var(--text-light)" font-family="'Noto Sans SC',sans-serif">${esc(label)}</text>
     </g>`;
   });
+
+  // 节点圆圈 + 名字
+  const colors = ['#1E5C3A','#2A6B45','#4A7A5A','#B8944A','#6B8070','#3D5C47'];
+  nodes.forEach((n, i) => {
+    const color = colors[i % colors.length];
+    // 截取最后两个字作为显示名
+    const displayName = n.id.replace(/[·•\/]/g,' ').split(' ').pop()?.slice(-3) || n.id.slice(-3);
+    // 全名放在圆圈下方
+    const fullName = n.id.length > 6 ? n.id.slice(0,6)+'…' : n.id;
+    svg += `<g>
+      <circle cx="${n.x}" cy="${n.y}" r="26" fill="${color}" fill-opacity=".12" stroke="${color}" stroke-width="1.5"/>
+      <text x="${n.x}" y="${n.y + 5}" text-anchor="middle" font-size="12" fill="${color}" font-weight="600" font-family="'Noto Sans SC',sans-serif">${esc(displayName)}</text>
+      <text x="${n.x}" y="${n.y + 42}" text-anchor="middle" font-size="10" fill="var(--text-ghost)" font-family="'Noto Sans SC',sans-serif">${esc(fullName)}</text>
+    </g>`;
+  });
+
   svg += '</svg>';
   container.innerHTML = svg;
 }
@@ -2130,9 +2270,16 @@ async function generateScript() {
 
 台词时间轴：\n${dialogues}`, cfg.llmKey, cfg.model, 4500);
 
-    document.getElementById('scriptText').textContent = scriptRaw;
-    document.getElementById('scriptEmpty').style.display = 'none';
-    document.getElementById('scriptView').style.display = 'flex';
+    // 显示到右侧面板
+    document.getElementById('subScriptEmpty').style.display = 'none';
+    const contentEl = document.getElementById('subScriptContent');
+    contentEl.textContent = scriptRaw;
+    contentEl.style.display = 'block';
+
+    // 显示翻译和导出按钮
+    document.getElementById('scriptTransBtn').style.display = '';
+    document.getElementById('btnExportScript').style.display = '';
+
     scriptGenerated = true;
     toast('剧本推演生成完成','ok');
   } catch (e) {
@@ -2145,7 +2292,7 @@ async function generateScript() {
 function exportScriptWord() {
   if (!scriptGenerated) { toast('请先生成剧本','err'); return; }
   const title = videoFile?.name?.replace(/\.[^.]+$/,'') || videoUrl || '剧本推演';
-  const text = document.getElementById('scriptText').innerText || '';
+  const text = document.getElementById('subScriptContent').innerText || '';
   const para = t => `{\\pard\\f1\\fs20 ${rtfEsc(t)}\\par}\n`;
   let body = '';
   text.split('\n').forEach(line => { body += para(line); });
@@ -2164,32 +2311,43 @@ async function translateSection(sec) {
   const transBtn = document.getElementById(sec+'TransBtn');
   const restoreBtn = document.getElementById(sec+'RestoreBtn');
   const badge = document.getElementById(sec+'LangBadge');
-  const scrollEl = document.querySelector(`#${sec}View .analysis-scroll`);
 
-  // 显示翻译中遮罩
+  // script 用右侧面板容器，其他用 analysis-scroll
+  const isScript = sec === 'script';
+  const scrollEl = isScript
+    ? document.getElementById('subScriptPanel')
+    : document.querySelector(`#${sec}View .analysis-scroll`);
+
+  if (!scrollEl) { toast('请先生成内容','err'); return; }
+
   const overlay = document.createElement('div');
   overlay.className = 'translating-overlay';
   overlay.innerHTML = '<div class="spinner" style="width:20px;height:20px;border-width:2px"></div><span>翻译中…</span>';
-  scrollEl.appendChild(overlay);
-  transBtn.disabled = true;
+  if (!isScript) scrollEl.appendChild(overlay);
+  if (transBtn) transBtn.disabled = true;
 
   try {
-    const zhContent = extractSectionText(sec);
-    const prompt = `将以下中文影视分析内容翻译成流畅的英文，保留所有段落结构和标点格式，保持专业影视术语。直接输出译文，不加任何说明：\n\n${zhContent}`;
-    const result = await callLLM(prompt, cfg.llmKey, cfg.model || 'doubao-seed-2.0-pro', 3000);
+    const content = extractSectionText(sec);
+    if (!content.trim()) { toast('暂无内容可翻译','err'); return; }
+
+    const isChToEn = !isScript;
+    const prompt = isChToEn
+      ? `将以下中文影视分析内容翻译成流畅的英文，保留所有段落结构和标点格式，保持专业影视术语。直接输出译文，不加任何说明：\n\n${content}`
+      : `将以下英文剧本翻译成流畅的中文，保留剧本格式（场景行/动作行/对白格式），保持人物名称原文。直接输出译文，不加任何说明：\n\n${content}`;
+
+    const result = await callLLM(prompt, cfg.llmKey, cfg.model || 'doubao-seed-2-0-pro-260215', 4000);
 
     applySectionTranslation(sec, result);
     sectionLang[sec] = 'en';
-    badge.textContent = 'English';
-    badge.classList.add('en');
-    transBtn.style.display = 'none';
-    restoreBtn.style.display = '';
-    toast('翻译完成，可直接编辑','ok');
+    if (badge) { badge.textContent = isScript ? '中文译本' : 'English'; badge.classList.add('en'); }
+    if (transBtn) transBtn.style.display = 'none';
+    if (restoreBtn) restoreBtn.style.display = '';
+    toast('翻译完成','ok');
   } catch(e) {
     toast('翻译失败：'+e.message,'err');
   } finally {
     overlay.remove();
-    transBtn.disabled = false;
+    if (transBtn) transBtn.disabled = false;
   }
 }
 
@@ -2237,7 +2395,8 @@ function restoreSection(sec) {
       apg.appendChild(card);
     });
   } else if (sec === 'script') {
-    document.getElementById('scriptText').textContent = analysisData._scriptZh || document.getElementById('scriptText').textContent;
+    const orig = analysisData._scriptOriginal;
+    if (orig) document.getElementById('subScriptContent').textContent = orig;
   }
 
   sectionLang[sec] = 'zh';
@@ -2267,7 +2426,7 @@ function extractSectionText(sec) {
     '改编总阐述\n'+(document.getElementById('adaptSummaryText').innerText||''),
     '改编方案\n'+(document.getElementById('adaptPlansGrid').innerText||''),
   ].join('\n\n');
-  if (sec === 'script') return document.getElementById('scriptText').innerText || '';
+  if (sec === 'script') return document.getElementById('subScriptContent').innerText || '';
   return '';
 }
 
@@ -2283,15 +2442,19 @@ function applySectionTranslation(sec, enText) {
     document.getElementById('adaptSummaryText').innerHTML = toP(paras);
   } else if (sec === 'script') {
     // 保存原文，显示译文
-    analysisData._scriptZh = document.getElementById('scriptText').innerText;
-    document.getElementById('scriptText').textContent = enText;
-    document.getElementById('scriptLangBadge').textContent = '中文译本';
+    analysisData._scriptOriginal = document.getElementById('subScriptContent').innerText;
+    document.getElementById('subScriptContent').textContent = enText;
+    document.getElementById('scriptTransBtn').style.display = 'none';
+    document.getElementById('scriptRestoreBtn').style.display = '';
   }
 }
 
 // ── 复制板块 ──
 function copySection(sec) {
-  const text = extractSectionText(sec);
+  let text = extractSectionText(sec);
+  if (sec === 'subtitles') {
+    text = subtitleData.map(s => `${fmtTC(s.tc)}  ${s.en}\n${s.zh}`).join('\n\n');
+  }
   navigator.clipboard.writeText(text)
     .then(()=>toast('已复制到剪贴板','ok'))
     .catch(()=>{
