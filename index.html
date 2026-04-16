@@ -1561,8 +1561,6 @@ async function transcribeAudio(blob, appId, token) {
     reader.readAsDataURL(blob);
   });
 
-  // 用豆包大模型多模态接口转录音频
-  // 走 /api/asr 代理，避免CORS
   const resp = await fetch('/api/asr', {
     method: 'POST',
     headers: {
@@ -1576,13 +1574,11 @@ async function transcribeAudio(blob, appId, token) {
         content: [
           {
             type: 'audio_url',
-            audio_url: {
-              url: `data:audio/wav;base64,${audioBase64}`
-            }
+            audio_url: { url: `data:audio/wav;base64,${audioBase64}` }
           },
           {
             type: 'text',
-            text: 'Please transcribe this audio exactly as spoken, output only the transcript text with no extra commentary, preserve sentence boundaries with periods.'
+            text: 'Please transcribe this audio exactly as spoken. Output only the transcript, no commentary.'
           }
         ]
       }],
