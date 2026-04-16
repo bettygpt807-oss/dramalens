@@ -798,9 +798,9 @@ header {
   display: flex; flex: 1; overflow: hidden; min-height: 0;
 }
 .sub-video-panel {
-  width: 38%; min-width: 240px; max-width: 480px;
+  width: 38%; min-width: 200px; max-width: 560px;
   background: #000; display: flex; flex-direction: column;
-  border-right: 1px solid var(--border-soft); flex-shrink: 0;
+  flex-shrink: 0;
 }
 .sub-video-panel video {
   width: 100%; flex: 1; min-height: 0;
@@ -814,10 +814,19 @@ header {
 .sub-list {
   flex: 1; overflow-y: auto; min-width: 0;
   padding: 8px 12px;
-  border-right: 1px solid var(--border-soft);
 }
 .sub-list::-webkit-scrollbar { width: 4px; }
 .sub-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* 字幕区列分隔条 */
+.sub-resize-handle {
+  width: 4px; flex-shrink: 0; cursor: col-resize;
+  background: var(--border-soft);
+  transition: background 0.15s;
+  position: relative; z-index: 1;
+}
+.sub-resize-handle:hover,
+.sub-resize-handle.dragging { background: var(--green-light); }
 
 /* 右侧剧本推演面板 */
 .sub-script-panel {
@@ -1322,8 +1331,12 @@ header {
             </div>
             <video id="subVideoPlayer" controls style="display:none"></video>
           </div>
+          <!-- 分隔条1 -->
+          <div class="sub-resize-handle" id="subResize1"></div>
           <!-- 中：字幕列表 -->
           <div class="sub-list" id="subList"></div>
+          <!-- 分隔条2 -->
+          <div class="sub-resize-handle" id="subResize2"></div>
           <!-- 右：剧本推演 -->
           <div class="sub-script-panel" id="subScriptPanel">
             <div class="sub-script-header">
@@ -2126,16 +2139,6 @@ function renderAnalysis() {
   });
 
   // ── 剧情概要 tab ──
-  // 基本信息
-  const ig = document.getElementById('infoGrid'); ig.innerHTML = '';
-  const infoItems = [
-    { label: '题材类型', value: d.info?.genre || '—' },
-    { label: '体裁体量', value: d.info?.format || '—' },
-    { label: '对白语言', value: d.info?.language_detected || '—' },
-  ];
-  infoItems.forEach(item => {
-    ig.innerHTML += `<div class="info-card"><div class="info-card-label">${item.label}</div><div class="info-card-value">${esc(item.value)}</div></div>`;
-  });
   // 一句话简介
   document.getElementById('loglineText').innerHTML = toP(d.logline);
   // 人物小传
@@ -2557,6 +2560,87 @@ function dlRtf(filename,rtf){const b=new Blob([rtf],{type:'application/rtf'});co
     document.body.style.cursor = '';
     document.body.style.userSelect = '';
   });
+})();
+
+// ── 字幕区三列 RESIZE ──
+(function(){
+  function makeSubResizer(handleId, getPanelFn, getMinFn, getMaxFn) {
+    const handle = document.getElementById(handleId);
+    if (!handle) return;
+    let dragging = false, startX = 0, startW = 0;
+    handle.addEventListener('mousedown', e => {
+      e.preventDefault();
+      const panel = getPanelFn();
+      if (!panel) return;
+      dragging = true;
+      startX = e.clientX;
+      startW = panel.offsetWidth;
+      handle.classList.add('dragging');
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+    });
+    document.addEventListener('mousemove', e => {
+      if (!dragging) return;
+      const panel = getPanelFn();
+      if (!panel) return;
+      const delta = e.clientX - startX;
+      const newW = Math.min(getMaxFn(), Math.max(getMinFn(), startW + delta));
+      panel.style.width = newW + 'px';
+      panel.style.maxWidth = 'none';
+      panel.style.minWidth = '0';
+    });
+    document.addEventListener('mouseup', () => {
+      if (!dragging) return;
+      dragging = false;
+      handle.classList.remove('dragging');
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    });
+  }
+
+  // 分隔条1：控制视频面板宽度
+  makeSubResizer(
+    'subResize1',
+    () => document.getElementById('subVideoPanel'),
+    () => 180,
+    () => window.innerWidth * 0.6
+  );
+
+  // 分隔条2：控制剧本面板宽度（向左拖=扩大，向右拖=缩小）
+  (function(){
+    const handle = document.getElementById('subResize2');
+    if (!handle) return;
+    let dragging = false, startX = 0, startW = 0;
+    handle.addEventListener('mousedown', e => {
+      e.preventDefault();
+      const panel = document.getElementById('subScriptPanel');
+      if (!panel) return;
+      dragging = true;
+      startX = e.clientX;
+      startW = panel.offsetWidth;
+      handle.classList.add('dragging');
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+    });
+    document.addEventListener('mousemove', e => {
+      if (!dragging) return;
+      const panel = document.getElementById('subScriptPanel');
+      if (!panel) return;
+      const delta = startX - e.clientX; // 反向
+      const newW = Math.min(window.innerWidth * 0.5, Math.max(160, startW + delta));
+      panel.style.width = newW + 'px';
+      panel.style.maxWidth = 'none';
+      panel.style.minWidth = '0';
+      panel.style.flexShrink = '0';
+    });
+    document.addEventListener('mouseup', () => {
+      if (!dragging) return;
+      dragging = false;
+      handle.classList.remove('dragging');
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    });
+  })();
 })();
 function setStatus(s,t){document.getElementById('statusDot').className='status-dot '+s;document.getElementById('statusText').textContent=t;}
 function setProg(p){document.getElementById('progressBar').style.width=p+'%';}
