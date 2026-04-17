@@ -1512,7 +1512,7 @@ header {
         <div class="w-feature-tag"><span class="tag-dot"></span>剧本还原推演</div>
         <div class="w-feature-tag"><span class="tag-dot"></span>剧情梗概节拍序列</div>
         <div class="w-feature-tag"><span class="tag-dot"></span>人物小传与关系图</div>
-        <div class="w-feature-tag"><span class="tag-dot"></span>7维度策划逻辑拆解</div>
+        <div class="w-feature-tag"><span class="tag-dot"></span>策划逻辑拆解</div>
         <div class="w-feature-tag"><span class="tag-dot"></span>差异化改编方案</div>
       </div>
       <div class="w-steps">
@@ -1757,8 +1757,65 @@ header {
 let videoFile = null, videoUrl = '', inputMode = 'file', videoObjectURL = '';
 let subtitleData = [], analysisData = {};
 
+// ── SESSION PERSISTENCE ──
+function saveSession() {
+  try {
+    const payload = {
+      subtitleData,
+      analysisData: {
+        ...analysisData,
+        // 不存 outlineCache 里的大型文本（可选保留）
+      },
+      savedAt: Date.now(),
+    };
+    localStorage.setItem('dl_session', JSON.stringify(payload));
+  } catch(e) {
+    // localStorage 空间不足时静默失败
+    try { localStorage.removeItem('dl_session'); } catch {}
+  }
+}
+
+function restoreSession() {
+  try {
+    const raw = localStorage.getItem('dl_session');
+    if (!raw) return false;
+    const { subtitleData: sd, analysisData: ad, savedAt } = JSON.parse(raw);
+    // 超过 24 小时的缓存自动丢弃
+    if (!savedAt || Date.now() - savedAt > 24 * 60 * 60 * 1000) {
+      localStorage.removeItem('dl_session');
+      return false;
+    }
+    if (!sd?.length && !ad?.logline) return false;
+    subtitleData = sd || [];
+    analysisData = ad || {};
+    return true;
+  } catch { return false; }
+}
+
 // ── INIT ──
-window.addEventListener('load', () => { loadSettings(); checkConfig(); });
+window.addEventListener('load', () => {
+  loadSettings();
+  checkConfig();
+  // 尝试恢复上次分析结果
+  if (restoreSession()) {
+    try {
+      if (subtitleData.length) {
+        renderSubs();
+      }
+      if (analysisData.logline || analysisData.highlights) {
+        renderAnalysis();
+      }
+      document.getElementById('welcomeScreen').style.display = 'none';
+      document.getElementById('tabsBar').classList.add('show');
+      document.getElementById('pane-subtitles').classList.add('active');
+      document.querySelector('.tab-btn[data-tab="subtitles"]').classList.add('active');
+      setStatus('active', '已恢复上次分析');
+      toast('已自动恢复上次分析结果', 'ok');
+    } catch(e) {
+      localStorage.removeItem('dl_session');
+    }
+  }
+});
 
 // ── SETTINGS ──
 function openSettings() { loadSettings(); document.getElementById('settingsModal').classList.add('open'); }
@@ -1937,6 +1994,7 @@ async function runAnalysis() {
 
 async function doRunAnalysis() {
   const c = getConfig();
+  localStorage.removeItem('dl_session'); // 新分析开始，清除旧缓存
   document.getElementById('btnAnalyze').disabled = true;
   document.getElementById('progressWrap').classList.add('show');
   document.getElementById('welcomeScreen').style.display = 'none';
@@ -1979,6 +2037,13 @@ async function doRunAnalysis() {
 
     setStatus('active','分析完成');
     toast('分析完成！','ok');
+    saveSession(); // 持久化到 localStorage
+
+    // 分析完成后重置上传区，方便用户继续上传新视频
+    clearFile();
+    document.getElementById('videoUrl').value = '';
+    videoUrl = '';
+    updateBtn();
 
   } catch(err) {
     console.error(err);
@@ -2229,7 +2294,10 @@ ${t}`, key, model, 4500);
   let outline = outlineBlocks.map(block => {
     const lines = block.trim().split('\n');
     const pointMatch = lines[0].match(/【([^】]+)】/);
-    const point = pointMatch ? pointMatch[1] : lines[0].replace(/^\d+[\.、]\s*/,'').slice(0, 30);
+    const point = pointMatch ? pointMatch[1] : lines[0]
+      .replace(/^\d+[\.、]\s*/, '')        // 剥掉序号
+      .replace(/^场景[一二三四五六七八九十\d]+[：:\s]*/, '') // 剥掉「场景X」前缀
+      .slice(0, 30);
     const content = lines.join('\n').replace(/^【[^】]+】\s*/,'').trim();
     return { point, content };
   });
@@ -2368,6 +2436,16 @@ async function _doGenerateOutline(btn, card, forceRegen) {
   const title = card.querySelector('.adapt-plan-title')?.innerText || '改编方案';
   const desc  = card.querySelector('.adapt-plan-body')?.innerText || '';
 
+  // 确保策划改编 tab 是激活状态
+  const planningPane = document.getElementById('pane-planning');
+  if (!planningPane?.classList.contains('active')) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    document.querySelector('[data-tab="planning"]')?.classList.add('active');
+    planningPane?.classList.add('active');
+    updateTabActions();
+  }
+
   // 切换右侧到大纲面板
   document.getElementById('adaptPlansView').style.display = 'none';
   const panel = document.getElementById('outlinePanelView');
@@ -2436,7 +2514,7 @@ ${fullOutline}
 
 function closeOutlinePanel() {
   document.getElementById('outlinePanelView').classList.remove('active');
-  document.getElementById('adaptPlansView').style.display = '';
+  document.getElementById('adaptPlansView').style.display = 'flex';
   updateTabActions();
 }
 
@@ -2674,7 +2752,7 @@ function renderAnalysis() {
 
   // ── 策划改编 tab（右侧重置）──
   document.getElementById('adaptPlansGrid').innerHTML = '';
-  document.getElementById('adaptPlansView').style.display = '';
+  document.getElementById('adaptPlansView').style.display = 'flex';
   document.getElementById('outlinePanelView').classList.remove('active');
   const btn = document.getElementById('btnGenAdapt');
   if (btn) { btn.textContent = '▶ 生成改编方案'; btn.disabled = false; }
@@ -2785,15 +2863,21 @@ async function generateScript() {
     const outlineSummary = (analysisData.outline || [])
       .map(item => `【${item.point}】${(item.content||'').slice(0,60)}`)
       .join('\n');
+    // 检测台词语言（取前几条英文字幕判断是否是中文）
+    const sampleText = subtitleData.slice(0, 5).map(s => s.en).join('');
+    const isChinese = /[\u4e00-\u9fa5]/.test(sampleText);
+    const langNote = isChinese
+      ? '输出中文标准剧本格式，对白100%使用原台词，场景行和动作行用中文描述'
+      : '输出英文标准剧本格式，对白100%使用原台词，场景行和动作行用英文描述';
 
-    const scriptRaw = await callLLM(`你是专业剧本编剧。根据以下短剧台词时间轴和剧情梗概，还原成标准英文格式剧本。
+    const scriptRaw = await callLLM(`你是专业剧本编剧。根据以下短剧台词时间轴和剧情梗概，还原成标准格式剧本。
 
 要求：
-- 输出英文标准剧本格式
+- ${langNote}
 - 场景行：INT./EXT. 场景描述 - 时间（结合梗概中的场景信息）
 - 动作行：描述人物动作、表情、场景氛围（结合梗概中的情绪和行为描述）
 - 对白：人物名 + 台词（100%使用原台词，不要改动）
-- 括号注释：(emotion/action) 标注情绪或动作
+- 括号注释：标注情绪或动作
 - 直接输出剧本正文，不要任何说明
 
 剧情梗概（场景和情绪参考）：
