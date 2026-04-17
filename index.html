@@ -1662,8 +1662,8 @@ header {
                   <div class="adapt-form-item">
                     <label class="adapt-form-label">内容类型</label>
                     <select class="adapt-form-select" id="adaptType">
-                      <option value="女频">女频（甜宠/虐恋/逆袭）</option>
-                      <option value="男频">男频（爽文/战神/赘婿）</option>
+                      <option value="女频">女频（甜宠/虐恋/复仇）</option>
+                      <option value="男频">男频（爽文/热血/权谋）</option>
                       <option value="通用">男女通用</option>
                     </select>
                   </div>
@@ -1979,6 +1979,9 @@ async function doRunAnalysis() {
 
     setStatus('active','分析完成');
     toast('分析完成！','ok');
+
+    // 保存视频文件名供后续导出使用
+    analysisData._title = videoFile?.name?.replace(/\.[^.]+$/,'') || videoUrl || '内容分析';
     saveSession(); // 持久化到 localStorage
 
     // 分析完成后重置上传区，方便用户继续上传新视频
@@ -2271,6 +2274,30 @@ ${t}`, key, model, 4500);
 
 剧情梗概：\n${outlineSummary}`, key, model, 2500);
   let charData; try { charData = JSON.parse(r_chars.replace(/```json|```/g,'').trim()); } catch { charData = { logline: '', characters: [], relations: [] }; }
+
+  // 用人物名校准梗概中的模糊指代（「一位女子」→女主名，「男子」→男主名等）
+  if (charData.characters && charData.characters.length > 0 && outline.length > 0) {
+    // 取主要人物的中文简称
+    const mainChars = charData.characters.slice(0, 4).map(c => {
+      const cnName = c.name.replace(/[\/／].*/,'').trim(); // 取斜杠前的中文名
+      return cnName;
+    });
+    const female = mainChars[0] || '';  // 女主通常排第一
+    const male   = mainChars[1] || '';  // 男主通常排第二
+    // 简单替换最常见的模糊指代
+    outline = outline.map(item => {
+      let c = item.content || '';
+      if (female) {
+        c = c.replace(/一位女子|女主角|女孩子(?![的地得])/g, female);
+        c = c.replace(/^女子|(?<=[，。！？、\s])女子(?=[，。！？、说道\s])/g, female);
+      }
+      if (male) {
+        c = c.replace(/一位男子|男主角/g, male);
+        c = c.replace(/^男子|(?<=[，。！？、\s])男子(?=[，。！？、说道\s])/g, male);
+      }
+      return { ...item, content: c };
+    });
+  }
 
   // ── 3. 策划逻辑（基于梗概，分析更有依据）──
   setLabel('拆解策划逻辑…');
@@ -2609,37 +2636,48 @@ function renderRelationGraph(relations, characters) {
     const label = (rel.label || '').slice(0, 10); // 最多10字避免过长
     if (!label) return;
     const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
-    // 垂直于连线方向偏移12px，让标签不压在线上
+    // 垂直于连线方向偏移14px
     const dx = b.x - a.x, dy = b.y - a.y;
     const len = Math.sqrt(dx*dx + dy*dy) || 1;
-    const ox = -dy / len * 12, oy = dx / len * 12;
-    const lx = mx + ox, ly = my + oy;
-    const bw = Math.max(label.length * 11 + 10, 28);
+    const ox = -dy / len * 14, oy = dx / len * 14;
+    const lx = Math.max(40, Math.min(W - 40, mx + ox));
+    const ly = Math.max(14, Math.min(H - 14, my + oy));
+    // 中文字符宽约12px，英文约7px
+    const labelW = Array.from(label).reduce((w, c) => w + (/[\u4e00-\u9fa5]/.test(c) ? 12 : 7), 0);
+    const bw = Math.max(labelW + 14, 32);
     svg += `<g>
-      <rect x="${lx - bw/2}" y="${ly - 9}" width="${bw}" height="17" rx="4"
-        fill="var(--surface)" fill-opacity="0.95" stroke="var(--border-soft)" stroke-width="0.8"/>
+      <rect x="${lx - bw/2}" y="${ly - 9}" width="${bw}" height="18" rx="4"
+        fill="var(--surface)" fill-opacity="0.97" stroke="var(--border-soft)" stroke-width="1"/>
       <text x="${lx}" y="${ly + 4}" text-anchor="middle" font-size="10"
         fill="var(--text-light)" font-family="'Noto Sans SC',sans-serif">${esc(label)}</text>
     </g>`;
   });
 
   // ── 最后画节点（在最上层）──
+  // 检测视频语言决定圆圈内显示中文名还是英文名
+  const useEnglish = subtitleData.length > 0 && !/[\u4e00-\u9fa5]/.test(subtitleData.slice(0,3).map(s=>s.en).join(''));
   const colors = ['#1E5C3A','#2A6B45','#4A7A5A','#B8944A','#6B8070','#3D5C47'];
   nodes.forEach((nd, i) => {
     const color = colors[i % colors.length];
-    // 节点内：取中文部分最后2字，或英文前3字母
     const parts = nd.id.replace(/[·•\/]/g,' ').trim().split(/\s+/);
     const cnPart = parts.find(p => /[\u4e00-\u9fa5]/.test(p));
-    const enPart = parts.find(p => /[a-zA-Z]/.test(p));
-    const inner = cnPart ? cnPart.slice(-2) : (enPart ? enPart.slice(0,3) : nd.id.slice(0,3));
-    // 节点下方全名（中英文各取前段）
-    const label = nd.id.length > 8 ? nd.id.slice(0,8)+'…' : nd.id;
+    const enPart = parts.find(p => /[a-zA-Z]{2,}/.test(p));
+    // 英文视频优先显示英文名，中文视频优先显示中文名
+    let inner;
+    if (useEnglish) {
+      inner = enPart ? enPart.slice(0, 5) : (cnPart ? cnPart.slice(-2) : nd.id.slice(0, 4));
+    } else {
+      inner = cnPart ? cnPart.slice(-2) : (enPart ? enPart.slice(0, 4) : nd.id.slice(0, 4));
+    }
+    // 节点下方全名
+    const fullLabel = nd.id.length > 10 ? nd.id.slice(0, 10) + '…' : nd.id;
+    const fontSize = inner.length <= 3 ? 13 : 11;
     svg += `<g>
       <circle cx="${nd.x}" cy="${nd.y}" r="28" fill="${color}" fill-opacity=".12" stroke="${color}" stroke-width="1.5"/>
-      <text x="${nd.x}" y="${nd.y + 5}" text-anchor="middle" font-size="13"
-        fill="${color}" font-weight="600" font-family="'Noto Sans SC',sans-serif">${esc(inner)}</text>
+      <text x="${nd.x}" y="${nd.y + 5}" text-anchor="middle" font-size="${fontSize}"
+        fill="${color}" font-weight="600" font-family="'Noto Sans SC','DM Mono',sans-serif">${esc(inner)}</text>
       <text x="${nd.x}" y="${nd.y + 44}" text-anchor="middle" font-size="10"
-        fill="var(--text-ghost)" font-family="'Noto Sans SC',sans-serif">${esc(label)}</text>
+        fill="var(--text-ghost)" font-family="'Noto Sans SC',sans-serif">${esc(fullLabel)}</text>
     </g>`;
   });
 
@@ -2659,31 +2697,40 @@ async function generateScript() {
 
   try {
     const dialogues = subtitleData.map(s => `${fmtTC(s.tc)}  ${s.en}`).join('\n');
-    const outlineSummary = (analysisData.outline || [])
-      .map(item => `【${item.point}】${(item.content||'').slice(0,60)}`)
-      .join('\n');
-    // 检测台词语言（取前几条英文字幕判断是否是中文）
+    // 完整梗概（所有节拍完整内容）
+    const fullOutlineText = (analysisData.outline || [])
+      .map((item, i) => `${String(i+1).padStart(2,'0')} 【${item.point}】\n${item.content || ''}`)
+      .join('\n\n');
+    // 完整人物小传
+    const charInfo = (analysisData.characters || [])
+      .map(c => `${c.name}：${c.bio || ''}`)
+      .join('\n\n');
+    // 检测台词语言
     const sampleText = subtitleData.slice(0, 5).map(s => s.en).join('');
     const isChinese = /[\u4e00-\u9fa5]/.test(sampleText);
     const langNote = isChinese
       ? '输出中文标准剧本格式，对白100%使用原台词，场景行和动作行用中文描述'
       : '输出英文标准剧本格式，对白100%使用原台词，场景行和动作行用英文描述';
 
-    const scriptRaw = await callLLM(`你是专业剧本编剧。根据以下短剧台词时间轴和剧情梗概，还原成标准格式剧本。
+    const scriptRaw = await callLLM(`你是专业剧本编剧。根据以下短剧台词时间轴、完整人物小传和完整剧情梗概，还原成标准格式剧本。
 
 要求：
 - ${langNote}
+- 人物名必须严格使用下方「人物小传」中的名字，不得自创或替换
 - 场景行：INT./EXT. 场景描述 - 时间（结合梗概中的场景信息）
 - 动作行：描述人物动作、表情、场景氛围（结合梗概中的情绪和行为描述）
 - 对白：人物名 + 台词（100%使用原台词，不要改动）
 - 括号注释：标注情绪或动作
 - 直接输出剧本正文，不要任何说明
 
-剧情梗概（场景和情绪参考）：
-${outlineSummary}
+人物小传（人物名和性格参考，剧本中必须使用这些名字）：
+${charInfo}
+
+完整剧情梗概（严格按照每个节拍的场景、情绪、行为还原）：
+${fullOutlineText}
 
 台词时间轴：
-${dialogues}`, cfg.llmKey, cfg.model, 4500);
+${dialogues}`, cfg.llmKey, cfg.model, 6000);
 
     // 显示到右侧面板
     document.getElementById('subScriptEmpty').style.display = 'none';
@@ -2707,7 +2754,7 @@ ${dialogues}`, cfg.llmKey, cfg.model, 4500);
 
 function exportScriptWord() {
   if (!scriptGenerated) { toast('请先生成剧本','err'); return; }
-  const title = videoFile?.name?.replace(/\.[^.]+$/,'') || videoUrl || '剧本推演';
+  const title = analysisData._title || videoFile?.name?.replace(/\.[^.]+$/,'') || videoUrl || '剧本推演';
   const text = document.getElementById('subScriptContent').innerText || '';
   const para = t => `{\\pard\\f1\\fs20 ${rtfEsc(t)}\\par}\n`;
   let body = '';
@@ -2867,11 +2914,12 @@ function copySection(sec) {
 
 // ── 导出分析报告 Word（不含剧本）──
 function exportFullWord() {
-  const title = videoFile?.name?.replace(/\.[^.]+$/,'') || videoUrl || '内容分析';
-  const para  = t => `{\\pard\\f0\\fs20 ${rtfEsc(t)}\\par}\n`;
-  const heading = t => `{\\pard\\b\\f0\\fs26\\cf1 ${rtfEsc(t)}\\par}\n{\\pard\\par}\n`;
-  const subH  = t => `{\\pard\\b\\f0\\fs22 ${rtfEsc(t)}\\par}\n`;
-  const divider = () => `{\\pard\\brdrb\\brdrs\\brdrw5\\brsp100 \\par}\n{\\pard\\par}\n`;
+  const title = analysisData._title || videoFile?.name?.replace(/\.[^.]+$/,'') || videoUrl || '内容分析';
+  const para    = t => `{\\pard\\f0\\fs22\\sl380\\slmult1\\sb80\\sa40 ${rtfEsc(t)}\\par}\n`;
+  const heading = t => `{\\pard\\f0\\b\\fs30\\cf1\\sb400\\sa160 ${rtfEsc(t)}\\par}\n`;
+  const subH    = t => `{\\pard\\f0\\b\\fs24\\cf2\\sb240\\sa80 ${rtfEsc(t)}\\par}\n`;
+  const subH2   = t => `{\\pard\\f0\\b\\fs22\\sb180\\sa60 ${rtfEsc(t)}\\par}\n`;
+  const divider = () => `{\\pard\\sb240\\sa240\\brdrb\\brdrs\\brdrw8\\brsp60\\brdrcf3 \\par}\n`;
   let body = '';
 
   // 剧情概要
@@ -2881,7 +2929,7 @@ function exportFullWord() {
   body += para(document.getElementById('loglineText').innerText||'');
   body += subH('人物小传');
   document.querySelectorAll('#charGrid .char-card').forEach(card => {
-    body += subH('  '+( card.querySelector('.char-name')?.innerText||''));
+    body += subH2('  '+( card.querySelector('.char-name')?.innerText||''));
     body += para(card.querySelector('.char-bio')?.innerText||'');
   });
   body += subH('剧情梗概');
@@ -2889,7 +2937,7 @@ function exportFullWord() {
     const pt = item.querySelector('.outline-pt')?.innerText||'';
     const spans = item.querySelectorAll('span');
     const content = spans[1]?.innerText||spans[0]?.innerText||'';
-    body += subH(`  ${String(i+1).padStart(2,'0')}.  ${pt}`);
+    body += subH2(`  ${String(i+1).padStart(2,'0')}.  ${pt}`);
     body += para(content);
   });
   body += divider();
@@ -2916,7 +2964,7 @@ function exportFullWord() {
     body += para(card.querySelector('.adapt-plan-body')?.innerText||'');
     const synopsis = card.querySelector('.adapt-plan-synopsis')?.innerText||'';
     if (synopsis) {
-      body += subH('  故事简介');
+      body += subH2('  故事简介');
       body += para(synopsis);
     }
     body += `{\\pard\\par}\n`;
@@ -2928,7 +2976,16 @@ function exportFullWord() {
 
 // ── RTF UTILS ──
 function rtfEsc(t){return String(t||'').replace(/\\/g,'\\\\').replace(/\{/g,'\\{').replace(/\}/g,'\\}').replace(/[\u0080-\uffff]/g,c=>`\\u${c.charCodeAt(0)}?`);}
-function makeRtf(body,docTitle){return `{\\rtf1\\ansi\\ansicpg936\\deff0\n{\\fonttbl{\\f0\\fnil\\fcharset134 \\u23435?\\u20307?;}{\\f1\\froman\\fcharset0 Times New Roman;}}\n{\\colortbl;\\red30\\green92\\blue58;\\red44\\green92\\blue68;}\n{\\pard\\qc\\b\\fs30 ${rtfEsc(docTitle)}\\par}\n{\\pard\\qc\\fs18\\cf1 DramaLens \\u23548?\\u20986?\\par}\n{\\pard\\par}\n${body}\n}`;}
+function makeRtf(body, docTitle) {
+  const t = rtfEsc(docTitle);
+  return `{\\rtf1\\ansi\\ansicpg936\\deff0
+{\\fonttbl{\\f0\\fnil\\fcharset134 \\u23435?\\u20307?;}{\\f1\\froman\\fcharset0 Georgia;}}
+{\\colortbl;\\red24\\green78\\blue50;\\red44\\green92\\blue68;\\red180\\green180\\blue180;\\red80\\green80\\blue80;}
+{\\pard\\qc\\f0\\b\\fs40\\cf1\\sb600\\sa160 ${t}\\par}
+{\\pard\\qc\\f0\\fs20\\cf4\\sa400 DramaLens \\u23548?\\u20986?\\par}
+${body}
+}`;
+}
 function dlRtf(filename,rtf){const b=new Blob([rtf],{type:'application/rtf'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=filename;a.click();}
 
 // ── 剧本同步定位到对应台词 ──
