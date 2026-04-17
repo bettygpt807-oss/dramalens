@@ -632,18 +632,19 @@ header {
   letter-spacing: 0.01em;
 }
 .w-features {
-  display: flex; flex-wrap: wrap; gap: 8px;
-  justify-content: center;
-  max-width: 500px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  max-width: 540px;
   margin-bottom: 40px;
 }
 .w-feature-tag {
-  display: inline-flex; align-items: center; gap: 4px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   background: var(--surface); border: 1px solid var(--border-soft);
-  border-radius: 6px; padding: 5px 11px;
-  font-size: 11.5px; color: var(--text-body);
+  border-radius: 6px; padding: 7px 14px;
+  font-size: 12px; color: var(--text-body);
   font-family: 'Noto Sans SC', sans-serif;
-  white-space: nowrap;
+  white-space: nowrap; text-align: center;
 }
 .w-feature-tag .tag-dot {
   width: 5px; height: 5px; border-radius: 50%;
@@ -717,8 +718,15 @@ header {
   border-bottom: 1px solid var(--border-soft);
   padding: 0 24px;
   gap: 0;
+  align-items: center;
+  justify-content: space-between;
 }
 .tabs-bar.show { display: flex; }
+.tab-btns { display: flex; align-items: center; gap: 0; }
+.tab-actions {
+  display: flex; align-items: center; gap: 6px;
+  flex-shrink: 0;
+}
 .tab-btn {
   padding: 0 16px;
   height: 48px;
@@ -866,8 +874,12 @@ header {
 
 /* 字幕区列分隔条 */
 .sub-resize-handle {
-  width: 4px; flex-shrink: 0; cursor: col-resize;
+  width: 5px; flex-shrink: 0; cursor: col-resize;
   background: var(--border-soft); transition: background 0.15s;
+  /* sticky 让分隔条跟着视频高度固定，可见 */
+  position: sticky; top: 0;
+  height: calc(100vh - 120px);
+  align-self: flex-start;
 }
 .sub-resize-handle:hover,
 .sub-resize-handle.dragging { background: var(--green-light); }
@@ -1487,9 +1499,12 @@ header {
 
     <!-- Tabs -->
     <div class="tabs-bar" id="tabsBar">
-      <button class="tab-btn active" data-tab="subtitles">双语字幕 <span class="tab-badge" id="subBadge">0</span></button>
-      <button class="tab-btn" data-tab="overview">剧情概要</button>
-      <button class="tab-btn" data-tab="planning">策划改编</button>
+      <div class="tab-btns">
+        <button class="tab-btn active" data-tab="subtitles">双语字幕 <span class="tab-badge" id="subBadge">0</span></button>
+        <button class="tab-btn" data-tab="overview">剧情概要</button>
+        <button class="tab-btn" data-tab="planning">策划改编</button>
+      </div>
+      <div class="tab-actions" id="tabActions"></div>
     </div>
 
     <!-- Subtitle Pane -->
@@ -1527,7 +1542,6 @@ header {
               <span class="sub-script-header-title">剧本推演</span>
               <button class="btn-sm btn-translate" id="scriptTransBtn" onclick="translateSection('script')" style="display:none">⇄ 译中文</button>
               <button class="btn-sm btn-translate" id="scriptRestoreBtn" onclick="restoreSection('script')" style="display:none">↺ 恢复</button>
-              <button class="btn-sm btn-export" id="btnExportScript" onclick="exportScriptWord()" style="display:none">⬇</button>
             </div>
             <div class="sub-script-empty" id="subScriptEmpty">
               <span style="font-size:28px">📝</span>
@@ -1549,10 +1563,6 @@ header {
         <div class="tab-empty-badge">步骤 5 完成后自动生成</div>
       </div>
       <div style="display:none;flex-direction:column;flex:1;overflow:hidden;position:relative" id="overviewView">
-        <div class="pane-actions">
-          <button class="btn-sm btn-export" onclick="copySection('overview')">⎘ 复制</button>
-          <button class="btn-sm btn-export" id="btnExportAll" onclick="exportFullWord()" style="display:none">⬇ 导出报告</button>
-        </div>
         <div class="two-col-layout" style="flex:1;overflow:hidden">
           <!-- 左列：简介 + 人物小传 + 关系图 -->
           <div class="two-col-left" id="overviewLeft">
@@ -1590,10 +1600,6 @@ header {
         <div class="tab-empty-badge">步骤 5 完成后自动生成</div>
       </div>
       <div style="display:none;flex-direction:column;flex:1;overflow:hidden;position:relative" id="planningView">
-        <div class="pane-actions">
-          <button class="btn-sm btn-export" onclick="copySection('planning')">⎘ 复制</button>
-          <button class="btn-sm btn-export btn-export-report" onclick="exportFullWord()" style="display:none">⬇ 导出报告</button>
-        </div>
         <div class="two-col-layout" style="flex:1;overflow:hidden">
           <!-- 左列：8个策划逻辑维度 -->
           <div class="two-col-left" id="planningLeft">
@@ -1633,8 +1639,6 @@ header {
             <div class="outline-panel" id="outlinePanelView" style="padding:24px 28px;">
               <div class="outline-panel-header">
                 <div class="outline-panel-title" id="outlinePanelTitle">方案大纲</div>
-                <button class="btn-sm" onclick="copyOutlinePanel()">⎘ 复制</button>
-                <button class="btn-sm btn-translate" onclick="closeOutlinePanel()">← 返回方案</button>
               </div>
               <div class="outline-panel-content editable" id="outlinePanelContent" contenteditable="true" spellcheck="false"></div>
             </div>
@@ -1793,12 +1797,52 @@ function updateBtn() {
 }
 
 // ── TABS ──
+// ── TAB ACTIONS：右上角按钮随 tab 动态更新 ──
+function updateTabActions() {
+  const activeBtn = document.querySelector('.tab-btn.active');
+  const tab = activeBtn?.dataset.tab;
+  const container = document.getElementById('tabActions');
+  if (!container) return;
+
+  // 大纲面板打开时显示大纲专属按钮
+  const outlineActive = document.getElementById('outlinePanelView')?.classList.contains('active');
+  if (outlineActive) {
+    container.innerHTML = `
+      <button class="btn-sm btn-export" onclick="copyOutlinePanel()">⎘ 复制大纲</button>
+      <button class="btn-sm btn-translate" onclick="closeOutlinePanel()">← 返回方案</button>`;
+    return;
+  }
+
+  if (tab === 'subtitles') {
+    // 双语字幕 tab：只有导出剧本（剧本生成后才显示）
+    const scriptGenerated = document.getElementById('subScriptContent')?.style.display !== 'none'
+      && document.getElementById('subScriptContent')?.innerText?.trim().length > 0;
+    container.innerHTML = scriptGenerated
+      ? `<button class="btn-sm btn-export" id="btnExportScript" onclick="exportScriptWord()">⬇ 导出剧本</button>`
+      : '';
+  } else if (tab === 'overview') {
+    container.innerHTML = `
+      <button class="btn-sm btn-export" onclick="copySection('overview')">⎘ 复制</button>
+      <button class="btn-sm btn-export" id="btnExportAll" onclick="exportFullWord()" style="display:none">⬇ 导出报告</button>`;
+    // 恢复导出按钮显示状态
+    if (Object.keys(analysisData).length) document.getElementById('btnExportAll').style.display = '';
+  } else if (tab === 'planning') {
+    container.innerHTML = `
+      <button class="btn-sm btn-export" onclick="copySection('planning')">⎘ 复制</button>
+      <button class="btn-sm btn-export btn-export-report" onclick="exportFullWord()" style="display:none">⬇ 导出报告</button>`;
+    if (Object.keys(analysisData).length) container.querySelector('.btn-export-report').style.display = '';
+  } else {
+    container.innerHTML = '';
+  }
+}
+
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
     document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
     btn.classList.add('active');
     document.getElementById('pane-'+btn.dataset.tab).classList.add('active');
+    updateTabActions();
   });
 });
 
@@ -2230,6 +2274,8 @@ async function generateAdaptOutline(btn) {
   const panel = document.getElementById('outlinePanelView');
   panel.classList.add('active');
   document.getElementById('outlinePanelTitle').textContent = title;
+  updateTabActions();
+
   document.getElementById('outlinePanelContent').textContent = '大纲生成中…';
 
   try {
@@ -2269,6 +2315,7 @@ ${fullOutline}
 function closeOutlinePanel() {
   document.getElementById('outlinePanelView').classList.remove('active');
   document.getElementById('adaptPlansView').style.display = '';
+  updateTabActions();
 }
 
 function copyOutlinePanel() {
@@ -2511,9 +2558,8 @@ function renderAnalysis() {
   // ── 剧本推演：显示生成按钮 ──
   document.getElementById('btnGenScript').style.display = '';
 
-  // 显示三个 tab 里的导出报告按钮
-  document.getElementById('btnExportAll').style.display = '';
-  document.querySelectorAll('.btn-export-report').forEach(btn => btn.style.display = '');
+  // 更新 tab 右上角按钮（含导出报告）
+  updateTabActions();
 }
 
 function renderRelationGraph(relations, characters) {
@@ -2534,21 +2580,23 @@ function renderRelationGraph(relations, characters) {
 
   let svg = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
 
-  // 连线 + 关系标签
+  // 连线 + 关系标签（贴线旋转）
   relations.forEach(rel => {
     const a = nodeMap[rel.from], b = nodeMap[rel.to];
     if (!a || !b) return;
     const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
     const label = rel.label || '';
-    // 中文字符宽度约为英文的1.5倍，每字约12px，加padding
+    // 计算连线角度
+    let angle = Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI;
+    // 保持文字方向朝上（避免倒写）
+    if (angle > 90 || angle < -90) angle += 180;
     const charW = 12;
     const boxW = Math.max(label.length * charW + 12, 30);
-    const boxH = 18;
-    svg += `<g>
-      <line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="var(--border)" stroke-width="1.5" stroke-dasharray="4 3"/>
-      <rect x="${mx - boxW/2}" y="${my - boxH/2}" width="${boxW}" height="${boxH}" rx="4" fill="var(--surface)" stroke="var(--border-soft)" stroke-width="1"/>
-      <text x="${mx}" y="${my + 5}" text-anchor="middle" font-size="10" fill="var(--text-light)" font-family="'Noto Sans SC',sans-serif">${esc(label)}</text>
+    svg += `<g transform="translate(${mx},${my}) rotate(${angle})">
+      <rect x="${-boxW/2}" y="-10" width="${boxW}" height="18" rx="3" fill="var(--surface)" fill-opacity="0.92"/>
+      <text x="0" y="4" text-anchor="middle" font-size="10" fill="var(--text-light)" font-family="'Noto Sans SC',sans-serif">${esc(label)}</text>
     </g>`;
+    svg += `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="var(--border)" stroke-width="1.5" stroke-dasharray="4 3"/>`;
   });
 
   // 节点圆圈 + 名字
@@ -2608,10 +2656,10 @@ ${dialogues}`, cfg.llmKey, cfg.model, 4500);
     contentEl.textContent = scriptRaw;
     contentEl.style.display = 'block';
 
-    // 显示翻译和导出按钮
+    // 显示翻译按钮，更新 tab 右上角（含导出剧本按钮）
     document.getElementById('scriptTransBtn').style.display = '';
-    document.getElementById('btnExportScript').style.display = '';
-    bindSyncScroll(); // 剧本生成后重新绑定同步滚动
+    bindSyncScroll();
+    updateTabActions();
 
     scriptGenerated = true;
     toast('剧本推演生成完成','ok');
