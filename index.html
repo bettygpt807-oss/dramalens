@@ -1125,45 +1125,7 @@ header {
   border-top: 1px solid var(--border-soft);
 }
 
-/* 大纲面板 */
-.outline-panel {
-  display: none; flex-direction: column; flex: 1; min-height: 0; overflow: hidden;
-}
-.outline-panel.active { display: flex; }
-.outline-panel-header {
-  display: flex; align-items: center; gap: 8px;
-  padding-bottom: 14px; border-bottom: 1px solid var(--border-soft); margin-bottom: 16px;
-  flex-shrink: 0;
-}
-.outline-panel-title {
-  font-size: 12px; font-weight: 600; color: var(--ink);
-  flex: 1; line-height: 1.4;
-}
-.outline-panel-content {
-  flex: 1; overflow-y: auto; min-height: 0;
-  font-size: 13px; line-height: 1.85; color: var(--text-body);
-  outline: none; white-space: pre-wrap;
-}
-.outline-panel-content::-webkit-scrollbar { width: 4px; }
-.outline-panel-content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-/* 版本导航 */
-.outline-version-nav {
-  display: flex; align-items: center; gap: 4px;
-  background: var(--surface-2); border: 1px solid var(--border-soft);
-  border-radius: 6px; padding: 2px 4px;
-}
-.outline-ver-btn {
-  background: none; border: none; cursor: pointer;
-  color: var(--text-light); font-size: 14px; line-height: 1;
-  padding: 1px 4px; border-radius: 4px;
-  transition: all 0.15s;
-}
-.outline-ver-btn:hover:not(:disabled) { background: var(--surface-3); color: var(--ink); }
-.outline-ver-btn:disabled { opacity: 0.3; cursor: default; }
-.outline-ver-label {
-  font-size: 10px; font-family: 'DM Mono', monospace;
-  color: var(--text-light); min-width: 28px; text-align: center;
-}
+
 .outline-panel-placeholder {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   height: 100%; gap: 10px; color: var(--text-ghost);
@@ -1320,6 +1282,8 @@ header {
 .adapt-plan-title { font-size: 14px; font-weight: 600; color: var(--ink); margin-bottom: 8px; outline: none; border-radius: 3px; }
 .adapt-plan-title:focus { background: rgba(30,92,58,0.04); }
 .adapt-plan-body { font-size: 13px; color: var(--text-body); line-height: 1.8; outline: none; border-radius: 3px; }
+.adapt-plan-synopsis-head { font-size: 10px; font-weight: 600; color: var(--green-main); margin-top: 12px; margin-bottom: 4px; letter-spacing: 0.04em; }
+.adapt-plan-synopsis { font-size: 12.5px; color: var(--text-body); line-height: 1.8; outline: none; border-radius: 3px; padding: 8px 10px; background: var(--surface-2); border-radius: 6px; margin-bottom: 10px; }
 .adapt-plan-body:focus { background: rgba(30,92,58,0.04); }
 
 /* Script Body */
@@ -1680,19 +1644,7 @@ header {
           <div class="two-col-divider" id="planningDivider"></div>
           <!-- 右列：表单 + 方案列表 / 大纲面板 -->
           <div class="two-col-right" id="planningRight" style="display:flex;flex-direction:column;padding:0;overflow:hidden;">
-            <!-- 大纲面板（生成后切换显示）-->
-            <div class="outline-panel" id="outlinePanelView" style="padding:24px 28px;">
-              <div class="outline-panel-header">
-                <div class="outline-panel-title" id="outlinePanelTitle">方案大纲</div>
-                <!-- 版本导航（有多版时显示）-->
-                <div class="outline-version-nav" id="outlineVersionNav" style="display:none">
-                  <button class="outline-ver-btn" id="outlineVerPrev" onclick="switchOutlineVersion(-1)">‹</button>
-                  <span class="outline-ver-label" id="outlineVerLabel">1/1</span>
-                  <button class="outline-ver-btn" id="outlineVerNext" onclick="switchOutlineVersion(1)">›</button>
-                </div>
-              </div>
-              <div class="outline-panel-content editable" id="outlinePanelContent" contenteditable="true" spellcheck="false"></div>
-            </div>
+
             <!-- 方案区（默认显示）-->
             <div id="adaptPlansView" style="flex:1;overflow-y:auto;padding:24px 28px;display:flex;flex-direction:column;gap:0;">
               <!-- 需求表单 -->
@@ -1702,9 +1654,9 @@ header {
                   <div class="adapt-form-item">
                     <label class="adapt-form-label">目标市场</label>
                     <select class="adapt-form-select" id="adaptMarket">
-                      <option value="中国市场（大陆/港台）">中国市场</option>
                       <option value="欧美市场（北美/欧洲）">欧美市场</option>
                       <option value="日韩市场（东亚/东南亚）">日韩市场</option>
+                      <option value="中国市场（大陆/港台）">中国市场</option>
                     </select>
                   </div>
                   <div class="adapt-form-item">
@@ -1915,16 +1867,6 @@ function updateTabActions() {
   const tab = activeBtn?.dataset.tab;
   const container = document.getElementById('tabActions');
   if (!container) return;
-
-  // 大纲面板打开时显示大纲专属按钮
-  const outlineActive = document.getElementById('outlinePanelView')?.classList.contains('active');
-  if (outlineActive) {
-    container.innerHTML = `
-      <button class="btn-sm btn-export" onclick="copyOutlinePanel()">⎘ 复制大纲</button>
-      <button class="btn-sm" id="btnRegenOutline" onclick="regenOutline()">↺ 重新生成</button>
-      <button class="btn-sm btn-translate" onclick="closeOutlinePanel()">← 返回方案</button>`;
-    return;
-  }
 
   if (tab === 'subtitles') {
     // 双语字幕 tab：只有导出剧本（剧本生成后才显示）
@@ -2272,7 +2214,7 @@ async function analyzeContent(text, key, model, scenes = []) {
     selectedFrames.forEach(f => { content.push({ type: 'image_url', image_url: { url: `data:image/jpeg;base64,${f.b64}` } }); });
     const vResp = await fetch('https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
       method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
-      body: JSON.stringify({ model: 'doubao-1-5-vision-pro-32k-250115', max_tokens: 4500, temperature: 0.7, messages: [{ role: 'user', content }] })
+      body: JSON.stringify({ model: 'doubao-1-5-vision-pro-32k-250115', max_tokens: 4500, temperature: 0.3, messages: [{ role: 'user', content }] })
     });
     r3 = vResp.ok ? ((await vResp.json()).choices?.[0]?.message?.content || '') : '';
     if (!r3) r3 = await callLLM(`根据以下英文短剧台词写详细梗概（约2500字）。只还原台词中实际出现的情节，台词结束即梗概结束，不补充原视频之外的新剧情。可基于台词上下文合理推断补全细节，节点数量与内容匹配。每节点格式：【情节标题】正文，转折标注【转折】高潮标注【高潮】，纯文本节点间空行。标题必须用【】包裹，禁止用「场景一/场景二」等写法。\n台词：\n${t}`, key, model, 4500);
@@ -2373,9 +2315,10 @@ ${t}`, key, model, 4500);
 // ── 复制单个改编方案 ──
 function copyAdaptPlan(btn) {
   const card = btn.closest('.adapt-plan-card');
-  const title = card.querySelector('.adapt-plan-title')?.innerText || '';
-  const body  = card.querySelector('.adapt-plan-body')?.innerText || '';
-  const text  = title + '\n\n' + body;
+  const title    = card.querySelector('.adapt-plan-title')?.innerText || '';
+  const body     = card.querySelector('.adapt-plan-body')?.innerText || '';
+  const synopsis = card.querySelector('.adapt-plan-synopsis')?.innerText || '';
+  const text = title + '\n\n' + body + (synopsis ? '\n\n【故事简介】\n' + synopsis : '');
   navigator.clipboard.writeText(text)
     .then(() => toast('方案已复制','ok'))
     .catch(() => {
@@ -2386,154 +2329,6 @@ function copyAdaptPlan(btn) {
     });
 }
 
-// ── 为某方案生成千字大纲 ──
-// 当前大纲面板状态
-let _outlinePlanId = '';
-let _outlineVerIdx = 0;
-
-function _renderOutlineVersion() {
-  const cache = (analysisData.outlineCache || {})[_outlinePlanId] || [];
-  const total = cache.length;
-  const nav = document.getElementById('outlineVersionNav');
-  const label = document.getElementById('outlineVerLabel');
-  const prev = document.getElementById('outlineVerPrev');
-  const next = document.getElementById('outlineVerNext');
-  const content = document.getElementById('outlinePanelContent');
-
-  if (total > 1) {
-    nav.style.display = 'flex';
-    label.textContent = `${_outlineVerIdx + 1}/${total}`;
-    prev.disabled = _outlineVerIdx === 0;
-    next.disabled = _outlineVerIdx === total - 1;
-  } else {
-    nav.style.display = 'none';
-  }
-  content.textContent = cache[_outlineVerIdx] || '';
-}
-
-function switchOutlineVersion(delta) {
-  const cache = (analysisData.outlineCache || {})[_outlinePlanId] || [];
-  _outlineVerIdx = Math.max(0, Math.min(cache.length - 1, _outlineVerIdx + delta));
-  _renderOutlineVersion();
-}
-
-async function regenOutline() {
-  const btn = document.getElementById('btnRegenOutline');
-  if (!btn) return;
-  // 找回当前方案按钮（通过 planId）
-  const card = document.querySelector(`.adapt-plan-card[data-plan-id="${_outlinePlanId}"]`);
-  if (!card) return;
-  const outlineBtn = card.querySelector('.btn-translate');
-  if (outlineBtn) await _doGenerateOutline(outlineBtn, card, true);
-}
-
-async function generateAdaptOutline(btn) {
-  const card = btn.closest('.adapt-plan-card');
-  await _doGenerateOutline(btn, card, false);
-}
-
-async function _doGenerateOutline(btn, card, forceRegen) {
-  const cfg = getConfig();
-  if (!cfg.llmKey) { toast('请先配置 API Key','err'); return; }
-  if (!card) { toast('找不到方案卡片','err'); return; }
-
-  const planId = card.dataset.planId || '';
-  const title = card.querySelector('.adapt-plan-title')?.innerText || '改编方案';
-  const desc  = card.querySelector('.adapt-plan-body')?.innerText || '';
-
-  // 确保策划改编 tab 是激活状态
-  const planningPane = document.getElementById('pane-planning');
-  if (!planningPane?.classList.contains('active')) {
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-    document.querySelector('[data-tab="planning"]')?.classList.add('active');
-    planningPane?.classList.add('active');
-    updateTabActions();
-  }
-
-  // 切换右侧到大纲面板
-  document.getElementById('adaptPlansView').style.display = 'none';
-  const panel = document.getElementById('outlinePanelView');
-  panel.classList.add('active');
-  document.getElementById('outlinePanelTitle').textContent = title;
-  _outlinePlanId = planId;
-  updateTabActions();
-
-  // 查缓存（非强制重新生成时）
-  if (!forceRegen) {
-    const cache = (analysisData.outlineCache || {})[planId] || [];
-    if (cache.length > 0) {
-      _outlineVerIdx = cache.length - 1;
-      _renderOutlineVersion();
-      btn.textContent = '📋 查看大纲';
-      btn.disabled = false; // 确保按钮可点击
-      return;
-    }
-  }
-
-  const originalBtn = btn.textContent;
-  btn.textContent = '生成中…'; btn.disabled = true;
-  document.getElementById('outlinePanelContent').textContent = '大纲生成中…';
-  document.getElementById('outlineVersionNav').style.display = 'none';
-
-  try {
-    const fullOutline = (analysisData.outline || [])
-      .map((item, i) => `${String(i+1).padStart(2,'0')} 【${item.point}】\n${item.content || ''}`)
-      .join('\n\n');
-
-    const outline = await callLLM(`你是资深短剧编剧。根据以下改编方案，生成一份约1000字的分场大纲。
-
-改编方案：
-【${title}】
-${desc}
-
-原剧策划逻辑（每一条都是爆款基因，改编大纲必须逐一对应保留）：
-${analysisData._planSummary || ''}
-
-原剧剧情梗概（完整参考——重点参照情节节拍的顺序和节奏结构；具体剧情细节了解即可，改编时用新题材语言重新表达）：
-${fullOutline}
-
-要求：
-- 严格按照原剧节拍序列的顺序和节奏，逐一在新题材下对应改写
-- 每场标注节拍编号和新场景标题（如：01 → 【新设定对应场景】）
-- 每场约50-80字：核心事件、人物行动、情感冲突
-- 保留原剧每个节拍的情绪强度和冲突密度，用新题材语言表达
-- 直接输出大纲正文，不要任何说明`, cfg.llmKey, cfg.model, 4000);
-
-    // 追加到版本历史
-    if (!analysisData.outlineCache) analysisData.outlineCache = {};
-    if (!analysisData.outlineCache[planId]) analysisData.outlineCache[planId] = [];
-    analysisData.outlineCache[planId].push(outline);
-    _outlineVerIdx = analysisData.outlineCache[planId].length - 1;
-    _renderOutlineVersion();
-
-    btn.textContent = '📋 查看大纲';
-    updateTabActions(); // 刷新右上角（加上重新生成按钮）
-    toast('大纲生成完成','ok');
-  } catch(e) {
-    document.getElementById('outlinePanelContent').textContent = '生成失败：' + e.message;
-    toast('生成失败：' + e.message, 'err');
-    btn.textContent = originalBtn; btn.disabled = false;
-  }
-}
-
-function closeOutlinePanel() {
-  document.getElementById('outlinePanelView').classList.remove('active');
-  document.getElementById('adaptPlansView').style.display = 'flex';
-  updateTabActions();
-}
-
-function copyOutlinePanel() {
-  const text = document.getElementById('outlinePanelContent').innerText || '';
-  navigator.clipboard.writeText(text)
-    .then(() => toast('大纲已复制','ok'))
-    .catch(() => {
-      const ta = document.createElement('textarea'); ta.value = text;
-      ta.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(ta);
-      ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
-      toast('大纲已复制','ok');
-    });
-}
 async function generateAdaptPlans() {
   const cfg = getConfig();
   if (!cfg.llmKey) { toast('请先配置 API Key','err'); return; }
@@ -2565,7 +2360,8 @@ async function generateAdaptPlans() {
 [
   {
     "title": "方案标题（含题材风格关键词）",
-    "description": "250字方案说明，必须覆盖以下内容：①新题材/世界观/人物身份设定 ②如何承载原剧核心冲突结构 ③情感爆点和人物关系张力如何迁移 ④节奏逻辑和悬念布局如何保留 ⑤高光情节如何在新题材下对应呈现"
+    "description": "250字方案说明，必须覆盖以下内容：①新题材/世界观/人物身份设定 ②如何承载原剧核心冲突结构 ③情感爆点和人物关系张力如何迁移 ④节奏逻辑和悬念布局如何保留 ⑤高光情节如何在新题材下对应呈现",
+    "synopsis": "300字故事简介：用新题材语言描述这个改编故事的完整剧情走向，包含主要人物设定、核心冲突、情感弧线和结局方向，读完让人有追看欲望"
   }
 ]
 
@@ -2582,23 +2378,21 @@ async function generateAdaptPlans() {
 ${analysisData._planSummary}
 
 原剧剧情梗概（完整参考——重点参照情节节拍的顺序和节奏结构；具体剧情细节了解即可，改编时用新题材语言重新表达）：
-${fullOutline}`, cfg.llmKey, cfg.model, 4000);
+${fullOutline}`, cfg.llmKey, cfg.model, 5000);
 
     let plans; try { plans = JSON.parse(r.replace(/```json|```/g,'').trim()); } catch { plans = []; }
     analysisData.adaptPlans = plans;
-    analysisData.outlineCache = {}; // 方案重新生成，清空旧大纲缓存
 
     const apg = document.getElementById('adaptPlansGrid'); apg.innerHTML = '';
     plans.forEach((plan, i) => {
-      const planId = `plan_${i}`;
       const card = document.createElement('div'); card.className = 'adapt-plan-card';
-      card.dataset.planId = planId;
       card.innerHTML = `<div class="adapt-plan-num">方案 ${String(i+1).padStart(2,'0')}</div>
         <div class="adapt-plan-title" contenteditable="true" spellcheck="false">${esc(plan.title||'')}</div>
         <div class="adapt-plan-body" contenteditable="true" spellcheck="false">${esc(plan.description||'')}</div>
+        <div class="adapt-plan-synopsis-head">故事简介</div>
+        <div class="adapt-plan-synopsis" contenteditable="true" spellcheck="false">${esc(plan.synopsis||'')}</div>
         <div class="adapt-plan-actions">
           <button class="btn-sm" onclick="copyAdaptPlan(this)">⎘ 复制方案</button>
-          <button class="btn-sm btn-translate" onclick="generateAdaptOutline(this)">📋 生成大纲</button>
         </div>`;
       apg.appendChild(card);
     });
@@ -2615,7 +2409,7 @@ async function callLLM(prompt, key, model, maxTok=1500) {
   const r=await fetch('https://ark.cn-beijing.volces.com/api/v3/chat/completions',{
     method:'POST',
     headers:{'Content-Type':'application/json','Authorization':`Bearer ${key}`},
-    body:JSON.stringify({model,max_tokens:maxTok,temperature:0.7,messages:[{role:'user',content:prompt}]})
+    body:JSON.stringify({model,max_tokens:maxTok,temperature:0.3,messages:[{role:'user',content:prompt}]})
   });
   if(!r.ok) throw new Error('豆包 API: '+await r.text());
   const d=await r.json(); return d.choices?.[0]?.message?.content||'';
@@ -2758,7 +2552,7 @@ function renderAnalysis() {
   // ── 策划改编 tab（右侧重置）──
   document.getElementById('adaptPlansGrid').innerHTML = '';
   document.getElementById('adaptPlansView').style.display = 'flex';
-  document.getElementById('outlinePanelView').classList.remove('active');
+
   const btn = document.getElementById('btnGenAdapt');
   if (btn) { btn.textContent = '▶ 生成改编方案'; btn.disabled = false; }
   document.getElementById('planningEmpty').style.display = 'none';
@@ -3120,6 +2914,11 @@ function exportFullWord() {
   document.querySelectorAll('#adaptPlansGrid .adapt-plan-card').forEach((card,i) => {
     body += subH(`  方案${i+1}：${card.querySelector('.adapt-plan-title')?.innerText||''}`);
     body += para(card.querySelector('.adapt-plan-body')?.innerText||'');
+    const synopsis = card.querySelector('.adapt-plan-synopsis')?.innerText||'';
+    if (synopsis) {
+      body += subH('  故事简介');
+      body += para(synopsis);
+    }
     body += `{\\pard\\par}\n`;
   });
 
