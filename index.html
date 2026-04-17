@@ -727,6 +727,13 @@ header {
   display: flex; align-items: center; gap: 6px;
   flex-shrink: 0;
 }
+.tab-hint {
+  flex: 1; text-align: center;
+  font-size: 11px; color: var(--text-ghost);
+  font-family: 'DM Mono', monospace;
+  letter-spacing: 0.02em;
+  pointer-events: none;
+}
 .tab-btn {
   padding: 0 16px;
   height: 48px;
@@ -1139,6 +1146,24 @@ header {
 }
 .outline-panel-content::-webkit-scrollbar { width: 4px; }
 .outline-panel-content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+/* 版本导航 */
+.outline-version-nav {
+  display: flex; align-items: center; gap: 4px;
+  background: var(--surface-2); border: 1px solid var(--border-soft);
+  border-radius: 6px; padding: 2px 4px;
+}
+.outline-ver-btn {
+  background: none; border: none; cursor: pointer;
+  color: var(--text-light); font-size: 14px; line-height: 1;
+  padding: 1px 4px; border-radius: 4px;
+  transition: all 0.15s;
+}
+.outline-ver-btn:hover:not(:disabled) { background: var(--surface-3); color: var(--ink); }
+.outline-ver-btn:disabled { opacity: 0.3; cursor: default; }
+.outline-ver-label {
+  font-size: 10px; font-family: 'DM Mono', monospace;
+  color: var(--text-light); min-width: 28px; text-align: center;
+}
 .outline-panel-placeholder {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   height: 100%; gap: 10px; color: var(--text-ghost);
@@ -1208,6 +1233,16 @@ header {
   transition: all 0.2s;
 }
 .char-card:hover { border-color: var(--border); box-shadow: var(--shadow-sm); }
+.char-card-del {
+  position: absolute; top: 8px; right: 8px;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: transparent; border: none; cursor: pointer;
+  color: var(--text-ghost); font-size: 14px; line-height: 20px;
+  display: none; align-items: center; justify-content: center;
+  transition: all 0.15s;
+}
+.char-card:hover .char-card-del { display: flex; }
+.char-card-del:hover { background: var(--surface-3); color: var(--ink); }
 .char-card::before {
   content: '';
   position: absolute; top: 0; left: 0; right: 0;
@@ -1268,6 +1303,15 @@ header {
   cursor: pointer; outline: none;
 }
 .adapt-form-select:focus { border-color: var(--green-light); }
+.adapt-form-textarea {
+  width: 100%; box-sizing: border-box;
+  padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--ink); font-size: 12px;
+  font-family: 'Noto Sans SC', sans-serif; line-height: 1.65;
+  resize: vertical; outline: none; transition: border-color .2s;
+}
+.adapt-form-textarea:focus { border-color: var(--green-light); }
+.adapt-form-textarea::placeholder { color: var(--text-ghost); }
 
 /* Adapt Plans */
 .adapt-plan-card { border: 1.5px solid var(--border-soft); border-radius: 10px; padding: 16px 18px; margin-bottom: 12px; transition: border-color .2s; }
@@ -1504,6 +1548,7 @@ header {
         <button class="tab-btn" data-tab="overview">剧情概要</button>
         <button class="tab-btn" data-tab="planning">策划改编</button>
       </div>
+      <div class="tab-hint" id="tabHint"></div>
       <div class="tab-actions" id="tabActions"></div>
     </div>
 
@@ -1639,6 +1684,12 @@ header {
             <div class="outline-panel" id="outlinePanelView" style="padding:24px 28px;">
               <div class="outline-panel-header">
                 <div class="outline-panel-title" id="outlinePanelTitle">方案大纲</div>
+                <!-- 版本导航（有多版时显示）-->
+                <div class="outline-version-nav" id="outlineVersionNav" style="display:none">
+                  <button class="outline-ver-btn" id="outlineVerPrev" onclick="switchOutlineVersion(-1)">‹</button>
+                  <span class="outline-ver-label" id="outlineVerLabel">1/1</span>
+                  <button class="outline-ver-btn" id="outlineVerNext" onclick="switchOutlineVersion(1)">›</button>
+                </div>
               </div>
               <div class="outline-panel-content editable" id="outlinePanelContent" contenteditable="true" spellcheck="false"></div>
             </div>
@@ -1681,6 +1732,10 @@ header {
                       <option value="不限">不限受众</option>
                     </select>
                   </div>
+                </div>
+                <div class="adapt-form-item" style="grid-column:1/-1;margin-top:4px;">
+                  <label class="adapt-form-label">特定改编需求</label>
+                  <textarea class="adapt-form-textarea" id="adaptCustom" placeholder="可选 · 说明你的特定需求，如：主角改为男性、增加职场元素、保留狼人设定但换成现代背景…" rows="3"></textarea>
                 </div>
                 <button class="btn-primary" id="btnGenAdapt" onclick="generateAdaptPlans()" style="margin-top:14px;font-size:12px;padding:8px 18px">▶ 生成改编方案</button>
               </div>
@@ -1809,6 +1864,7 @@ function updateTabActions() {
   if (outlineActive) {
     container.innerHTML = `
       <button class="btn-sm btn-export" onclick="copyOutlinePanel()">⎘ 复制大纲</button>
+      <button class="btn-sm" id="btnRegenOutline" onclick="regenOutline()">↺ 重新生成</button>
       <button class="btn-sm btn-translate" onclick="closeOutlinePanel()">← 返回方案</button>`;
     return;
   }
@@ -2258,25 +2314,82 @@ function copyAdaptPlan(btn) {
 }
 
 // ── 为某方案生成千字大纲 ──
+// 当前大纲面板状态
+let _outlinePlanId = '';
+let _outlineVerIdx = 0;
+
+function _renderOutlineVersion() {
+  const cache = (analysisData.outlineCache || {})[_outlinePlanId] || [];
+  const total = cache.length;
+  const nav = document.getElementById('outlineVersionNav');
+  const label = document.getElementById('outlineVerLabel');
+  const prev = document.getElementById('outlineVerPrev');
+  const next = document.getElementById('outlineVerNext');
+  const content = document.getElementById('outlinePanelContent');
+
+  if (total > 1) {
+    nav.style.display = 'flex';
+    label.textContent = `${_outlineVerIdx + 1}/${total}`;
+    prev.disabled = _outlineVerIdx === 0;
+    next.disabled = _outlineVerIdx === total - 1;
+  } else {
+    nav.style.display = 'none';
+  }
+  content.textContent = cache[_outlineVerIdx] || '';
+}
+
+function switchOutlineVersion(delta) {
+  const cache = (analysisData.outlineCache || {})[_outlinePlanId] || [];
+  _outlineVerIdx = Math.max(0, Math.min(cache.length - 1, _outlineVerIdx + delta));
+  _renderOutlineVersion();
+}
+
+async function regenOutline() {
+  const btn = document.getElementById('btnRegenOutline');
+  if (!btn) return;
+  // 找回当前方案按钮（通过 planId）
+  const card = document.querySelector(`.adapt-plan-card[data-plan-id="${_outlinePlanId}"]`);
+  if (!card) return;
+  const outlineBtn = card.querySelector('.btn-translate');
+  if (outlineBtn) await _doGenerateOutline(outlineBtn, card, true);
+}
+
 async function generateAdaptOutline(btn) {
+  const card = btn.closest('.adapt-plan-card');
+  await _doGenerateOutline(btn, card, false);
+}
+
+async function _doGenerateOutline(btn, card, forceRegen) {
   const cfg = getConfig();
   if (!cfg.llmKey) { toast('请先配置 API Key','err'); return; }
 
-  const card = btn.closest('.adapt-plan-card');
+  const planId = card.dataset.planId || '';
   const title = card.querySelector('.adapt-plan-title')?.innerText || '改编方案';
   const desc  = card.querySelector('.adapt-plan-body')?.innerText || '';
-
-  const originalBtn = btn.textContent;
-  btn.textContent = '生成中…'; btn.disabled = true;
 
   // 切换右侧到大纲面板
   document.getElementById('adaptPlansView').style.display = 'none';
   const panel = document.getElementById('outlinePanelView');
   panel.classList.add('active');
   document.getElementById('outlinePanelTitle').textContent = title;
+  _outlinePlanId = planId;
   updateTabActions();
 
+  // 查缓存（非强制重新生成时）
+  if (!forceRegen) {
+    const cache = (analysisData.outlineCache || {})[planId] || [];
+    if (cache.length > 0) {
+      _outlineVerIdx = cache.length - 1; // 默认显示最新版
+      _renderOutlineVersion();
+      btn.textContent = '📋 查看大纲';
+      return;
+    }
+  }
+
+  const originalBtn = btn.textContent;
+  btn.textContent = '生成中…'; btn.disabled = true;
   document.getElementById('outlinePanelContent').textContent = '大纲生成中…';
+  document.getElementById('outlineVersionNav').style.display = 'none';
 
   try {
     const fullOutline = (analysisData.outline || [])
@@ -2302,12 +2415,19 @@ ${fullOutline}
 - 保留原剧每个节拍的情绪强度和冲突密度，用新题材语言表达
 - 直接输出大纲正文，不要任何说明`, cfg.llmKey, cfg.model, 4000);
 
-    document.getElementById('outlinePanelContent').textContent = outline;
+    // 追加到版本历史
+    if (!analysisData.outlineCache) analysisData.outlineCache = {};
+    if (!analysisData.outlineCache[planId]) analysisData.outlineCache[planId] = [];
+    analysisData.outlineCache[planId].push(outline);
+    _outlineVerIdx = analysisData.outlineCache[planId].length - 1;
+    _renderOutlineVersion();
+
+    btn.textContent = '📋 查看大纲';
+    updateTabActions(); // 刷新右上角（加上重新生成按钮）
     toast('大纲生成完成','ok');
   } catch(e) {
     document.getElementById('outlinePanelContent').textContent = '生成失败：' + e.message;
     toast('生成失败：' + e.message, 'err');
-  } finally {
     btn.textContent = originalBtn; btn.disabled = false;
   }
 }
@@ -2341,6 +2461,7 @@ async function generateAdaptPlans() {
   const type     = document.getElementById('adaptType').value;
   const volume   = document.getElementById('adaptVolume').value;
   const audience = document.getElementById('adaptAudience').value;
+  const custom  = document.getElementById('adaptCustom').value.trim();
 
   const fullOutline = (analysisData.outline || [])
     .map((item, i) => `${String(i+1).padStart(2,'0')} 【${item.point}】\n${item.content || ''}`)
@@ -2370,7 +2491,7 @@ async function generateAdaptPlans() {
 - 方案说明中必须明确说明：用什么新设定来承载原来的每一个核心策划要素
 
 【目标市场硬约束 - 必须严格遵守】${marketGuide}
-用户其他需求：内容类型【${type}】，体量规划【${volume}】，目标受众【${audience}】
+用户其他需求：内容类型【${type}】，体量规划【${volume}】，目标受众【${audience}】${custom ? `\n用户特定改编需求（必须优先满足）：${custom}` : ''}
 
 原剧完整策划逻辑（每一条都是爆款基因，改编方案必须逐一对应保留）：
 ${analysisData._planSummary}
@@ -2380,10 +2501,13 @@ ${fullOutline}`, cfg.llmKey, cfg.model, 4000);
 
     let plans; try { plans = JSON.parse(r.replace(/```json|```/g,'').trim()); } catch { plans = []; }
     analysisData.adaptPlans = plans;
+    if (!analysisData.outlineCache) analysisData.outlineCache = {};
 
     const apg = document.getElementById('adaptPlansGrid'); apg.innerHTML = '';
     plans.forEach((plan, i) => {
+      const planId = `plan_${i}`;
       const card = document.createElement('div'); card.className = 'adapt-plan-card';
+      card.dataset.planId = planId;
       card.innerHTML = `<div class="adapt-plan-num">方案 ${String(i+1).padStart(2,'0')}</div>
         <div class="adapt-plan-title" contenteditable="true" spellcheck="false">${esc(plan.title||'')}</div>
         <div class="adapt-plan-body" contenteditable="true" spellcheck="false">${esc(plan.description||'')}</div>
@@ -2513,7 +2637,7 @@ function renderAnalysis() {
   const cg = document.getElementById('charGrid'); cg.innerHTML = '';
   (d.characters||[]).forEach(c => {
     const card = document.createElement('div'); card.className = 'char-card';
-    card.innerHTML = `<div class="char-name" contenteditable="true" spellcheck="false">${esc(c.name)}</div><div class="char-bio" contenteditable="true" spellcheck="false">${esc(c.bio)}</div>`;
+    card.innerHTML = `<button class="char-card-del" onclick="this.closest('.char-card').remove()" title="删除">✕</button><div class="char-name" contenteditable="true" spellcheck="false">${esc(c.name)}</div><div class="char-bio" contenteditable="true" spellcheck="false">${esc(c.bio)}</div>`;
     cg.appendChild(card);
   });
   // 人物关系图
@@ -2560,6 +2684,9 @@ function renderAnalysis() {
 
   // 更新 tab 右上角按钮（含导出报告）
   updateTabActions();
+  // 显示 AI 精准度提示
+  const hint = document.getElementById('tabHint');
+  if (hint) hint.textContent = '✦ AI 生成内容准确率约 85%，细节可点击直接编辑校准';
 }
 
 function renderRelationGraph(relations, characters) {
@@ -2569,48 +2696,71 @@ function renderRelationGraph(relations, characters) {
     return;
   }
 
-  const W = 700, H = 280;
-  // 环形布局
+  const n = characters.length;
+  const W = 660;
+  // 动态高度：节点少时紧凑，多时扩展
+  const H = n <= 3 ? 220 : n <= 5 ? 300 : 360;
+  // 半径：保证节点间距足够
+  const R = n <= 2 ? 140 : n <= 4 ? Math.min(W, H) * 0.38 : Math.min(W, H) * 0.42;
+  const cx = W / 2, cy = H / 2;
+
   const nodes = characters.map((c, i) => {
-    const angle = (2 * Math.PI * i) / Math.max(characters.length, 1) - Math.PI / 2;
-    const r = characters.length <= 2 ? 120 : Math.min(W, H) * 0.33;
-    return { id: c.name, x: W/2 + r * Math.cos(angle), y: H/2 + r * Math.sin(angle) };
+    const angle = (2 * Math.PI * i) / n - Math.PI / 2;
+    return {
+      id: c.name,
+      x: cx + R * Math.cos(angle),
+      y: cy + R * Math.sin(angle),
+    };
   });
-  const nodeMap = Object.fromEntries(nodes.map(n => [n.id, n]));
+  const nodeMap = Object.fromEntries(nodes.map(nd => [nd.id, nd]));
 
   let svg = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
 
-  // 连线 + 关系标签（贴线旋转）
+  // ── 先画连线 ──
   relations.forEach(rel => {
     const a = nodeMap[rel.from], b = nodeMap[rel.to];
     if (!a || !b) return;
-    const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
-    const label = rel.label || '';
-    // 计算连线角度
-    let angle = Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI;
-    // 保持文字方向朝上（避免倒写）
-    if (angle > 90 || angle < -90) angle += 180;
-    const charW = 12;
-    const boxW = Math.max(label.length * charW + 12, 30);
-    svg += `<g transform="translate(${mx},${my}) rotate(${angle})">
-      <rect x="${-boxW/2}" y="-10" width="${boxW}" height="18" rx="3" fill="var(--surface)" fill-opacity="0.92"/>
-      <text x="0" y="4" text-anchor="middle" font-size="10" fill="var(--text-light)" font-family="'Noto Sans SC',sans-serif">${esc(label)}</text>
-    </g>`;
-    svg += `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="var(--border)" stroke-width="1.5" stroke-dasharray="4 3"/>`;
+    svg += `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="var(--border)" stroke-width="1.5" stroke-dasharray="5 3"/>`;
   });
 
-  // 节点圆圈 + 名字
-  const colors = ['#1E5C3A','#2A6B45','#4A7A5A','#B8944A','#6B8070','#3D5C47'];
-  nodes.forEach((n, i) => {
-    const color = colors[i % colors.length];
-    // 截取最后两个字作为显示名
-    const displayName = n.id.replace(/[·•\/]/g,' ').split(' ').pop()?.slice(-3) || n.id.slice(-3);
-    // 全名放在圆圈下方
-    const fullName = n.id.length > 6 ? n.id.slice(0,6)+'…' : n.id;
+  // ── 再画标签（不旋转，带背景框，紧贴中点偏移避免压线）──
+  relations.forEach(rel => {
+    const a = nodeMap[rel.from], b = nodeMap[rel.to];
+    if (!a || !b) return;
+    const label = (rel.label || '').slice(0, 10); // 最多10字避免过长
+    if (!label) return;
+    const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+    // 垂直于连线方向偏移12px，让标签不压在线上
+    const dx = b.x - a.x, dy = b.y - a.y;
+    const len = Math.sqrt(dx*dx + dy*dy) || 1;
+    const ox = -dy / len * 12, oy = dx / len * 12;
+    const lx = mx + ox, ly = my + oy;
+    const bw = Math.max(label.length * 11 + 10, 28);
     svg += `<g>
-      <circle cx="${n.x}" cy="${n.y}" r="26" fill="${color}" fill-opacity=".12" stroke="${color}" stroke-width="1.5"/>
-      <text x="${n.x}" y="${n.y + 5}" text-anchor="middle" font-size="12" fill="${color}" font-weight="600" font-family="'Noto Sans SC',sans-serif">${esc(displayName)}</text>
-      <text x="${n.x}" y="${n.y + 42}" text-anchor="middle" font-size="10" fill="var(--text-ghost)" font-family="'Noto Sans SC',sans-serif">${esc(fullName)}</text>
+      <rect x="${lx - bw/2}" y="${ly - 9}" width="${bw}" height="17" rx="4"
+        fill="var(--surface)" fill-opacity="0.95" stroke="var(--border-soft)" stroke-width="0.8"/>
+      <text x="${lx}" y="${ly + 4}" text-anchor="middle" font-size="10"
+        fill="var(--text-light)" font-family="'Noto Sans SC',sans-serif">${esc(label)}</text>
+    </g>`;
+  });
+
+  // ── 最后画节点（在最上层）──
+  const colors = ['#1E5C3A','#2A6B45','#4A7A5A','#B8944A','#6B8070','#3D5C47'];
+  nodes.forEach((nd, i) => {
+    const color = colors[i % colors.length];
+    // 节点内：取中文部分最后2字，或英文前3字母
+    const parts = nd.id.replace(/[·•\/]/g,' ').trim().split(/\s+/);
+    const cnPart = parts.find(p => /[\u4e00-\u9fa5]/.test(p));
+    const enPart = parts.find(p => /[a-zA-Z]/.test(p));
+    const inner = cnPart ? cnPart.slice(-2) : (enPart ? enPart.slice(0,3) : nd.id.slice(0,3));
+    // 节点下方全名（中英文各取前段）
+    const label = nd.id.length > 8 ? nd.id.slice(0,8)+'…' : nd.id;
+    svg += `<g>
+      <circle cx="${nd.x}" cy="${nd.y}" r="28" fill="${color}" fill-opacity=".12" stroke="${color}" stroke-width="1.5"/>
+      <text x="${nd.x}" y="${nd.y + 5}" text-anchor="middle" font-size="13"
+        fill="${color}" font-weight="600" font-family="'Noto Sans SC',sans-serif">${esc(inner)}</text>
+      <text x="${nd.x}" y="${nd.y + 44}" text-anchor="middle" font-size="10"
+        fill="var(--text-ghost)" font-family="'Noto Sans SC',sans-serif">${esc(label)}</text>
     </g>`;
   });
 
@@ -2744,7 +2894,7 @@ function restoreSection(sec) {
     const cg = document.getElementById('charGrid'); cg.innerHTML = '';
     (d.characters||[]).forEach(c => {
       const card = document.createElement('div'); card.className = 'char-card';
-      card.innerHTML = `<div class="char-name" contenteditable="true" spellcheck="false">${esc(c.name)}</div><div class="char-bio" contenteditable="true" spellcheck="false">${esc(c.bio)}</div>`;
+      card.innerHTML = `<button class="char-card-del" onclick="this.closest('.char-card').remove()" title="删除">✕</button><div class="char-name" contenteditable="true" spellcheck="false">${esc(c.name)}</div><div class="char-bio" contenteditable="true" spellcheck="false">${esc(c.bio)}</div>`;
       cg.appendChild(card);
     });
     const ol = document.getElementById('outlineList'); ol.innerHTML = '';
