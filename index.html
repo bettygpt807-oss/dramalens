@@ -1127,7 +1127,7 @@ header {
 
 /* 大纲面板 */
 .outline-panel {
-  display: none; flex-direction: column; height: 100%;
+  display: none; flex-direction: column; flex: 1; min-height: 0; overflow: hidden;
 }
 .outline-panel.active { display: flex; }
 .outline-panel-header {
@@ -2362,6 +2362,7 @@ async function generateAdaptOutline(btn) {
 async function _doGenerateOutline(btn, card, forceRegen) {
   const cfg = getConfig();
   if (!cfg.llmKey) { toast('请先配置 API Key','err'); return; }
+  if (!card) { toast('找不到方案卡片','err'); return; }
 
   const planId = card.dataset.planId || '';
   const title = card.querySelector('.adapt-plan-title')?.innerText || '改编方案';
@@ -2379,9 +2380,10 @@ async function _doGenerateOutline(btn, card, forceRegen) {
   if (!forceRegen) {
     const cache = (analysisData.outlineCache || {})[planId] || [];
     if (cache.length > 0) {
-      _outlineVerIdx = cache.length - 1; // 默认显示最新版
+      _outlineVerIdx = cache.length - 1;
       _renderOutlineVersion();
       btn.textContent = '📋 查看大纲';
+      btn.disabled = false; // 确保按钮可点击
       return;
     }
   }
@@ -2501,7 +2503,7 @@ ${fullOutline}`, cfg.llmKey, cfg.model, 4000);
 
     let plans; try { plans = JSON.parse(r.replace(/```json|```/g,'').trim()); } catch { plans = []; }
     analysisData.adaptPlans = plans;
-    if (!analysisData.outlineCache) analysisData.outlineCache = {};
+    analysisData.outlineCache = {}; // 方案重新生成，清空旧大纲缓存
 
     const apg = document.getElementById('adaptPlansGrid'); apg.innerHTML = '';
     plans.forEach((plan, i) => {
