@@ -868,16 +868,14 @@ header {
   display: flex; flex: 1; min-height: 0; overflow: hidden;
   align-items: stretch;
 }
+/* 视频列 */
 .sub-video-panel {
-  width: 36%; min-width: 200px; max-width: 520px;
-  flex-shrink: 0; background: #000;
-  overflow: hidden; position: relative;
+  width: 36%; min-width: 200px; max-width: 520px; flex-shrink: 0;
+  background: #000; overflow: hidden; position: relative;
+  display: flex; flex-direction: column;
 }
 .sub-video-panel video {
-  position: absolute; inset: 0;
-  width: 100%; height: 100%;
-  object-fit: contain; display: block;
-  background: #000;
+  width: 100%; height: 100%; object-fit: contain; display: block; background: #000;
 }
 .sub-video-placeholder {
   position: absolute; inset: 0;
@@ -885,38 +883,48 @@ header {
   color: var(--text-ghost); font-size: 13px;
   flex-direction: column; gap: 8px;
 }
+/* 时间进度轴 */
+.sub-timeline {
+  flex-shrink: 0; padding: 6px 10px 4px;
+  background: var(--surface); border-bottom: 1px solid var(--border-soft);
+  display: flex; align-items: center; gap: 8px;
+}
+.sub-timeline-bar {
+  flex: 1; height: 4px; background: var(--surface-3);
+  border-radius: 2px; cursor: pointer; position: relative;
+}
+.sub-timeline-fill {
+  height: 100%; background: var(--green-main);
+  border-radius: 2px; width: 0%; transition: width 0.1s linear;
+  pointer-events: none;
+}
+.sub-timeline-time {
+  font-size: 10px; font-family: 'DM Mono', monospace;
+  color: var(--text-light); white-space: nowrap; flex-shrink: 0;
+}
 /* 字幕中列容器 */
 .sub-list-col {
-  flex: 1; min-width: 0; display: flex; flex-direction: column;
-  overflow: hidden;
+  flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden;
 }
 .sub-list-header {
-  padding: 7px 10px;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border-soft);
-  flex-shrink: 0;
+  padding: 7px 10px; background: var(--surface);
+  border-bottom: 1px solid var(--border-soft); flex-shrink: 0;
 }
 .sub-search-inline {
-  width: 100%; box-sizing: border-box;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 5px 10px;
-  font-family: 'DM Mono', monospace;
-  font-size: 11px; color: var(--ink);
-  outline: none; transition: border-color .2s;
+  width: 100%; box-sizing: border-box; background: var(--surface-2);
+  border: 1px solid var(--border); border-radius: 6px;
+  padding: 5px 10px; font-family: 'DM Mono', monospace;
+  font-size: 11px; color: var(--ink); outline: none; transition: border-color .2s;
 }
 .sub-search-inline:focus { border-color: var(--green-main); background: white; }
 .sub-search-inline::placeholder { color: var(--text-ghost); }
 .sub-list {
-  flex: 1; min-width: 0; min-height: 0;
-  overflow-y: auto;
+  flex: 1; min-width: 0; min-height: 0; overflow-y: auto;
   padding: 4px 12px 8px;
 }
 .sub-list::-webkit-scrollbar { width: 4px; }
 .sub-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-
-/* 字幕区列分隔条 */
+/* 列分隔条 */
 .sub-resize-handle {
   width: 5px; flex-shrink: 0; cursor: col-resize;
   background: var(--border-soft); transition: background 0.15s;
@@ -927,9 +935,8 @@ header {
 /* 右侧剧本推演面板 */
 .sub-script-panel {
   width: 380px; min-width: 160px; flex-shrink: 0;
-  display: flex; flex-direction: column;
+  display: flex; flex-direction: column; overflow: hidden;
   background: var(--surface);
-  overflow: hidden;
 }
 .sub-script-header {
   padding: 10px 14px;
@@ -1510,7 +1517,7 @@ header {
     <!-- Welcome -->
     <div id="welcomeScreen">
       <div class="w-badge">✦ AI 驱动 · 全自动拆解</div>
-      <div class="w-title">不到十分钟，<em>深度拆解</em>一部剧</div>
+      <div class="w-title">上传视频，<em>深度拆解</em>一部剧</div>
       <div class="w-features">
         <div class="w-feature-tag"><span class="tag-dot"></span>双语字幕时间轴</div>
         <div class="w-feature-tag"><span class="tag-dot"></span>剧本还原推演</div>
@@ -1533,7 +1540,7 @@ header {
         <div class="w-step">
           <div class="w-step-n">03</div>
           <div class="w-step-t">开始分析</div>
-          <div class="w-step-d">约 5–10 分钟全自动处理，输出双语字幕、剧情梗概、人物分析、策划逻辑与改编方案</div>
+          <div class="w-step-d">全自动处理，处理时长视视频长度而定（15分钟短片约5分钟，74分钟长片约15分钟），输出双语字幕、剧情梗概、人物分析、策划逻辑与改编方案</div>
         </div>
       </div>
     </div>
@@ -2082,6 +2089,8 @@ async function doRunAnalysis() {
   document.getElementById('welcomeScreen').style.display = 'none';
   document.getElementById('procOverlay').classList.add('show');
   document.getElementById('tabsBar').classList.remove('show');
+  // 隐藏所有 pane，让 procOverlay 占满空间
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
   setStatus('loading','处理中');
   setProg(0);
 
@@ -2237,8 +2246,11 @@ async function transcribeSegment(pcm, sampleRate, offsetSec, label) {
         throw new Error('转录返回内容为空');
       return result.utterances.map(u => ({
         ...u,
-        start_time: (u.start_time || 0) + offsetSec * 1000,
-        end_time: (u.end_time || 0) + offsetSec * 1000,
+        start_time: u.start + offsetSec,   // start 已是秒，直接加偏移
+        end_time:   u.end   + offsetSec,
+        tc:         u.start + offsetSec,   // 直接可用的秒级时间码
+        tcEnd:      u.end   + offsetSec,
+        text:       u.text,
       }));
     }
     if (result.status === 'error')
@@ -2275,7 +2287,7 @@ async function transcribeAudio(audioData) {
       const results = await Promise.all(promises);
       results.forEach(r => allUtterances.push(...r));
     }
-    return allUtterances.sort((a, b) => (a.start_time||0) - (b.start_time||0));
+    return allUtterances.sort((a, b) => (a.tc||a.start_time||0) - (b.tc||b.start_time||0));
   }
 }
 
@@ -2289,7 +2301,7 @@ async function translateSubs(subs, key, model) {
     const lines=batch.map((s,n)=>`${n+1}. ${s.text}`).join('\n');
     const r=await callLLM(`将以下英文短剧台词逐句翻译成中文，口语化，保留人名。只输出JSON数组["译1","译2"]：\n\n${lines}`,key,model,2000);
     let tr; try{tr=JSON.parse(r.replace(/```json|```/g,'').trim());}catch{tr=batch.map(()=>'—');}
-    batch.forEach((s,n)=>result.push({tc: (s.start_time||0)/1000, tcEnd: (s.end_time||0)/1000, start_time: s.start_time||0, en:s.text, zh:tr[n]||'—'}));
+    batch.forEach((s,n)=>result.push({tc: s.tc||0, tcEnd: s.tcEnd||0, start_time: s.start_time||0, en:s.text||s.en||'', zh:tr[n]||'—'}));
   }
   return result;
 }
