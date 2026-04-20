@@ -363,7 +363,8 @@ header {
 ══════════════════════════════ */
 .app {
   display: flex;
-  min-height: calc(100vh - 56px);
+  height: calc(100vh - 56px);
+  max-height: calc(100vh - 56px);
   overflow: hidden;
 }
 .sidebar {
@@ -371,6 +372,8 @@ header {
   min-width: 220px;
   max-width: 520px;
   flex-shrink: 0;
+  height: 100%;
+  overflow-y: auto;
 }
 .resize-handle {
   width: 5px;
@@ -398,6 +401,10 @@ header {
 .right-panel {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
 }
 
 /* ── LEFT SIDEBAR ── */
@@ -808,7 +815,7 @@ header {
 .tab-btn.active .tab-badge { background: var(--green-pale); color: var(--green-main); }
 
 /* Tab content */
-.tab-pane { display: none; flex: 1; overflow: hidden; flex-direction: column; }
+.tab-pane { display: none; flex: 1; min-height: 0; overflow: hidden; flex-direction: column; }
 .tab-pane.active { display: flex; }
 
 /* Pending state */
@@ -1632,9 +1639,9 @@ header {
         <div class="tab-empty-desc">基本信息、一句话简介、人物小传、人物关系图、剧情梗概，全面掌握原剧骨架。</div>
         <div class="tab-empty-badge">步骤 5 完成后自动生成</div>
       </div>
-      <div style="display:none;flex-direction:column;flex:1;overflow:hidden;position:relative" id="overviewView">
+      <div style="display:none;flex-direction:column;flex:1;min-height:0;overflow:hidden;position:relative" id="overviewView">
         <!-- 滚动容器：整页上下滚动 -->
-        <div id="overviewScroll" style="flex:1;overflow-y:auto;padding:24px 32px;display:flex;flex-direction:column;gap:24px;">
+        <div id="overviewScroll" style="flex:1;min-height:0;overflow-y:auto;padding:24px 32px;display:flex;flex-direction:column;gap:24px;">
 
           <!-- 行1：一句话简介 -->
           <div class="a-block" style="margin-bottom:0">
@@ -1642,24 +1649,28 @@ header {
             <div class="a-body editable" id="loglineText" contenteditable="true" spellcheck="false"></div>
           </div>
 
-          <!-- 行2：人物关系图 + 人物小传（并排） -->
+          <!-- 行2：人物关系图 + 人物小传（并排，各占一半） -->
           <div style="display:flex;gap:16px;align-items:flex-start;min-height:0">
             <!-- 关系图 -->
-            <div style="flex:0 0 320px;min-width:0">
+            <div style="flex:1;min-width:280px">
               <div class="a-head" style="margin-bottom:10px"><div class="a-num">02</div><div class="a-title">人物关系图</div><div class="a-line"></div></div>
-              <div id="relationGraph" style="width:100%;min-height:200px;"></div>
+              <div id="relationGraph" style="width:100%;"></div>
             </div>
             <!-- 人物小传 -->
-            <div style="flex:1;min-width:0">
+            <div style="flex:1;min-width:240px">
               <div class="a-head" style="margin-bottom:10px"><div class="a-num">03</div><div class="a-title">人物小传</div><div class="a-line"></div></div>
               <div class="char-grid" id="charGrid" style="padding-left:0"></div>
             </div>
           </div>
 
-          <!-- 行3：剧情梗概节拍（左右各半） -->
+          <!-- 行3：剧情梗概节拍（左右各半，可拖拽） -->
           <div>
             <div class="a-head" style="margin-bottom:12px"><div class="a-num">04</div><div class="a-title">剧情梗概节拍</div><div class="a-line"></div></div>
-            <div id="outlineList" style="display:grid;grid-template-columns:1fr 1fr;gap:0 32px;padding-left:0"></div>
+            <div style="display:flex;gap:0;min-height:0" id="outlineWrapper">
+              <div id="outlineLeft" style="flex:1;min-width:0;overflow-y:visible"></div>
+              <div id="outlineDivider" style="width:5px;flex-shrink:0;cursor:col-resize;background:var(--border-soft);margin:0 4px;border-radius:3px;transition:background .15s" onmouseenter="this.style.background='var(--green-light)'" onmouseleave="this.style.background='var(--border-soft)'"></div>
+              <div id="outlineRight" style="flex:1;min-width:0;overflow-y:visible"></div>
+            </div>
           </div>
 
         </div>
@@ -1674,7 +1685,7 @@ header {
         <div class="tab-empty-desc">深度拆解原剧策划逻辑，并基于此生成专属改编方案。</div>
         <div class="tab-empty-badge">步骤 5 完成后自动生成</div>
       </div>
-      <div style="display:none;flex-direction:column;flex:1;overflow:hidden;position:relative" id="planningView">
+      <div style="display:none;flex-direction:column;flex:1;min-height:0;overflow:hidden;position:relative" id="planningView">
         <div class="two-col-layout" style="flex:1;overflow:hidden">
           <!-- 左列：8个策划逻辑维度 -->
           <div class="two-col-left" id="planningLeft">
@@ -2062,6 +2073,10 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.classList.add('active');
     document.getElementById('pane-'+btn.dataset.tab).classList.add('active');
     updateTabActions();
+    // 切换到 overview tab 时重绘关系图（tab 隐藏时 offsetWidth=0）
+    if (btn.dataset.tab === 'overview' && analysisData.relations) {
+      requestAnimationFrame(() => renderRelationGraph(analysisData.relations||[], analysisData.characters||[]));
+    }
     // 保存当前 tab 状态，刷新后可恢复
     if (subtitleData.length || analysisData.logline) saveSession();
   });
@@ -2638,7 +2653,11 @@ function renderSubs() {
   } else {
     player.style.display = 'none';
     placeholder.style.display = 'flex';
-    placeholder.innerHTML = '<span style="font-size:28px">📎</span><span style="font-size:12px">本地视频可在此预览</span>';
+    // 区分历史记录加载（有字幕但无视频源）和初次空状态
+    const fromHistory = subtitleData.length > 0 && !videoFile && !videoUrl;
+    placeholder.innerHTML = fromHistory
+      ? `<span style="font-size:24px">📂</span><span style="font-size:12px;color:var(--text-light);text-align:center;line-height:1.6">历史记录不保存视频文件<br>如需回看，请重新上传该视频</span>`
+      : `<span style="font-size:28px">🎬</span><span style="font-size:12px">视频加载中…</span>`;
   }
 
   // 渲染字幕行
@@ -2729,13 +2748,19 @@ function renderAnalysis() {
   });
   // 人物关系图
   renderRelationGraph(d.relations || [], d.characters || []);
-  // 剧情梗概
-  const ol = document.getElementById('outlineList'); ol.innerHTML = '';
-  (d.outline||[]).forEach((item, i) => {
+  // 剧情梗概 — 左右各半列
+  const items = d.outline || [];
+  const half = Math.ceil(items.length / 2);
+  const olL = document.getElementById('outlineLeft');
+  const olR = document.getElementById('outlineRight');
+  if (olL) olL.innerHTML = '';
+  if (olR) olR.innerHTML = '';
+  items.forEach((item, i) => {
     const div = document.createElement('div'); div.className = 'outline-item';
     const content = esc(item.content||'').replace(/【转折】/g,'<strong style="color:var(--red)">【转折】</strong>').replace(/【高潮】/g,'<strong style="color:var(--green-main)">【高潮】</strong>');
     div.innerHTML = `<div class="outline-n">${String(i+1).padStart(2,'0')}</div><div class="outline-content"><span class="outline-pt" contenteditable="true" spellcheck="false">${esc(item.point||'')}</span><span contenteditable="true" spellcheck="false">${content}</span></div>`;
-    ol.appendChild(div);
+    if (i < half) { if (olL) olL.appendChild(div); }
+    else { if (olR) olR.appendChild(div); }
   });
   document.getElementById('overviewEmpty').style.display = 'none';
   document.getElementById('overviewView').style.display = 'flex';
@@ -2784,11 +2809,12 @@ function renderRelationGraph(relations, characters) {
   }
 
   const n = characters.length;
-  const W = 660;
+  // 宽度自适应容器，最小 280，最大 600
+  const W = Math.max(280, Math.min(600, container.offsetWidth || 400));
   // 动态高度：节点少时紧凑，多时扩展
-  const H = n <= 3 ? 220 : n <= 5 ? 300 : 360;
+  const H = n <= 3 ? 200 : n <= 5 ? 260 : 320;
   // 半径：保证节点间距足够
-  const R = n <= 2 ? 140 : n <= 4 ? Math.min(W, H) * 0.38 : Math.min(W, H) * 0.42;
+  const R = n <= 2 ? Math.min(W,H)*0.35 : n <= 4 ? Math.min(W,H)*0.36 : Math.min(W,H)*0.38;
   const cx = W / 2, cy = H / 2;
 
   const nodes = characters.map((c, i) => {
@@ -3010,12 +3036,17 @@ function restoreSection(sec) {
       card.innerHTML = `<button class="char-card-del" onclick="this.closest('.char-card').remove()" title="删除">✕</button><div class="char-name" contenteditable="true" spellcheck="false">${esc(c.name)}</div><div class="char-bio" contenteditable="true" spellcheck="false">${esc(c.bio)}</div>`;
       cg.appendChild(card);
     });
-    const ol = document.getElementById('outlineList'); ol.innerHTML = '';
-    (d.outline||[]).forEach((item,i) => {
+    const outItems = d.outline||[];
+    const half2 = Math.ceil(outItems.length/2);
+    const olL2 = document.getElementById('outlineLeft');
+    const olR2 = document.getElementById('outlineRight');
+    if(olL2) olL2.innerHTML = '';
+    if(olR2) olR2.innerHTML = '';
+    outItems.forEach((item,i) => {
       const div = document.createElement('div'); div.className = 'outline-item';
       const content = esc(item.content||'').replace(/【转折】/g,'<strong style="color:var(--red)">【转折】</strong>').replace(/【高潮】/g,'<strong style="color:var(--green-main)">【高潮】</strong>');
-      div.innerHTML = `<div class="outline-content"><span class="outline-pt" contenteditable="true" spellcheck="false">${esc(item.point||'')}</span><span contenteditable="true" spellcheck="false">${content}</span></div>`;
-      ol.appendChild(div);
+      div.innerHTML = `<div class="outline-n">${String(i+1).padStart(2,'0')}</div><div class="outline-content"><span class="outline-pt" contenteditable="true" spellcheck="false">${esc(item.point||'')}</span><span contenteditable="true" spellcheck="false">${content}</span></div>`;
+      if(i < half2){ if(olL2) olL2.appendChild(div); } else { if(olR2) olR2.appendChild(div); }
     });
   } else if (sec === 'planning') {
     const stripPrefix = (text, label) => {
@@ -3046,7 +3077,7 @@ function extractSectionText(sec) {
   if (sec === 'overview') return [
     '一句话简介\n'+(document.getElementById('loglineText').innerText||''),
     '人物小传\n'+(document.getElementById('charGrid').innerText||''),
-    '剧情梗概\n'+(document.getElementById('outlineList').innerText||''),
+    '剧情梗概\n'+((document.getElementById('outlineLeft')?.innerText||'')+'\n'+(document.getElementById('outlineRight')?.innerText||'')).trim(),
   ].join('\n\n');
   if (sec === 'planning') return [
     '核心亮点\n'+(document.getElementById('highlightsText').innerText||''),
@@ -3114,7 +3145,7 @@ function exportFullWord() {
     body += para(card.querySelector('.char-bio')?.innerText||'');
   });
   body += subH('剧情梗概');
-  document.querySelectorAll('#outlineList .outline-item').forEach((item,i) => {
+  [...document.querySelectorAll('#outlineLeft .outline-item'), ...document.querySelectorAll('#outlineRight .outline-item')].forEach((item,i) => {
     const pt = item.querySelector('.outline-pt')?.innerText||'';
     const spans = item.querySelectorAll('span');
     const content = spans[1]?.innerText||spans[0]?.innerText||'';
@@ -3340,6 +3371,38 @@ function bindSyncScroll() {
     });
   }
   makeColResizer('planningDivider',  'planningLeft',  200, 200);
+
+  // outline 节拍左右列分隔条（动态绑定，因为列在 overview 渲染后才出现）
+  function bindOutlineDivider() {
+    const handle = document.getElementById('outlineDivider');
+    const leftEl = document.getElementById('outlineLeft');
+    if (!handle || !leftEl || handle._bound) return;
+    handle._bound = true;
+    let dragging = false, startX = 0, startW = 0;
+    handle.addEventListener('mousedown', e => {
+      e.preventDefault(); dragging = true; startX = e.clientX; startW = leftEl.offsetWidth;
+      handle.style.background = 'var(--green-main)';
+      document.body.style.cursor = 'col-resize'; document.body.style.userSelect = 'none';
+    });
+    document.addEventListener('mousemove', e => {
+      if (!dragging) return;
+      const container = leftEl.parentElement;
+      const maxW = container.offsetWidth - 120;
+      const newW = Math.min(maxW, Math.max(120, startW + e.clientX - startX));
+      leftEl.style.flex = '0 0 ' + newW + 'px';
+    });
+    document.addEventListener('mouseup', () => {
+      if (!dragging) return; dragging = false;
+      handle.style.background = '';
+      document.body.style.cursor = ''; document.body.style.userSelect = '';
+    });
+  }
+  // 在 renderAnalysis 调用后绑定
+  const _origRA = window.renderAnalysis;
+  if (typeof renderAnalysis === 'function') {
+    const _ra = renderAnalysis;
+    window.renderAnalysis = function() { _ra.apply(this, arguments); setTimeout(bindOutlineDivider, 50); };
+  }
 })();
 function setStatus(s,t){document.getElementById('statusDot').className='status-dot '+s;document.getElementById('statusText').textContent=t;}
 function setProg(p){document.getElementById('progressBar').style.width=p+'%';}
