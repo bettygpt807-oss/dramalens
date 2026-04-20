@@ -865,19 +865,13 @@ header {
 
 /* 字幕区三列布局 */
 .sub-split {
-  display: flex; flex: 1; min-height: 0;
-  /* 整体可纵向滚动，让字幕和剧本内容自由延伸 */
-  overflow-y: auto; overflow-x: hidden;
-  align-items: flex-start;
+  display: flex; flex: 1; min-height: 0; overflow: hidden;
+  align-items: stretch;
 }
 .sub-video-panel {
   width: 36%; min-width: 200px; max-width: 520px;
   flex-shrink: 0; background: #000;
-  overflow: hidden;
-  /* sticky：视频贴顶固定，不随内容滚动移位 */
-  position: sticky; top: 0;
-  /* 高度撑满视口内容区，不被内容撑高 */
-  height: calc(100vh - 120px);
+  overflow: hidden; position: relative;
 }
 .sub-video-panel video {
   position: absolute; inset: 0;
@@ -894,14 +888,13 @@ header {
 /* 字幕中列容器 */
 .sub-list-col {
   flex: 1; min-width: 0; display: flex; flex-direction: column;
+  overflow: hidden;
 }
 .sub-list-header {
   padding: 7px 10px;
   background: var(--surface);
   border-bottom: 1px solid var(--border-soft);
   flex-shrink: 0;
-  /* sticky 让搜索框贴顶，字幕向下滚动时搜索框不动 */
-  position: sticky; top: 0; z-index: 2;
 }
 .sub-search-inline {
   width: 100%; box-sizing: border-box;
@@ -916,7 +909,8 @@ header {
 .sub-search-inline:focus { border-color: var(--green-main); background: white; }
 .sub-search-inline::placeholder { color: var(--text-ghost); }
 .sub-list {
-  flex: 1; min-width: 0;
+  flex: 1; min-width: 0; min-height: 0;
+  overflow-y: auto;
   padding: 4px 12px 8px;
 }
 .sub-list::-webkit-scrollbar { width: 4px; }
@@ -926,10 +920,6 @@ header {
 .sub-resize-handle {
   width: 5px; flex-shrink: 0; cursor: col-resize;
   background: var(--border-soft); transition: background 0.15s;
-  /* sticky 让分隔条跟着视频高度固定，可见 */
-  position: sticky; top: 0;
-  height: calc(100vh - 120px);
-  align-self: flex-start;
 }
 .sub-resize-handle:hover,
 .sub-resize-handle.dragging { background: var(--green-light); }
@@ -939,9 +929,6 @@ header {
   width: 380px; min-width: 160px; flex-shrink: 0;
   display: flex; flex-direction: column;
   background: var(--surface);
-  /* sticky：剧本header固定，内容随整体滚动 */
-  position: sticky; top: 0;
-  height: calc(100vh - 120px);
   overflow: hidden;
 }
 .sub-script-header {
@@ -2272,15 +2259,21 @@ async function transcribeAudio(audioData) {
   } else {
     const chunkSamples = CHUNK_SEC * sampleRate;
     const totalChunks = Math.ceil(pcm.length / chunkSamples);
-    setLabel(`音频 ${Math.round(duration/60)} 分钟，分 ${totalChunks} 段依次转录…`);
+    setLabel(`音频 ${Math.round(duration/60)} 分钟，分 ${totalChunks} 段转录…`);
     const allUtterances = [];
-    // 串行处理，避免并发过多触发 Vercel 限制
-    for (let i = 0; i < totalChunks; i++) {
-      const start = i * chunkSamples;
-      const end = Math.min(start + chunkSamples, pcm.length);
-      const offsetSec = i * CHUNK_SEC;
-      const result = await transcribeSegment(pcm.slice(start, end), sampleRate, offsetSec, `第${i+1}/${totalChunks}段`);
-      allUtterances.push(...result);
+    // 每批3片并行，兼顾速度和稳定性
+    const BATCH = 3;
+    for (let i = 0; i < totalChunks; i += BATCH) {
+      const batchEnd = Math.min(i + BATCH, totalChunks);
+      setLabel(`转录第 ${i+1}–${batchEnd} / ${totalChunks} 段…`);
+      const promises = [];
+      for (let j = i; j < batchEnd; j++) {
+        const start = j * chunkSamples;
+        const end = Math.min(start + chunkSamples, pcm.length);
+        promises.push(transcribeSegment(pcm.slice(start, end), sampleRate, j * CHUNK_SEC, `第${j+1}/${totalChunks}段`));
+      }
+      const results = await Promise.all(promises);
+      results.forEach(r => allUtterances.push(...r));
     }
     return allUtterances.sort((a, b) => (a.start_time||0) - (b.start_time||0));
   }
@@ -2296,7 +2289,7 @@ async function translateSubs(subs, key, model) {
     const lines=batch.map((s,n)=>`${n+1}. ${s.text}`).join('\n');
     const r=await callLLM(`将以下英文短剧台词逐句翻译成中文，口语化，保留人名。只输出JSON数组["译1","译2"]：\n\n${lines}`,key,model,2000);
     let tr; try{tr=JSON.parse(r.replace(/```json|```/g,'').trim());}catch{tr=batch.map(()=>'—');}
-    batch.forEach((s,n)=>result.push({tc:s.start,tcEnd:s.end,en:s.text,zh:tr[n]||'—'}));
+    batch.forEach((s,n)=>result.push({tc: (s.start_time||0)/1000, tcEnd: (s.end_time||0)/1000, start_time: s.start_time||0, en:s.text, zh:tr[n]||'—'}));
   }
   return result;
 }
@@ -2629,12 +2622,12 @@ function renderSubs() {
       // 2. 字幕列高亮并滚动到点击项居中
       document.querySelectorAll('.sub-item').forEach(el => el.classList.remove('active'));
       d.classList.add('active');
-      const split = d.closest('.sub-split');
-      if (split) {
-        const splitRect = split.getBoundingClientRect();
+      const subList = document.getElementById('subList');
+      if (subList) {
+        const listRect = subList.getBoundingClientRect();
         const dRect = d.getBoundingClientRect();
-        const target = split.scrollTop + (dRect.top - splitRect.top) - splitRect.height / 2 + dRect.height / 2;
-        split.scrollTo({ top: Math.max(0, target), behavior: 'smooth' });
+        const target = subList.scrollTop + (dRect.top - listRect.top) - listRect.height / 2 + dRect.height / 2;
+        subList.scrollTo({ top: Math.max(0, target), behavior: 'smooth' });
       }
       // 3. 剧本面板同步定位到包含该台词的段落
       syncScriptToDialogue(item.en);
@@ -2656,12 +2649,14 @@ function renderSubs() {
       if (i === activeIdx) {
         if (!el.classList.contains('active')) {
           el.classList.add('active');
-          // 整体滚动 sub-split，让高亮字幕居中显示
-          const split = document.getElementById('subList').closest('.sub-split');
-          const splitRect = split.getBoundingClientRect();
-          const elRect = el.getBoundingClientRect();
-          const scrollTarget = split.scrollTop + (elRect.top - splitRect.top) - splitRect.height / 2 + elRect.height / 2;
-          split.scrollTo({ top: Math.max(0, scrollTarget), behavior: 'smooth' });
+          // subList 独立滚动，让高亮字幕居中显示
+          const subList = document.getElementById('subList');
+          if (subList) {
+            const listRect = subList.getBoundingClientRect();
+            const elRect = el.getBoundingClientRect();
+            const scrollTarget = subList.scrollTop + (elRect.top - listRect.top) - listRect.height / 2 + elRect.height / 2;
+            subList.scrollTo({ top: Math.max(0, scrollTarget), behavior: 'smooth' });
+          }
           // 剧本同步定位
           syncScriptToDialogue(subtitleData[i]?.en || '');
         }
@@ -3171,22 +3166,20 @@ function syncScriptToDialogue(enText) {
 }
 
 // ── 三列同步滚动 ──
-// sub-split 整体滚动，视频和剧本header sticky固定
-// 字幕列高亮随播放同步，剧本内容在面板内独立滚动
+// 字幕列(subList)和剧本列(subScriptContent)各自独立滚动，滚动时互相同步比例
 let _syncLock = false;
 function bindSyncScroll() {
-  // sub-split 整体滚动时，同步剧本面板内容的滚动位置
-  const split = document.getElementById('subList')?.closest('.sub-split');
+  const subList = document.getElementById('subList');
   const scriptContent = document.getElementById('subScriptContent');
-  if (!split || !scriptContent) return;
+  if (!subList || !scriptContent) return;
 
-  split._syncHandler && split.removeEventListener('scroll', split._syncHandler);
+  subList._syncHandler && subList.removeEventListener('scroll', subList._syncHandler);
   scriptContent._syncHandler && scriptContent.removeEventListener('scroll', scriptContent._syncHandler);
 
-  split._syncHandler = () => {
+  subList._syncHandler = () => {
     if (_syncLock || scriptContent.style.display === 'none') return;
     _syncLock = true;
-    const ratio = split.scrollTop / Math.max(1, split.scrollHeight - split.clientHeight);
+    const ratio = subList.scrollTop / Math.max(1, subList.scrollHeight - subList.clientHeight);
     scriptContent.scrollTop = ratio * Math.max(0, scriptContent.scrollHeight - scriptContent.clientHeight);
     requestAnimationFrame(() => { _syncLock = false; });
   };
@@ -3195,11 +3188,11 @@ function bindSyncScroll() {
     if (_syncLock) return;
     _syncLock = true;
     const ratio = scriptContent.scrollTop / Math.max(1, scriptContent.scrollHeight - scriptContent.clientHeight);
-    split.scrollTop = ratio * Math.max(0, split.scrollHeight - split.clientHeight);
+    subList.scrollTop = ratio * Math.max(0, subList.scrollHeight - subList.clientHeight);
     requestAnimationFrame(() => { _syncLock = false; });
   };
 
-  split.addEventListener('scroll', split._syncHandler);
+  subList.addEventListener('scroll', subList._syncHandler);
   scriptContent.addEventListener('scroll', scriptContent._syncHandler);
 }
 
