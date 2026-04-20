@@ -1861,17 +1861,15 @@ function loadHistoryItem(id) {
 
 function saveSession() {
   try {
+    const activeTab = document.querySelector('.tab-btn.active')?.dataset.tab || 'subtitles';
     const payload = {
       subtitleData,
-      analysisData: {
-        ...analysisData,
-        // 不存 outlineCache 里的大型文本（可选保留）
-      },
+      analysisData: { ...analysisData },
+      activeTab,
       savedAt: Date.now(),
     };
     localStorage.setItem('dl_session', JSON.stringify(payload));
   } catch(e) {
-    // localStorage 空间不足时静默失败
     try { localStorage.removeItem('dl_session'); } catch {}
   }
 }
@@ -1879,18 +1877,17 @@ function saveSession() {
 function restoreSession() {
   try {
     const raw = localStorage.getItem('dl_session');
-    if (!raw) return false;
-    const { subtitleData: sd, analysisData: ad, savedAt } = JSON.parse(raw);
-    // 超过 24 小时的缓存自动丢弃
+    if (!raw) return null;
+    const { subtitleData: sd, analysisData: ad, activeTab, savedAt } = JSON.parse(raw);
     if (!savedAt || Date.now() - savedAt > 24 * 60 * 60 * 1000) {
       localStorage.removeItem('dl_session');
-      return false;
+      return null;
     }
-    if (!sd?.length && !ad?.logline) return false;
+    if (!sd?.length && !ad?.logline) return null;
     subtitleData = sd || [];
     analysisData = ad || {};
-    return true;
-  } catch { return false; }
+    return activeTab || 'subtitles';
+  } catch { return null; }
 }
 
 // ── INIT ──
@@ -1899,18 +1896,22 @@ window.addEventListener('load', () => {
   checkConfig();
   renderHistoryList(); // 初始化历史记录显示
   // 尝试恢复上次分析结果
-  if (restoreSession()) {
+  const restoredTab = restoreSession();
+  if (restoredTab) {
     try {
-      if (subtitleData.length) {
-        renderSubs();
-      }
-      if (analysisData.logline || analysisData.highlights) {
-        renderAnalysis();
-      }
+      if (subtitleData.length) renderSubs();
+      if (analysisData.logline || analysisData.highlights) renderAnalysis();
       document.getElementById('welcomeScreen').style.display = 'none';
       document.getElementById('tabsBar').classList.add('show');
-      document.getElementById('pane-subtitles').classList.add('active');
-      document.querySelector('.tab-btn[data-tab="subtitles"]').classList.add('active');
+      // 恢复到刷新前的 tab
+      document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      const tabToRestore = restoredTab;
+      const pane = document.getElementById('pane-' + tabToRestore);
+      const btn = document.querySelector(`.tab-btn[data-tab="${tabToRestore}"]`);
+      if (pane) pane.classList.add('active');
+      if (btn) btn.classList.add('active');
+      updateTabActions();
       setStatus('active', '已恢复上次分析');
       toast('已自动恢复上次分析结果', 'ok');
     } catch(e) {
@@ -2048,6 +2049,8 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.classList.add('active');
     document.getElementById('pane-'+btn.dataset.tab).classList.add('active');
     updateTabActions();
+    // 保存当前 tab 状态，刷新后可恢复
+    if (subtitleData.length || analysisData.logline) saveSession();
   });
 });
 
@@ -2153,8 +2156,8 @@ async function doRunAnalysis() {
 
 // ── AUDIO ──
 const SAMPLE_RATE = 16000;
-const SPLIT_THRESHOLD_SEC = 70 * 60;   // >70分钟走分片
-const CHUNK_SEC = 60 * 60;             // 每片60分钟
+const SPLIT_THRESHOLD_SEC = 8 * 60;    // >8分钟走分片（单片64kbps MP3上限约3.7MB）
+const CHUNK_SEC = 8 * 60;              // 每片8分钟（64kbps MP3约3.7MB，安全上传）
 
 // 提取音频：返回 { pcm, sampleRate, duration }
 async function extractAudio(file) {
@@ -2183,7 +2186,7 @@ async function fetchExtract(url) {
 
 // PCM Float32Array → MP3 Blob
 function encodeMp3(pcm, sampleRate) {
-  const mp3enc = new lamejs.Mp3Encoder(1, sampleRate, 128);
+  const mp3enc = new lamejs.Mp3Encoder(1, sampleRate, 64);
   const blockSize = 1152;
   const mp3Data = [];
   const int16 = new Int16Array(pcm.length);
@@ -2264,21 +2267,22 @@ async function transcribeAudio(audioData) {
   const { pcm, sampleRate, duration } = audioData;
 
   if (duration <= SPLIT_THRESHOLD_SEC) {
-    setLabel(`音频 ${Math.round(duration/60)} 分钟，单次转录…`);
+    setLabel(`音频 ${Math.round(duration/60)} 分钟，转录中…`);
     return await transcribeSegment(pcm, sampleRate, 0, '转录');
   } else {
     const chunkSamples = CHUNK_SEC * sampleRate;
     const totalChunks = Math.ceil(pcm.length / chunkSamples);
-    setLabel(`音频 ${Math.round(duration/60)} 分钟，分 ${totalChunks} 段并行转录…`);
-    const promises = [];
+    setLabel(`音频 ${Math.round(duration/60)} 分钟，分 ${totalChunks} 段依次转录…`);
+    const allUtterances = [];
+    // 串行处理，避免并发过多触发 Vercel 限制
     for (let i = 0; i < totalChunks; i++) {
       const start = i * chunkSamples;
       const end = Math.min(start + chunkSamples, pcm.length);
       const offsetSec = i * CHUNK_SEC;
-      promises.push(transcribeSegment(pcm.slice(start, end), sampleRate, offsetSec, `第${i+1}/${totalChunks}段`));
+      const result = await transcribeSegment(pcm.slice(start, end), sampleRate, offsetSec, `第${i+1}/${totalChunks}段`);
+      allUtterances.push(...result);
     }
-    const results = await Promise.all(promises);
-    return results.flat().sort((a, b) => (a.start_time||0) - (b.start_time||0));
+    return allUtterances.sort((a, b) => (a.start_time||0) - (b.start_time||0));
   }
 }
 
