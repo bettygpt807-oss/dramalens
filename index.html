@@ -873,9 +873,11 @@ header {
   width: 36%; min-width: 200px; max-width: 520px; flex-shrink: 0;
   background: #000; overflow: hidden; position: relative;
   display: flex; flex-direction: column;
+  min-height: 0; /* critical: allow flex child to shrink */
 }
 .sub-video-panel video {
-  width: 100%; height: 100%; object-fit: contain; display: block; background: #000;
+  width: 100%; flex: 1; min-height: 0;
+  object-fit: contain; display: block; background: #000;
 }
 .sub-video-placeholder {
   position: absolute; inset: 0;
@@ -919,11 +921,13 @@ header {
 .sub-search-inline:focus { border-color: var(--green-main); background: white; }
 .sub-search-inline::placeholder { color: var(--text-ghost); }
 .sub-list {
-  flex: 1; min-width: 0; min-height: 0; overflow-y: auto;
+  flex: 1; min-width: 0; min-height: 0; overflow-y: scroll;
   padding: 4px 12px 8px;
 }
-.sub-list::-webkit-scrollbar { width: 4px; }
-.sub-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.sub-list::-webkit-scrollbar { width: 6px; }
+.sub-list::-webkit-scrollbar-track { background: var(--surface-3); border-radius: 3px; }
+.sub-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+.sub-list::-webkit-scrollbar-thumb:hover { background: var(--green-muted); }
 /* 列分隔条 */
 .sub-resize-handle {
   width: 5px; flex-shrink: 0; cursor: col-resize;
@@ -949,13 +953,15 @@ header {
   flex: 1;
 }
 .sub-script-content {
-  flex: 1; overflow-y: auto; overflow-x: hidden; padding: 12px 14px;
+  flex: 1; overflow-y: scroll; overflow-x: hidden; padding: 12px 14px;
   font-family: 'DM Mono','Courier New',monospace;
   font-size: 11.5px; line-height: 1.9; color: var(--ink);
   white-space: pre-wrap; word-break: break-word; min-height: 0;
 }
-.sub-script-content::-webkit-scrollbar { width: 3px; }
-.sub-script-content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.sub-script-content::-webkit-scrollbar { width: 6px; }
+.sub-script-content::-webkit-scrollbar-track { background: var(--surface-3); border-radius: 3px; }
+.sub-script-content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+.sub-script-content::-webkit-scrollbar-thumb:hover { background: var(--green-muted); }
 .sub-script-empty {
   flex: 1; display: flex; flex-direction: column;
   align-items: center; justify-content: center;
@@ -1256,6 +1262,7 @@ header {
   display: grid; grid-template-columns: 24px 1fr;
   gap: 12px; padding: 12px 0;
   border-bottom: 1px solid var(--border-soft);
+  break-inside: avoid; /* 防止 grid 布局内被截断 */
 }
 .outline-item:last-child { border-bottom: none; }
 .outline-n {
@@ -1283,6 +1290,13 @@ header {
 .info-card { background: var(--surface-2); border: 1px solid var(--border-soft); border-radius: 8px; padding: 12px 14px; }
 .info-card-label { font-size: 10px; color: var(--text-ghost); margin-bottom: 4px; text-transform: uppercase; letter-spacing: .06em; }
 .info-card-value { font-size: 13px; color: var(--ink); font-weight: 500; line-height: 1.5; }
+
+/* ── Overview scroll container ── */
+#overviewScroll { scrollbar-width: thin; scrollbar-color: var(--border) var(--surface-3); }
+#overviewScroll::-webkit-scrollbar { width: 6px; }
+#overviewScroll::-webkit-scrollbar-track { background: var(--surface-3); }
+#overviewScroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+#overviewScroll::-webkit-scrollbar-thumb:hover { background: var(--green-muted); }
 
 /* Relation Graph */
 #relationGraph svg { width: 100%; overflow: visible; }
@@ -1571,8 +1585,8 @@ header {
         <div class="tab-empty-desc">分析完成后，左侧播放视频，中间字幕同步高亮，右侧可生成剧本推演。</div>
         <div class="tab-empty-badge">步骤 4 完成后自动生成</div>
       </div>
-      <div style="display:none;flex-direction:column;flex:1;overflow:hidden;height:0;min-height:0" id="subView">
-        <div class="sub-split">
+      <div style="display:none;flex-direction:column;flex:1;overflow:hidden;height:100%;min-height:0" id="subView">
+        <div class="sub-split" style="height:100%;min-height:0">
           <!-- 左：视频 -->
           <div class="sub-video-panel" id="subVideoPanel">
             <div class="sub-video-placeholder" id="subVideoPlaceholder">
@@ -1619,30 +1633,35 @@ header {
         <div class="tab-empty-badge">步骤 5 完成后自动生成</div>
       </div>
       <div style="display:none;flex-direction:column;flex:1;overflow:hidden;position:relative" id="overviewView">
-        <div class="two-col-layout" style="flex:1;overflow:hidden">
-          <!-- 左列：简介 + 人物小传 + 关系图 -->
-          <div class="two-col-left" id="overviewLeft">
-            <div class="a-block">
-              <div class="a-head"><div class="a-num">01</div><div class="a-title">一句话简介</div><div class="a-line"></div></div>
-              <div class="a-body editable" id="loglineText" contenteditable="true" spellcheck="false"></div>
+        <!-- 滚动容器：整页上下滚动 -->
+        <div id="overviewScroll" style="flex:1;overflow-y:auto;padding:24px 32px;display:flex;flex-direction:column;gap:24px;">
+
+          <!-- 行1：一句话简介 -->
+          <div class="a-block" style="margin-bottom:0">
+            <div class="a-head"><div class="a-num">01</div><div class="a-title">一句话简介</div><div class="a-line"></div></div>
+            <div class="a-body editable" id="loglineText" contenteditable="true" spellcheck="false"></div>
+          </div>
+
+          <!-- 行2：人物关系图 + 人物小传（并排） -->
+          <div style="display:flex;gap:16px;align-items:flex-start;min-height:0">
+            <!-- 关系图 -->
+            <div style="flex:0 0 320px;min-width:0">
+              <div class="a-head" style="margin-bottom:10px"><div class="a-num">02</div><div class="a-title">人物关系图</div><div class="a-line"></div></div>
+              <div id="relationGraph" style="width:100%;min-height:200px;"></div>
             </div>
-            <div class="a-block">
-              <div class="a-head"><div class="a-num">02</div><div class="a-title">人物关系图</div><div class="a-line"></div></div>
-              <div id="relationGraph" style="width:100%;min-height:220px;"></div>
-            </div>
-            <div class="a-block">
-              <div class="a-head"><div class="a-num">03</div><div class="a-title">人物小传</div><div class="a-line"></div></div>
-              <div class="char-grid" id="charGrid"></div>
+            <!-- 人物小传 -->
+            <div style="flex:1;min-width:0">
+              <div class="a-head" style="margin-bottom:10px"><div class="a-num">03</div><div class="a-title">人物小传</div><div class="a-line"></div></div>
+              <div class="char-grid" id="charGrid" style="padding-left:0"></div>
             </div>
           </div>
-          <div class="two-col-divider" id="overviewDivider"></div>
-          <!-- 右列：剧情梗概 -->
-          <div class="two-col-right" id="overviewRight">
-            <div class="a-block">
-              <div class="a-head"><div class="a-num">04</div><div class="a-title">剧情梗概</div><div class="a-line"></div></div>
-              <div class="outline-list" id="outlineList"></div>
-            </div>
+
+          <!-- 行3：剧情梗概节拍（左右各半） -->
+          <div>
+            <div class="a-head" style="margin-bottom:12px"><div class="a-num">04</div><div class="a-title">剧情梗概节拍</div><div class="a-line"></div></div>
+            <div id="outlineList" style="display:grid;grid-template-columns:1fr 1fr;gap:0 32px;padding-left:0"></div>
           </div>
+
         </div>
       </div>
     </div>
@@ -3320,7 +3339,6 @@ function bindSyncScroll() {
       document.body.style.userSelect = '';
     });
   }
-  makeColResizer('overviewDivider',  'overviewLeft',  200, 200);
   makeColResizer('planningDivider',  'planningLeft',  200, 200);
 })();
 function setStatus(s,t){document.getElementById('statusDot').className='status-dot '+s;document.getElementById('statusText').textContent=t;}
