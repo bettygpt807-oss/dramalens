@@ -1263,34 +1263,93 @@ header {
 .char-name { font-size: 13.5px; font-weight: 600; color: var(--ink); margin-bottom: 7px; }
 .char-bio { font-size: 12px; line-height: 1.8; color: var(--text-body); }
 
-/* Outline */
+/* ── 剧情梗概：起承转合结构 ── */
 .outline-list { padding-left: 30px; }
-.outline-item {
-  display: grid; grid-template-columns: 24px 1fr;
-  gap: 12px; padding: 12px 0;
-  border-bottom: 1px solid var(--border-soft);
-  break-inside: avoid; /* 防止 grid 布局内被截断 */
+
+/* 幕标题行（起/承/转/合）*/
+.act-header {
+  display: flex; align-items: center; gap: 12px;
+  padding: 20px 0 10px;
+  margin-top: 8px;
 }
-.outline-item:last-child { border-bottom: none; }
-.outline-n {
+.act-header:first-child { padding-top: 4px; margin-top: 0; }
+.act-badge {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--green-main); color: white;
+  font-size: 13px; font-weight: 600;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  font-family: 'Noto Serif SC', serif;
+}
+.act-badge.qi  { background: var(--green-main); }
+.act-badge.cheng { background: var(--green-mid); }
+.act-badge.zhuan { background: var(--gold); }
+.act-badge.he  { background: var(--green-muted); }
+.act-title {
+  font-size: 15px; font-weight: 600; color: var(--ink);
+}
+.act-subtitle {
+  font-size: 11px; color: var(--text-light);
+  margin-left: 2px;
+  letter-spacing: 0.03em;
+}
+.act-line { flex: 1; height: 1px; background: var(--border-soft); }
+
+/* 节拍条目 */
+.beat-item {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 0 14px;
+  padding: 14px 0 14px 8px;
+  border-left: 2px solid var(--border-soft);
+  margin-left: 16px;
+  margin-bottom: 2px;
+  transition: border-color 0.15s;
+  break-inside: avoid;
+}
+.beat-item:hover { border-left-color: var(--green-light); }
+.beat-item:last-of-type { margin-bottom: 0; }
+
+.beat-num {
+  width: 24px; height: 24px; border-radius: 50%;
+  background: var(--surface-3); color: var(--text-light);
+  font-size: 11px; font-family: 'DM Mono', monospace;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; margin-top: 1px;
+  transition: all 0.15s;
+}
+.beat-item:hover .beat-num {
+  background: var(--green-pale); color: var(--green-main);
+}
+.beat-body { min-width: 0; }
+.beat-title {
+  font-size: 13.5px; font-weight: 600; color: var(--ink);
+  margin-bottom: 6px; line-height: 1.4;
+  display: block;
+  outline: none; border-radius: 3px; transition: background 0.15s;
+}
+.beat-title:focus { background: rgba(30,92,58,0.04); box-shadow: 0 0 0 2px rgba(30,92,58,0.08); }
+.beat-text {
+  font-size: 13px; line-height: 1.85; color: var(--text-body);
+  outline: none; border-radius: 3px; transition: background 0.15s;
+  display: block;
+}
+.beat-text:focus { background: rgba(30,92,58,0.04); box-shadow: 0 0 0 2px rgba(30,92,58,0.08); }
+
+/* 转折/高潮标签 */
+.beat-tag {
+  display: inline-block;
+  font-size: 10px; font-weight: 600;
+  padding: 1px 6px; border-radius: 4px;
+  margin-right: 4px; vertical-align: middle;
   font-family: 'DM Mono', monospace;
-  font-size: 9px; color: var(--text-ghost); padding-top: 2px;
 }
-.outline-content { font-size: 13px; line-height: 1.8; color: var(--text-body); }
-.outline-pt {
-  display: block; margin-bottom: 4px;
-  font-weight: 600; color: var(--ink); font-size: 13.5px;
-}
-.outline-pt[contenteditable], .outline-content [contenteditable],
-.outline-content span[contenteditable] {
-  outline: none;
-  border-radius: 3px;
-  transition: background 0.15s;
-}
-.outline-pt[contenteditable]:focus, .outline-content span[contenteditable]:focus {
-  background: rgba(30,92,58,0.04);
-  box-shadow: 0 0 0 2px rgba(30,92,58,0.08);
-}
+.beat-tag.zhuan { background: rgba(192,57,43,0.1); color: var(--red); }
+.beat-tag.gaochao { background: var(--green-pale); color: var(--green-main); }
+
+/* 旧样式兼容（extractSectionText等地方用到） */
+.outline-item { display: none; }
+
 
 /* Info Grid */
 .info-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 4px; }
@@ -1897,8 +1956,10 @@ header {
         <div class="tab-empty-badge">步骤 5 完成后自动生成</div>
       </div>
       <div style="display:none;flex-direction:column;flex:1;min-height:0;overflow:hidden;position:relative" id="overviewView">
-        <!-- 滚动容器：整页上下滚动 -->
-        <div id="overviewScroll" style="flex:1;min-height:0;overflow-y:auto;padding:24px 32px 40px;display:flex;flex-direction:column;gap:28px;">
+        <!-- 滚动容器 -->
+        <div id="overviewScroll" style="flex:1;min-height:0;overflow-y:auto;padding:32px 24px 48px;">
+          <!-- 居中内容区 -->
+          <div style="max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:28px;">
 
           <!-- 行1：一句话简介 -->
           <div class="a-block" style="margin-bottom:0">
@@ -1922,16 +1983,13 @@ header {
             </div>
           </div>
 
-          <!-- 行3：剧情梗概节拍（左右各半，可拖拽） -->
+          <!-- 行3：剧情梗概节拍（全宽单列，起承转合分幕展示） -->
           <div style="border-top:1px solid var(--border-soft);padding-top:4px">
-            <div class="a-head" style="margin-bottom:12px"><div class="a-num">04</div><div class="a-title">剧情梗概节拍</div><div class="a-line"></div></div>
-            <div style="display:flex;gap:0;align-items:flex-start" id="outlineWrapper">
-              <div id="outlineLeft" style="flex:1;min-width:0"></div>
-              <div id="outlineDivider" style="width:5px;flex-shrink:0;cursor:col-resize;background:var(--border-soft);margin:0 6px;border-radius:3px;min-height:40px;transition:background .15s" onmouseenter="this.style.background='var(--green-light)'" onmouseleave="this.style.background='var(--border-soft)'"></div>
-              <div id="outlineRight" style="flex:1;min-width:0"></div>
-            </div>
+            <div class="a-head" style="margin-bottom:16px"><div class="a-num">04</div><div class="a-title">剧情梗概节拍</div><div class="a-line"></div></div>
+            <div id="outlineContainer" style="display:flex;flex-direction:column;gap:0"></div>
           </div>
 
+          </div><!-- /居中内容区 -->
         </div>
       </div>
     </div>
@@ -2697,12 +2755,17 @@ async function analyzeContent(text, key, model, scenes = []) {
   setLabel('生成详细梗概…');
   let r3;
   if (scenes && scenes.length > 0) {
-    const prompt = `你是专业影视内容分析师。根据以下英文短剧的台词和视频截图，写全剧剧情梗概。
+    const prompt = `你是专业影视内容分析师。根据以下英文短剧的台词文本和视频截图，写全剧剧情梗概。
+
+截图使用说明：
+- 截图是视频关键帧，用于补充台词无法传达的视觉信息：场景环境、人物表情/动作、画面氛围
+- 结合截图画面来判断场景切换、人物状态、情绪变化，让梗概描述更准确生动
+- 截图信息服务于叙事，不需要逐帧描述画面，只在有助于理解剧情时融入文字
 
 输出要求：
-- 总字数控制在2500-3500字，绝对不超过5000字
+- 总字数控制在3000-5000字
 - 按「起承转合」四幕结构划分，每幕下细分事件节拍，全剧共10-15个节拍点
-- 每个节拍点格式：【节拍标题】正文（100-250字）
+- 每个节拍点格式：【节拍标题】正文（150-350字）
 - 节拍标题直接点明该段核心事件，禁用「场景一」「第X段」等格式
 - 重点写清楚：事件起因→发展→结果的因果链，以及人物情感/动机的转变逻辑
 - 台词极度克制：全文不超过5处直接引语，只保留对情节转折有决定性作用的关键台词
@@ -2716,17 +2779,17 @@ async function analyzeContent(text, key, model, scenes = []) {
     selectedFrames.forEach(f => { content.push({ type: 'image_url', image_url: { url: `data:image/jpeg;base64,${f.b64}` } }); });
     const vResp = await fetch('https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
       method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
-      body: JSON.stringify({ model: 'doubao-1-5-vision-pro-32k-250115', max_tokens: 4500, temperature: 0.3, messages: [{ role: 'user', content }] })
+      body: JSON.stringify({ model: 'doubao-1-5-vision-pro-32k-250115', max_tokens: 5500, temperature: 0.3, messages: [{ role: 'user', content }] })
     });
     r3 = vResp.ok ? ((await vResp.json()).choices?.[0]?.message?.content || '') : '';
-    if (!r3) r3 = await callLLM(`根据以下英文短剧台词写全剧剧情梗概。总字数2500-3500字，按起承转合四幕结构划分，每幕下细分节拍点，全剧10-15个节拍点。每节拍格式：【节拍标题】正文（100-250字）。重点写因果链和人物情感转变逻辑，台词极度克制（全文不超过5处直接引语，只保留关键转折台词）。转折标注【转折】，高潮标注【高潮】，只还原台词中实际出现的情节。\n台词：\n${t}`, key, model, 4500);
+    if (!r3) r3 = await callLLM(`根据以下英文短剧台词写全剧剧情梗概。总字数3000-5000字，按起承转合四幕结构划分，每幕下细分节拍点，全剧10-15个节拍点。每节拍格式：【节拍标题】正文（150-350字）。重点写因果链和人物情感转变逻辑，台词极度克制（全文不超过5处直接引语，只保留关键转折台词）。转折标注【转折】，高潮标注【高潮】，只还原台词中实际出现的情节。\n台词：\n${t}`, key, model, 5500);
   } else {
     r3 = await callLLM(`你是专业影视内容分析师。根据以下英文短剧台词写全剧剧情梗概。
 
 输出要求：
-- 总字数控制在2500-3500字，绝对不超过5000字
+- 总字数控制在3000-5000字
 - 按「起承转合」四幕结构划分，每幕下细分事件节拍，全剧共10-15个节拍点
-- 每个节拍点格式：【节拍标题】正文（100-250字）
+- 每个节拍点格式：【节拍标题】正文（150-350字）
 - 节拍标题直接点明该段核心事件，禁用「场景一」「第X段」等格式
 - 重点写清楚：事件起因→发展→结果的因果链，以及人物情感/动机的转变逻辑
 - 台词极度克制：全文不超过5处直接引语，只保留对情节转折有决定性作用的关键台词
@@ -2735,7 +2798,7 @@ async function analyzeContent(text, key, model, scenes = []) {
 - 直接输出纯文本，不要JSON，节点间空行
 
 台词：
-${t}`, key, model, 4500);
+${t}`, key, model, 5500);
   }
   const outlineRaw = r3.replace(/```[\s\S]*?```/g,'').trim();
   const outlineBlocks = outlineRaw.split(/\n\s*\n/).filter(b => b.trim());
@@ -3061,20 +3124,8 @@ function renderAnalysis() {
   });
   // 人物关系图
   renderRelationGraph(d.relations || [], d.characters || []);
-  // 剧情梗概 — 左右各半列
-  const items = d.outline || [];
-  const half = Math.ceil(items.length / 2);
-  const olL = document.getElementById('outlineLeft');
-  const olR = document.getElementById('outlineRight');
-  if (olL) olL.innerHTML = '';
-  if (olR) olR.innerHTML = '';
-  items.forEach((item, i) => {
-    const div = document.createElement('div'); div.className = 'outline-item';
-    const content = esc(item.content||'').replace(/【转折】/g,'<strong style="color:var(--red)">【转折】</strong>').replace(/【高潮】/g,'<strong style="color:var(--green-main)">【高潮】</strong>');
-    div.innerHTML = `<div class="outline-n">${String(i+1).padStart(2,'0')}</div><div class="outline-content"><span class="outline-pt" contenteditable="true" spellcheck="false">${esc(item.point||'')}</span><span contenteditable="true" spellcheck="false">${content}</span></div>`;
-    if (i < half) { if (olL) olL.appendChild(div); }
-    else { if (olR) olR.appendChild(div); }
-  });
+  // 剧情梗概
+  renderOutline(d.outline || []);
   document.getElementById('overviewEmpty').style.display = 'none';
   document.getElementById('overviewView').style.display = 'flex';
 
@@ -3353,17 +3404,7 @@ function restoreSection(sec) {
       cg.appendChild(card);
     });
     const outItems = d.outline||[];
-    const half2 = Math.ceil(outItems.length/2);
-    const olL2 = document.getElementById('outlineLeft');
-    const olR2 = document.getElementById('outlineRight');
-    if(olL2) olL2.innerHTML = '';
-    if(olR2) olR2.innerHTML = '';
-    outItems.forEach((item,i) => {
-      const div = document.createElement('div'); div.className = 'outline-item';
-      const content = esc(item.content||'').replace(/【转折】/g,'<strong style="color:var(--red)">【转折】</strong>').replace(/【高潮】/g,'<strong style="color:var(--green-main)">【高潮】</strong>');
-      div.innerHTML = `<div class="outline-n">${String(i+1).padStart(2,'0')}</div><div class="outline-content"><span class="outline-pt" contenteditable="true" spellcheck="false">${esc(item.point||'')}</span><span contenteditable="true" spellcheck="false">${content}</span></div>`;
-      if(i < half2){ if(olL2) olL2.appendChild(div); } else { if(olR2) olR2.appendChild(div); }
-    });
+    renderOutline(outItems);
   } else if (sec === 'planning') {
     const stripPrefix = (text, label) => {
       if (!text) return '';
@@ -3393,7 +3434,7 @@ function extractSectionText(sec) {
   if (sec === 'overview') return [
     '一句话简介\n'+(document.getElementById('loglineText').innerText||''),
     '人物小传\n'+(document.getElementById('charGrid').innerText||''),
-    '剧情梗概\n'+((document.getElementById('outlineLeft')?.innerText||'')+'\n'+(document.getElementById('outlineRight')?.innerText||'')).trim(),
+    '剧情梗概\n'+(document.getElementById('outlineContainer')?.innerText||'').trim(),
   ].join('\n\n');
   if (sec === 'planning') return [
     '核心亮点\n'+(document.getElementById('highlightsText').innerText||''),
@@ -3475,9 +3516,9 @@ async function _regenOutlineFromRaw(rawText, cfg) {
     const result = await callLLM(`你是专业影视内容分析师。根据以下英文短剧台词写全剧剧情梗概。
 
 输出要求：
-- 总字数控制在2500-3500字，绝对不超过5000字
+- 总字数控制在3000-5000字
 - 按「起承转合」四幕结构划分，每幕下细分事件节拍，全剧共10-15个节拍点
-- 每个节拍点格式：【节拍标题】正文（100-250字）
+- 每个节拍点格式：【节拍标题】正文（150-350字）
 - 节拍标题直接点明该段核心事件，禁用「场景一」「第X段」等格式
 - 重点写清楚：事件起因→发展→结果的因果链，以及人物情感/动机的转变逻辑
 - 台词极度克制：全文不超过5处直接引语，只保留对情节转折有决定性作用的关键台词
@@ -3486,7 +3527,7 @@ async function _regenOutlineFromRaw(rawText, cfg) {
 - 直接输出纯文本，节点间空行
 
 台词：
-${t}`, cfg.llmKey, cfg.model, 4500);
+${t}`, cfg.llmKey, cfg.model, 5500);
 
     _applyNewOutline(result);
     toast('基于完整台词的梗概已重新生成','ok');
@@ -3507,9 +3548,9 @@ async function _reformatFromExisting(existingText, cfg) {
     const result = await callLLM(`你是专业影视内容分析师。以下是一部短剧的剧情梗概（原始版本），请按起承转合四幕结构重新整理，生成结构清晰的最终版本。
 
 输出要求：
-- 总字数控制在2500-3500字，不超过5000字
+- 总字数控制在3000-5000字
 - 按「起承转合」四幕结构划分，每幕下细分事件节拍，全剧共10-15个节拍点
-- 每个节拍点格式：【节拍标题】正文（100-250字）
+- 每个节拍点格式：【节拍标题】正文（150-350字）
 - 节拍标题直接点明该段核心事件，禁用「场景一」「第X段」等格式
 - 重点写清楚：事件起因→发展→结果的因果链，以及人物情感/动机的转变逻辑
 - 台词极度克制：全文不超过5处直接引语，只保留对情节转折有决定性作用的关键台词
@@ -3518,7 +3559,7 @@ async function _reformatFromExisting(existingText, cfg) {
 - 直接输出纯文本，节点间空行
 
 原始梗概：
-${existingText}`, cfg.llmKey, cfg.model, 4500);
+${existingText}`, cfg.llmKey, cfg.model, 5500);
 
     _applyNewOutline(result);
     toast('梗概已按起承转合结构重新整理','ok');
@@ -3542,21 +3583,107 @@ function _applyNewOutline(result) {
   });
   if (!newOutline.length) { toast('解析结果为空，请重试','err'); return; }
   analysisData.outline = newOutline;
-  const half = Math.ceil(newOutline.length / 2);
-  const olL = document.getElementById('outlineLeft');
-  const olR = document.getElementById('outlineRight');
-  if (olL) olL.innerHTML = '';
-  if (olR) olR.innerHTML = '';
-  newOutline.forEach((item, i) => {
-    const div = document.createElement('div'); div.className = 'outline-item';
-    const content = esc(item.content||'').replace(/【转折】/g,'<strong style="color:var(--red)">【转折】</strong>').replace(/【高潮】/g,'<strong style="color:var(--green-main)">【高潮】</strong>');
-    div.innerHTML = `<div class="outline-n">${String(i+1).padStart(2,'0')}</div><div class="outline-content"><span class="outline-pt" contenteditable="true" spellcheck="false">${esc(item.point||'')}</span><span contenteditable="true" spellcheck="false">${content}</span></div>`;
-    if (i < half) { if (olL) olL.appendChild(div); } else { if (olR) olR.appendChild(div); }
-  });
+  renderOutline(newOutline);
   saveSession();
 }
 
 // ── 复制板块 ──
+// ── 剧情梗概渲染（起承转合结构）──
+const ACT_DEFS = [
+  { keys: ['起','开篇','第一幕','一、起'], label: '起', title: '开篇设定', sub: '人物登场 · 冲突起点 · 世界规则确立', cls: 'qi' },
+  { keys: ['承','发展','第二幕','二、承'], label: '承', title: '矛盾激化', sub: '日常摩擦 · 能力彰显 · 情感暗流',   cls: 'cheng' },
+  { keys: ['转','转折','第三幕','三、转'], label: '转', title: '危机爆发', sub: '关键转折 · 最低谷 · 真相揭露',      cls: 'zhuan' },
+  { keys: ['合','结局','第四幕','四、合'], label: '合', title: '高潮收束', sub: '对决 · 情感爆发 · 结局落定',        cls: 'he' },
+];
+
+function detectAct(text) {
+  // 标题里含【起】【承】【转】【合】或对应关键词
+  const t = text.replace(/[\s\u3000]/g, '');
+  for (let i = 0; i < ACT_DEFS.length; i++) {
+    const def = ACT_DEFS[i];
+    if (new RegExp(`【(${def.keys.join('|')})】`).test(t)) return i;
+    if (new RegExp(`^(${def.keys.join('|')})[：:「]`).test(t)) return i;
+  }
+  return -1; // 没检测到幕标记
+}
+
+function renderOutline(items) {
+  const container = document.getElementById('outlineContainer');
+  if (!container) return;
+  container.innerHTML = '';
+
+  // 判断是否有幕标记
+  const hasActMarkers = items.some(item => detectAct(item.point) >= 0 || detectAct(item.content?.slice(0,30)||'') >= 0);
+
+  // 自动分幕：如果没有幕标记，按 10-15个节拍均匀切4幕
+  let groups; // [{actIdx, items:[]}]
+  if (hasActMarkers) {
+    groups = []; let curGroup = null;
+    items.forEach(item => {
+      const actIdx = detectAct(item.point) >= 0 ? detectAct(item.point) : detectAct(item.content?.slice(0,30)||'');
+      if (actIdx >= 0) {
+        curGroup = { actIdx, items: [] };
+        groups.push(curGroup);
+      }
+      if (!curGroup) { curGroup = { actIdx: 0, items: [] }; groups.push(curGroup); }
+      curGroup.items.push(item);
+    });
+  } else {
+    // 均匀切4幕
+    const n = items.length;
+    const cuts = [
+      Math.ceil(n * 0.2),
+      Math.ceil(n * 0.5),
+      Math.ceil(n * 0.75),
+      n
+    ];
+    groups = [];
+    let prev = 0;
+    cuts.forEach((cut, i) => {
+      const slice = items.slice(prev, cut);
+      if (slice.length) groups.push({ actIdx: i, items: slice });
+      prev = cut;
+    });
+  }
+
+  let beatIndex = 0;
+  groups.forEach(group => {
+    const def = ACT_DEFS[group.actIdx] || ACT_DEFS[0];
+
+    // 幕标题行
+    const header = document.createElement('div');
+    header.className = 'act-header';
+    header.innerHTML = `
+      <div class="act-badge ${def.cls}">${def.label}</div>
+      <div class="act-title">${def.title}</div>
+      <div class="act-subtitle">${def.sub}</div>
+      <div class="act-line"></div>`;
+    container.appendChild(header);
+
+    // 节拍条目
+    group.items.forEach(item => {
+      beatIndex++;
+      // 清理标题里的幕标记
+      const rawPoint = (item.point || '').replace(/【(起|承|转|合|开篇|发展|转折|结局|第[一二三四]幕|[一二三四]、[起承转合])】/g,'').trim();
+      // 处理正文里的【转折】【高潮】标签
+      const rawContent = esc(item.content || '')
+        .replace(/【转折】/g, '<span class="beat-tag zhuan">转折</span>')
+        .replace(/【高潮】/g, '<span class="beat-tag gaochao">高潮</span>');
+
+      const beat = document.createElement('div');
+      beat.className = 'beat-item';
+      beat.dataset.beatIndex = beatIndex - 1;
+      beat.innerHTML = `
+        <div class="beat-num">${beatIndex}</div>
+        <div class="beat-body">
+          <span class="beat-title" contenteditable="true" spellcheck="false">${esc(rawPoint)}</span>
+          <span class="beat-text" contenteditable="true" spellcheck="false">${rawContent}</span>
+        </div>`;
+      container.appendChild(beat);
+    });
+  });
+}
+
 function copySection(sec) {
   let text = extractSectionText(sec);
   if (sec === 'subtitles') {
@@ -3593,10 +3720,9 @@ function exportFullWord() {
     body += para(card.querySelector('.char-bio')?.innerText||'');
   });
   body += subH('剧情梗概');
-  [...document.querySelectorAll('#outlineLeft .outline-item'), ...document.querySelectorAll('#outlineRight .outline-item')].forEach((item,i) => {
-    const pt = item.querySelector('.outline-pt')?.innerText||'';
-    const spans = item.querySelectorAll('span');
-    const content = spans[1]?.innerText||spans[0]?.innerText||'';
+  document.querySelectorAll('#outlineContainer .beat-item').forEach((item, i) => {
+    const pt = item.querySelector('.beat-title')?.innerText||'';
+    const content = item.querySelector('.beat-text')?.innerText||'';
     body += subH2(`  ${String(i+1).padStart(2,'0')}.  ${pt}`);
     body += para(content);
   });
@@ -3848,36 +3974,7 @@ function bindSyncScroll() {
   })();
 
   // outline 节拍左右列分隔条（动态绑定，因为列在 overview 渲染后才出现）
-  function bindOutlineDivider() {
-    const handle = document.getElementById('outlineDivider');
-    const leftEl = document.getElementById('outlineLeft');
-    if (!handle || !leftEl || handle._bound) return;
-    handle._bound = true;
-    let dragging = false, startX = 0, startW = 0;
-    handle.addEventListener('mousedown', e => {
-      e.preventDefault(); dragging = true; startX = e.clientX; startW = leftEl.offsetWidth;
-      handle.style.background = 'var(--green-main)';
-      document.body.style.cursor = 'col-resize'; document.body.style.userSelect = 'none';
-    });
-    document.addEventListener('mousemove', e => {
-      if (!dragging) return;
-      const container = leftEl.parentElement;
-      const maxW = container.offsetWidth - 120;
-      const newW = Math.min(maxW, Math.max(120, startW + e.clientX - startX));
-      leftEl.style.flex = '0 0 ' + newW + 'px';
-    });
-    document.addEventListener('mouseup', () => {
-      if (!dragging) return; dragging = false;
-      handle.style.background = '';
-      document.body.style.cursor = ''; document.body.style.userSelect = '';
-    });
-  }
-  // 在 renderAnalysis 调用后绑定
-  const _origRA = window.renderAnalysis;
-  if (typeof renderAnalysis === 'function') {
-    const _ra = renderAnalysis;
-    window.renderAnalysis = function() { _ra.apply(this, arguments); setTimeout(bindOutlineDivider, 50); };
-  }
+  // outline 已改为单列，无需分隔条绑定
 })();
 function setStatus(s,t){document.getElementById('statusDot').className='status-dot '+s;document.getElementById('statusText').textContent=t;}
 function setProg(p){document.getElementById('progressBar').style.width=p+'%';}
@@ -4172,10 +4269,12 @@ async function sendFloatChat() {
       name: c.querySelector('.char-name')?.innerText || '',
       bio: c.querySelector('.char-bio')?.innerText || ''
     })),
-    outline: [...document.querySelectorAll('#outlineLeft .outline-item'), ...document.querySelectorAll('#outlineRight .outline-item')].map(el => ({
-      point: el.querySelector('.outline-pt')?.innerText || '',
-      content: el.querySelector('span:last-child')?.innerText || ''
-    })),
+    outline: document.querySelectorAll('#outlineContainer .beat-item').length
+      ? [...document.querySelectorAll('#outlineContainer .beat-item')].map(el => ({
+          point: el.querySelector('.beat-title')?.innerText || '',
+          content: el.querySelector('.beat-text')?.innerText || ''
+        }))
+      : (analysisData.outline || []),
     highlights: document.getElementById('highlightsText')?.innerText || '',
     structureActs: document.getElementById('logicGrid')?.innerText || '',
     characterLogic: document.getElementById('charLogicText')?.innerText || '',
@@ -4240,15 +4339,7 @@ async function sendFloatChat() {
       }
       if (ch.outline?.length) {
         analysisData.outline = ch.outline;
-        const half = Math.ceil(ch.outline.length/2);
-        const olL = document.getElementById('outlineLeft'); if(olL) olL.innerHTML='';
-        const olR = document.getElementById('outlineRight'); if(olR) olR.innerHTML='';
-        ch.outline.forEach((item,i)=>{
-          const div=document.createElement('div'); div.className='outline-item';
-          const content=esc(item.content||'').replace(/【转折】/g,'<strong style="color:var(--red)">【转折】</strong>').replace(/【高潮】/g,'<strong style="color:var(--green-main)">【高潮】</strong>');
-          div.innerHTML=`<div class="outline-n">${String(i+1).padStart(2,'0')}</div><div class="outline-content"><span class="outline-pt" contenteditable="true" spellcheck="false">${esc(item.point||'')}</span><span contenteditable="true" spellcheck="false">${content}</span></div>`;
-          if(i<half){if(olL)olL.appendChild(div);}else{if(olR)olR.appendChild(div);}
-        });
+        renderOutline(ch.outline);
       }
       if (ch.highlights) { document.getElementById('highlightsText').innerHTML = ch.highlights; analysisData.highlights = ch.highlights; }
       if (ch.structureActs) { document.getElementById('logicGrid').innerHTML = ch.structureActs; analysisData.structureActs = ch.structureActs; }
