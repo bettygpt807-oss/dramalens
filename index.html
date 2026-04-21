@@ -3428,11 +3428,77 @@ function applySectionTranslation(sec, enText) {
 async function reformatOutline() {
   const cfg = getConfig();
   if (!cfg.llmKey) { toast('请先配置 API Key','err'); return; }
-  const existingText = (analysisData.outline || [])
-    .map(item => `【${item.point}】\n${item.content||''}`)
-    .join('\n\n');
-  if (!existingText.trim()) { toast('暂无梗概数据','err'); return; }
 
+  const existingOutline = analysisData.outline || [];
+  const rawText = analysisData._rawText || '';
+  const existingText = existingOutline.map(item => `【${item.point}】\n${item.content||''}`).join('\n\n');
+
+  // ── 诊断：计算当前数据覆盖情况 ──
+  const nodeCount = existingOutline.length;
+  const totalChars = existingText.length;
+  const rawChars = rawText.length;
+
+  // 有原始台词 → 可以完整重跑梗概（最优）
+  if (rawText && rawChars > 500) {
+    const confirmed = confirm(
+      `检测到原始台词数据（约${Math.round(rawChars/500)}分钟视频内容）。\n\n` +
+      `当前梗概：${nodeCount} 个节拍点，约 ${totalChars} 字\n\n` +
+      `推荐操作：用原始台词重新生成完整梗概（覆盖全部剧情，约需30秒）\n` +
+      `点「确定」→ 基于完整台词重生成\n点「取消」→ 仅重新整理现有梗概格式`
+    );
+    if (confirmed) {
+      await _regenOutlineFromRaw(rawText, cfg);
+      return;
+    }
+  } else if (!existingText.trim()) {
+    toast('暂无梗概数据，请重新解析视频','err');
+    return;
+  } else {
+    // 无原始台词，告知用户限制
+    const charCount = totalChars;
+    const msg = nodeCount < 8
+      ? `当前梗概只有 ${nodeCount} 个节拍点（约${charCount}字），数据可能不完整。\n\n重整梗概只能重新整理已有内容，无法补充缺失的剧情。\n如需完整梗概，建议重新上传视频解析。\n\n仍然继续重整格式？`
+      : `当前梗概有 ${nodeCount} 个节拍点（约${charCount}字）。\n\n将按起承转合结构重新整理，约需20秒。\n\n继续？`;
+    if (!confirm(msg)) return;
+  }
+
+  await _reformatFromExisting(existingText, cfg);
+}
+
+async function _regenOutlineFromRaw(rawText, cfg) {
+  const btn = document.querySelector('[onclick="reformatOutline()"]');
+  if (btn) { btn.textContent = '重生成中…'; btn.disabled = true; }
+  toast('基于完整台词重新生成梗概，请稍候…');
+
+  try {
+    const t = rawText.length > 15000 ? rawText.slice(0, 15000) + '…' : rawText;
+    const result = await callLLM(`你是专业影视内容分析师。根据以下英文短剧台词写全剧剧情梗概。
+
+输出要求：
+- 总字数控制在2500-3500字，绝对不超过5000字
+- 按「起承转合」四幕结构划分，每幕下细分事件节拍，全剧共10-15个节拍点
+- 每个节拍点格式：【节拍标题】正文（100-250字）
+- 节拍标题直接点明该段核心事件，禁用「场景一」「第X段」等格式
+- 重点写清楚：事件起因→发展→结果的因果链，以及人物情感/动机的转变逻辑
+- 台词极度克制：全文不超过5处直接引语，只保留对情节转折有决定性作用的关键台词
+- 转折节点标注【转折】，高潮节点标注【高潮】
+- 只还原台词中实际出现的情节，不补充原视频之外的剧情
+- 直接输出纯文本，节点间空行
+
+台词：
+${t}`, cfg.llmKey, cfg.model, 4500);
+
+    _applyNewOutline(result);
+    toast('基于完整台词的梗概已重新生成','ok');
+  } catch(e) {
+    toast('生成失败：'+e.message,'err');
+  } finally {
+    const btn = document.querySelector('[onclick="reformatOutline()"]');
+    if (btn) { btn.textContent = '↺ 重整梗概'; btn.disabled = false; }
+  }
+}
+
+async function _reformatFromExisting(existingText, cfg) {
   const btn = document.querySelector('[onclick="reformatOutline()"]');
   if (btn) { btn.textContent = '整理中…'; btn.disabled = true; }
   toast('正在重新整理梗概结构…');
@@ -3454,37 +3520,40 @@ async function reformatOutline() {
 原始梗概：
 ${existingText}`, cfg.llmKey, cfg.model, 4500);
 
-    const outlineRaw = result.replace(/```[\s\S]*?```/g,'').trim();
-    const blocks = outlineRaw.split(/\n\s*\n/).filter(b=>b.trim());
-    const newOutline = blocks.map(block => {
-      const lines = block.trim().split('\n');
-      const m = lines[0].match(/【([^】]+)】/);
-      const point = m ? m[1] : lines[0].replace(/\*+/g,'').replace(/^\d+[\.、\s]+/,'').trim().slice(0,30);
-      const content = lines.join('\n').replace(/^【[^】]+】\s*/,'').trim();
-      return { point, content };
-    });
-    if (newOutline.length) {
-      analysisData.outline = newOutline;
-      // 重新渲染节拍
-      const half = Math.ceil(newOutline.length / 2);
-      const olL = document.getElementById('outlineLeft');
-      const olR = document.getElementById('outlineRight');
-      if (olL) olL.innerHTML = '';
-      if (olR) olR.innerHTML = '';
-      newOutline.forEach((item, i) => {
-        const div = document.createElement('div'); div.className = 'outline-item';
-        const content = esc(item.content||'').replace(/【转折】/g,'<strong style="color:var(--red)">【转折】</strong>').replace(/【高潮】/g,'<strong style="color:var(--green-main)">【高潮】</strong>');
-        div.innerHTML = `<div class="outline-n">${String(i+1).padStart(2,'0')}</div><div class="outline-content"><span class="outline-pt" contenteditable="true" spellcheck="false">${esc(item.point||'')}</span><span contenteditable="true" spellcheck="false">${content}</span></div>`;
-        if (i < half) { if (olL) olL.appendChild(div); } else { if (olR) olR.appendChild(div); }
-      });
-      saveSession();
-      toast('梗概已按起承转合结构重新整理','ok');
-    }
+    _applyNewOutline(result);
+    toast('梗概已按起承转合结构重新整理','ok');
   } catch(e) {
     toast('整理失败：'+e.message,'err');
   } finally {
+    const btn = document.querySelector('[onclick="reformatOutline()"]');
     if (btn) { btn.textContent = '↺ 重整梗概'; btn.disabled = false; }
   }
+}
+
+function _applyNewOutline(result) {
+  const outlineRaw = result.replace(/```[\s\S]*?```/g,'').trim();
+  const blocks = outlineRaw.split(/\n\s*\n/).filter(b=>b.trim());
+  const newOutline = blocks.map(block => {
+    const lines = block.trim().split('\n');
+    const m = lines[0].match(/【([^】]+)】/);
+    const point = m ? m[1] : lines[0].replace(/\*+/g,'').replace(/^\d+[\.、\s]+/,'').trim().slice(0,30);
+    const content = lines.join('\n').replace(/^【[^】]+】\s*/,'').trim();
+    return { point, content };
+  });
+  if (!newOutline.length) { toast('解析结果为空，请重试','err'); return; }
+  analysisData.outline = newOutline;
+  const half = Math.ceil(newOutline.length / 2);
+  const olL = document.getElementById('outlineLeft');
+  const olR = document.getElementById('outlineRight');
+  if (olL) olL.innerHTML = '';
+  if (olR) olR.innerHTML = '';
+  newOutline.forEach((item, i) => {
+    const div = document.createElement('div'); div.className = 'outline-item';
+    const content = esc(item.content||'').replace(/【转折】/g,'<strong style="color:var(--red)">【转折】</strong>').replace(/【高潮】/g,'<strong style="color:var(--green-main)">【高潮】</strong>');
+    div.innerHTML = `<div class="outline-n">${String(i+1).padStart(2,'0')}</div><div class="outline-content"><span class="outline-pt" contenteditable="true" spellcheck="false">${esc(item.point||'')}</span><span contenteditable="true" spellcheck="false">${content}</span></div>`;
+    if (i < half) { if (olL) olL.appendChild(div); } else { if (olR) olR.appendChild(div); }
+  });
+  saveSession();
 }
 
 // ── 复制板块 ──
