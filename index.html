@@ -1649,15 +1649,17 @@ header {
             <div class="a-body editable" id="loglineText" contenteditable="true" spellcheck="false"></div>
           </div>
 
-          <!-- 行2：人物关系图 + 人物小传（并排，各占一半，内容等高对齐） -->
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;min-width:0;width:100%">
+          <!-- 行2：人物关系图 + 人物小传（flex + 可拖拽分隔条） -->
+          <div style="display:flex;gap:0;align-items:flex-start;min-width:0;width:100%" id="row2Wrapper">
             <!-- 关系图 -->
-            <div style="min-width:0">
+            <div style="flex:1;min-width:200px;overflow:hidden" id="relationGraphCol">
               <div class="a-head" style="margin-bottom:10px"><div class="a-num">02</div><div class="a-title">人物关系图</div><div class="a-line"></div></div>
               <div id="relationGraph" style="width:100%;overflow:hidden;"></div>
             </div>
+            <!-- 分隔条 -->
+            <div id="row2Divider" style="width:5px;flex-shrink:0;cursor:col-resize;background:var(--border-soft);margin:0 6px;border-radius:3px;align-self:stretch;min-height:40px;transition:background .15s" onmouseenter="this.style.background='var(--green-light)'" onmouseleave="this.style.background='var(--border-soft)'"></div>
             <!-- 人物小传 -->
-            <div style="min-width:0">
+            <div style="flex:1;min-width:200px;overflow:hidden" id="charGridCol">
               <div class="a-head" style="margin-bottom:10px"><div class="a-num">03</div><div class="a-title">人物小传</div><div class="a-line"></div></div>
               <div class="char-grid" id="charGrid" style="padding-left:0;grid-template-columns:repeat(auto-fill,minmax(180px,1fr))"></div>
             </div>
@@ -1737,34 +1739,32 @@ header {
                     </select>
                   </div>
                   <div class="adapt-form-item">
-                    <label class="adapt-form-label">内容类型</label>
+                    <label class="adapt-form-label">受众偏好</label>
                     <select class="adapt-form-select" id="adaptType">
-                      <option value="女频">女频（甜宠/虐恋/复仇）</option>
-                      <option value="男频">男频（爽文/热血/权谋）</option>
-                      <option value="通用">男女通用</option>
+                      <option value="女频（18-50岁）">女频（18–50岁）</option>
+                      <option value="男频（18-50岁）">男频（18–50岁）</option>
+                      <option value="男女通频">男女通频</option>
+                    </select>
+                  </div>
+                  <div class="adapt-form-item">
+                    <label class="adapt-form-label">题材类型</label>
+                    <select class="adapt-form-select" id="adaptGenre">
+                      <option value="AI向（玄幻/奇幻/科幻/末世/神话/狼人/吸血鬼）">AI向（玄幻/奇幻/科幻/末世/神话/狼人/吸血鬼）</option>
+                      <option value="真人向（霸总/都市/甜宠/虐恋/情感流/复仇）">真人向（霸总/都市/甜宠/虐恋/情感流/复仇）</option>
                     </select>
                   </div>
                   <div class="adapt-form-item">
                     <label class="adapt-form-label">体量规划</label>
                     <select class="adapt-form-select" id="adaptVolume">
-                      <option value="40集60分钟">短篇·40集/约60分钟</option>
-                      <option value="60集90分钟">中篇·60集/约90分钟</option>
-                      <option value="80集120分钟">长篇·80集/约120分钟</option>
-                    </select>
-                  </div>
-                  <div class="adapt-form-item">
-                    <label class="adapt-form-label">目标受众</label>
-                    <select class="adapt-form-select" id="adaptAudience">
-                      <option value="18-29岁">18-29岁（Z世代）</option>
-                      <option value="30-50岁">30-50岁（主力消费）</option>
-                      <option value="50岁以上">50岁以上（银发市场）</option>
-                      <option value="不限">不限受众</option>
+                      <option value="短篇·40集/约60分钟">短篇·40集 / 约60分</option>
+                      <option value="中篇·60集/约90分钟">中篇·60集 / 约90分</option>
+                      <option value="长篇·80集/约120分钟">长篇·80集 / 约120分</option>
                     </select>
                   </div>
                 </div>
                 <div class="adapt-form-item" style="grid-column:1/-1;margin-top:4px;">
                   <label class="adapt-form-label">特定改编需求</label>
-                  <textarea class="adapt-form-textarea" id="adaptCustom" placeholder="可选 · 说明你的特定需求，如：主角改为男性、增加职场元素、保留狼人设定但换成现代背景…" rows="3"></textarea>
+                  <textarea class="adapt-form-textarea" id="adaptCustom" placeholder="描述你的项目需求……例如：保留狼人设定但换成现代背景，改编成适合欧美 TikTok 市场的短剧，原著有强烈的…" rows="3"></textarea>
                 </div>
                 <button class="btn-primary" id="btnGenAdapt" onclick="generateAdaptPlans()" style="margin-top:14px;font-size:12px;padding:8px 18px">▶ 生成改编方案</button>
               </div>
@@ -2394,15 +2394,17 @@ async function analyzeContent(text, key, model, scenes = []) {
   setLabel('生成详细梗概…');
   let r3;
   if (scenes && scenes.length > 0) {
-    const prompt = `你是专业影视内容分析师。根据以下英文短剧的台词和视频截图，写全剧详细梗概（约2500字）。
+    const prompt = `你是专业影视内容分析师。根据以下英文短剧的台词和视频截图，写全剧剧情梗概。
 
-严格要求：
-- 只还原视频中实际发生的情节，台词结束即梗概结束，绝对不要补充原视频之后的新剧情
-- 可基于截图画面和台词上下文做合理推断，补全人物神态、场景氛围、行为动机等细节——但推断必须以现有台词或截图为依据
-- 节点数量与视频实际内容匹配，不要凑数量
-- 每个节点格式：【情节标题】正文（结合截图画面 + 台词 + 情绪分析）
-- 节点标题必须使用【】包裹，禁止使用「场景一」「场景二」等格式，直接写情节内容关键词作为标题
-- 转折处标注【转折】，高潮处标注【高潮】
+输出要求：
+- 总字数控制在2500-3500字，绝对不超过5000字
+- 按「起承转合」四幕结构划分，每幕下细分事件节拍，全剧共10-15个节拍点
+- 每个节拍点格式：【节拍标题】正文（100-250字）
+- 节拍标题直接点明该段核心事件，禁用「场景一」「第X段」等格式
+- 重点写清楚：事件起因→发展→结果的因果链，以及人物情感/动机的转变逻辑
+- 台词极度克制：全文不超过5处直接引语，只保留对情节转折有决定性作用的关键台词
+- 转折节点标注【转折】，高潮节点标注【高潮】
+- 只还原视频中实际发生的情节，绝对不要补充原视频之外的新剧情
 - 直接输出纯文本，节点间空行
 
 台词：\n${t}`;
@@ -2414,17 +2416,19 @@ async function analyzeContent(text, key, model, scenes = []) {
       body: JSON.stringify({ model: 'doubao-1-5-vision-pro-32k-250115', max_tokens: 4500, temperature: 0.3, messages: [{ role: 'user', content }] })
     });
     r3 = vResp.ok ? ((await vResp.json()).choices?.[0]?.message?.content || '') : '';
-    if (!r3) r3 = await callLLM(`根据以下英文短剧台词写详细梗概（约2500字）。只还原台词中实际出现的情节，台词结束即梗概结束，不补充原视频之外的新剧情。可基于台词上下文合理推断补全细节，节点数量与内容匹配。每节点格式：【情节标题】正文，转折标注【转折】高潮标注【高潮】，纯文本节点间空行。标题必须用【】包裹，禁止用「场景一/场景二」等写法。\n台词：\n${t}`, key, model, 4500);
+    if (!r3) r3 = await callLLM(`根据以下英文短剧台词写全剧剧情梗概。总字数2500-3500字，按起承转合四幕结构划分，每幕下细分节拍点，全剧10-15个节拍点。每节拍格式：【节拍标题】正文（100-250字）。重点写因果链和人物情感转变逻辑，台词极度克制（全文不超过5处直接引语，只保留关键转折台词）。转折标注【转折】，高潮标注【高潮】，只还原台词中实际出现的情节。\n台词：\n${t}`, key, model, 4500);
   } else {
-    r3 = await callLLM(`你是专业影视内容分析师。根据以下英文短剧台词写详细梗概（约2500字）。
+    r3 = await callLLM(`你是专业影视内容分析师。根据以下英文短剧台词写全剧剧情梗概。
 
-严格要求：
-- 只还原台词中实际出现的情节，台词结束即梗概结束，绝对不要补充原视频之外的新剧情
-- 可基于台词上下文合理推断，补全场景氛围、人物神态与动机——推断必须以现有台词为依据
-- 节点数量与台词内容匹配，不要凑数量
-- 每个节点格式：【情节标题】正文（含场景/台词/情感）
-- 标题必须用【】包裹，禁止使用「场景一」「场景二」「场景X」等格式
-- 转折处标注【转折】，高潮处标注【高潮】
+输出要求：
+- 总字数控制在2500-3500字，绝对不超过5000字
+- 按「起承转合」四幕结构划分，每幕下细分事件节拍，全剧共10-15个节拍点
+- 每个节拍点格式：【节拍标题】正文（100-250字）
+- 节拍标题直接点明该段核心事件，禁用「场景一」「第X段」等格式
+- 重点写清楚：事件起因→发展→结果的因果链，以及人物情感/动机的转变逻辑
+- 台词极度克制：全文不超过5处直接引语，只保留对情节转折有决定性作用的关键台词
+- 转折节点标注【转折】，高潮节点标注【高潮】
+- 只还原台词中实际出现的情节，绝对不要补充原视频之外的新剧情
 - 直接输出纯文本，不要JSON，节点间空行
 
 台词：
@@ -2560,8 +2564,8 @@ async function generateAdaptPlans() {
 
   const market   = document.getElementById('adaptMarket').value;
   const type     = document.getElementById('adaptType').value;
+  const genre    = document.getElementById('adaptGenre').value;
   const volume   = document.getElementById('adaptVolume').value;
-  const audience = document.getElementById('adaptAudience').value;
   const custom  = document.getElementById('adaptCustom').value.trim();
 
   const fullOutline = (analysisData.outline || [])
@@ -2593,7 +2597,7 @@ async function generateAdaptPlans() {
 - 方案说明中必须明确说明：用什么新设定来承载原来的每一个核心策划要素
 
 【目标市场硬约束 - 必须严格遵守】${marketGuide}
-用户其他需求：内容类型【${type}】，体量规划【${volume}】，目标受众【${audience}】${custom ? `\n用户特定改编需求（必须优先满足）：${custom}` : ''}
+用户其他需求：受众偏好【${type}】，题材类型【${genre}】，体量规划【${volume}】${custom ? `\n用户特定改编需求（必须优先满足）：${custom}` : ''}
 
 原剧完整策划逻辑（每一条都是爆款基因，改编方案必须逐一对应保留）：
 ${analysisData._planSummary}
@@ -3372,6 +3376,33 @@ function bindSyncScroll() {
     });
   }
   makeColResizer('planningDivider',  'planningLeft',  200, 200);
+
+  // 行2：关系图 | 人物小传 分隔条
+  (function(){
+    const handle = document.getElementById('row2Divider');
+    const leftEl = document.getElementById('relationGraphCol');
+    if (!handle || !leftEl) return;
+    let dragging = false, startX = 0, startW = 0;
+    handle.addEventListener('mousedown', e => {
+      e.preventDefault(); dragging = true; startX = e.clientX; startW = leftEl.offsetWidth;
+      handle.style.background = 'var(--green-main)';
+      document.body.style.cursor = 'col-resize'; document.body.style.userSelect = 'none';
+    });
+    document.addEventListener('mousemove', e => {
+      if (!dragging) return;
+      const container = document.getElementById('row2Wrapper');
+      const maxW = container.offsetWidth - 200 - 17;
+      const newW = Math.min(maxW, Math.max(200, startW + e.clientX - startX));
+      leftEl.style.flex = '0 0 ' + newW + 'px';
+      // 重绘关系图适应新宽度
+      if (analysisData.relations) renderRelationGraph(analysisData.relations||[], analysisData.characters||[]);
+    });
+    document.addEventListener('mouseup', () => {
+      if (!dragging) return; dragging = false;
+      handle.style.background = '';
+      document.body.style.cursor = ''; document.body.style.userSelect = '';
+    });
+  })();
 
   // outline 节拍左右列分隔条（动态绑定，因为列在 overview 渲染后才出现）
   function bindOutlineDivider() {
