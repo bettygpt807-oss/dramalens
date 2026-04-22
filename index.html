@@ -8,7 +8,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@300;400;500&family=Noto+Serif+SC:wght@300;400;600;700&family=Noto+Sans+SC:wght@300;400;500;600&display=swap');
 
 :root {
-  /* ── DramaMind 墨绿色系 ── */
   --green-deep:   #0F2D1A;
   --green-dark:   #1A4A2A;
   --green-main:   #1E5C3A;
@@ -880,7 +879,7 @@ header {
   width: 36%; min-width: 200px; max-width: 520px; flex-shrink: 0;
   background: #000; overflow: hidden; position: relative;
   display: flex; flex-direction: column;
-  min-height: 0; /* critical: allow flex child to shrink */
+  min-height: 0;
 }
 .sub-video-panel video {
   width: 100%; flex: 1; min-height: 0;
@@ -998,9 +997,8 @@ header {
 
 /* Analysis views */
 .analysis-toolbar {
-  display: none; /* 不再单独占行 */
+  display: none;
 }
-/* 右上角浮动按钮组 */
 .pane-actions {
   position: absolute; top: 10px; right: 16px;
   display: flex; gap: 6px; z-index: 10;
@@ -1347,7 +1345,7 @@ header {
 .beat-tag.zhuan { background: rgba(192,57,43,0.1); color: var(--red); }
 .beat-tag.gaochao { background: var(--green-pale); color: var(--green-main); }
 
-/* 旧样式兼容（extractSectionText等地方用到） */
+/* 旧样式兼容 */
 .outline-item { display: none; }
 
 
@@ -1424,93 +1422,7 @@ header {
 .toast.show { transform: translateY(0); opacity: 1; }
 .toast.ok { background: var(--success); }
 .toast.err { background: var(--red); }
-/* ── 悬浮对话框 ── */
-.float-chat {
-  position: fixed;
-  bottom: 24px; right: 24px;
-  width: 420px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  box-shadow: var(--shadow-lg);
-  display: none;
-  flex-direction: column;
-  z-index: 200;
-  overflow: hidden;
-  transition: box-shadow 0.2s;
-}
-.float-chat.open { display: flex; }
-.float-chat-header {
-  display: flex; align-items: center; gap: 8px;
-  padding: 12px 16px;
-  background: var(--green-deep);
-  color: white;
-  flex-shrink: 0;
-  cursor: move;
-  user-select: none;
-}
-.float-chat-title { font-size: 13px; font-weight: 500; flex: 1; }
-.float-chat-hint { font-size: 11px; color: rgba(255,255,255,0.5); }
-.float-chat-close {
-  background: none; border: none; color: rgba(255,255,255,0.7);
-  cursor: pointer; font-size: 16px; padding: 0 2px; line-height: 1;
-  transition: color 0.15s;
-}
-.float-chat-close:hover { color: white; }
-.float-chat-log {
-  flex: 1; overflow-y: auto; padding: 12px 14px;
-  max-height: 280px; min-height: 80px;
-  display: flex; flex-direction: column; gap: 10px;
-}
-.float-chat-log::-webkit-scrollbar { width: 4px; }
-.float-chat-log::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-.fc-msg { font-size: 12.5px; line-height: 1.6; }
-.fc-msg.user { color: var(--ink); background: var(--green-pale); border-radius: 8px; padding: 8px 10px; align-self: flex-end; max-width: 90%; }
-.fc-msg.ai { color: var(--text-body); background: var(--surface-2); border-radius: 8px; padding: 8px 10px; max-width: 95%; }
-.fc-msg.ai.loading { color: var(--text-ghost); font-style: italic; }
-.float-chat-input-row {
-  display: flex; align-items: flex-end; gap: 8px;
-  padding: 10px 12px;
-  border-top: 1px solid var(--border-soft);
-  flex-shrink: 0;
-}
-.float-chat-input {
-  flex: 1; min-height: 36px; max-height: 120px;
-  padding: 8px 11px;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  font-family: 'Noto Sans SC', sans-serif;
-  font-size: 12.5px; color: var(--ink);
-  outline: none; resize: none;
-  transition: border-color 0.2s;
-  line-height: 1.5;
-}
-.float-chat-input:focus { border-color: var(--green-main); background: white; }
-.float-chat-input::placeholder { color: var(--text-ghost); }
-.float-chat-send {
-  height: 36px; width: 36px; flex-shrink: 0;
-  background: var(--green-main); color: white;
-  border: none; border-radius: 8px; cursor: pointer;
-  font-size: 14px; display: flex; align-items: center; justify-content: center;
-  transition: all 0.2s;
-}
-.float-chat-send:hover:not(:disabled) { background: var(--green-dark); }
-.float-chat-send:disabled { opacity: 0.4; cursor: not-allowed; }
-.float-chat-toggle {
-  position: fixed; bottom: 24px; right: 24px;
-  width: 48px; height: 48px;
-  background: var(--green-main);
-  color: white; border: none; border-radius: 50%;
-  cursor: pointer; font-size: 20px;
-  box-shadow: var(--shadow-md);
-  z-index: 199;
-  display: none;
-  align-items: center; justify-content: center;
-  transition: all 0.2s;
-}
-.float-chat-toggle.visible { display: flex; }
-.float-chat-toggle:hover { background: var(--green-dark); transform: scale(1.05); }
+
 /* ── 单词悬浮 tooltip ── */
 .word-span {
   cursor: pointer;
@@ -1660,7 +1572,7 @@ header {
 }
 .vocab-export-btn:hover { border-color: var(--green-main); color: var(--green-main); background: var(--green-ghost); }
 
-/* 单词本按钮（header右侧）*/
+/* 单词本按钮 */
 .vocab-toggle-btn {
   height: 30px; padding: 0 12px;
   background: rgba(255,255,255,0.08);
@@ -1920,7 +1832,7 @@ header {
           </div>
           <!-- 分隔条1 -->
           <div class="sub-resize-handle" id="subResize1"></div>
-          <!-- 中：字幕列（含搜索框）-->
+          <!-- 中：字幕列 -->
           <div class="sub-list-col">
             <div class="sub-list-header">
               <input type="text" class="sub-search-inline" id="subSearch" placeholder="🔍 搜索台词…">
@@ -1947,7 +1859,7 @@ header {
       </div>
     </div>
 
-    <!-- Overview Pane：剧情概要 -->
+    <!-- Overview Pane -->
     <div class="tab-pane" id="pane-overview">
       <div class="tab-empty" id="overviewEmpty">
         <div class="tab-empty-icon">🎬</div>
@@ -1956,45 +1868,40 @@ header {
         <div class="tab-empty-badge">步骤 5 完成后自动生成</div>
       </div>
       <div style="display:none;flex-direction:column;flex:1;min-height:0;overflow:hidden;position:relative" id="overviewView">
-        <!-- 滚动容器 -->
         <div id="overviewScroll" style="flex:1;min-height:0;overflow-y:auto;padding:32px 24px 48px;">
-          <!-- 居中内容区 -->
           <div style="max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:28px;">
 
-          <!-- 行1：一句话简介 -->
+          <!-- 一句话简介 -->
           <div class="a-block" style="margin-bottom:0">
             <div class="a-head"><div class="a-num">01</div><div class="a-title">一句话简介</div><div class="a-line"></div></div>
             <div class="a-body editable" id="loglineText" contenteditable="true" spellcheck="false"></div>
           </div>
 
-          <!-- 行2：人物关系图 + 人物小传（flex + 可拖拽分隔条） -->
+          <!-- 人物关系图 + 人物小传 -->
           <div style="display:flex;gap:0;align-items:flex-start;min-width:0;width:100%" id="row2Wrapper">
-            <!-- 关系图 -->
             <div style="flex:1;min-width:200px;overflow:hidden" id="relationGraphCol">
               <div class="a-head" style="margin-bottom:10px"><div class="a-num">02</div><div class="a-title">人物关系图</div><div class="a-line"></div></div>
               <div id="relationGraph" style="width:100%;overflow:hidden;"></div>
             </div>
-            <!-- 分隔条 -->
             <div id="row2Divider" style="width:5px;flex-shrink:0;cursor:col-resize;background:var(--border-soft);margin:0 6px;border-radius:3px;align-self:stretch;min-height:40px;transition:background .15s" onmouseenter="this.style.background='var(--green-light)'" onmouseleave="this.style.background='var(--border-soft)'"></div>
-            <!-- 人物小传 -->
             <div style="flex:1;min-width:200px;overflow:hidden" id="charGridCol">
               <div class="a-head" style="margin-bottom:10px"><div class="a-num">03</div><div class="a-title">人物小传</div><div class="a-line"></div></div>
               <div class="char-grid" id="charGrid" style="padding-left:0;grid-template-columns:repeat(auto-fill,minmax(180px,1fr))"></div>
             </div>
           </div>
 
-          <!-- 行3：剧情梗概节拍（全宽单列，起承转合分幕展示） -->
+          <!-- 剧情梗概节拍 -->
           <div style="border-top:1px solid var(--border-soft);padding-top:4px">
             <div class="a-head" style="margin-bottom:16px"><div class="a-num">04</div><div class="a-title">剧情梗概节拍</div><div class="a-line"></div></div>
             <div id="outlineContainer" style="display:flex;flex-direction:column;gap:0"></div>
           </div>
 
-          </div><!-- /居中内容区 -->
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Planning Pane：策划逻辑 -->
+    <!-- Planning Pane -->
     <div class="tab-pane" id="pane-planning">
       <div class="tab-empty" id="planningEmpty">
         <div class="tab-empty-icon">⬡</div>
@@ -2004,7 +1911,6 @@ header {
       </div>
       <div style="display:none;flex-direction:column;flex:1;min-height:0;overflow:hidden;position:relative" id="planningView">
         <div class="two-col-layout" style="flex:1;overflow:hidden">
-          <!-- 左列：8个策划逻辑维度 -->
           <div class="two-col-left" id="planningLeft">
             <div class="a-block">
               <div class="a-head"><div class="a-num">01</div><div class="a-title">核心亮点</div><div class="a-line"></div></div>
@@ -2036,12 +1942,8 @@ header {
             </div>
           </div>
           <div class="two-col-divider" id="planningDivider"></div>
-          <!-- 右列：表单 + 方案列表 / 大纲面板 -->
           <div class="two-col-right" id="planningRight" style="display:flex;flex-direction:column;padding:0;overflow:hidden;">
-
-            <!-- 方案区（默认显示）-->
             <div id="adaptPlansView" style="flex:1;overflow-y:auto;padding:24px 28px;display:flex;flex-direction:column;gap:0;">
-              <!-- 需求表单 -->
               <div class="adapt-form" id="adaptForm" style="margin-bottom:20px;">
                 <div class="adapt-form-desc">选择改编方向，基于左侧策划逻辑生成专属方案</div>
                 <div class="adapt-form-grid">
@@ -2083,7 +1985,6 @@ header {
                 </div>
                 <button class="btn-primary" id="btnGenAdapt" onclick="generateAdaptPlans()" style="margin-top:14px;font-size:12px;padding:8px 18px">▶ 生成改编方案</button>
               </div>
-              <!-- 方案卡片列表 -->
               <div id="adaptPlansGrid"></div>
             </div>
           </div>
@@ -2122,25 +2023,6 @@ header {
 
 <div class="toast" id="toast"></div>
 
-<!-- 悬浮对话按钮 -->
-<button class="float-chat-toggle" id="floatChatToggle" onclick="toggleFloatChat()" title="AI 修改助手">✦</button>
-
-<!-- 悬浮对话框 -->
-<div class="float-chat" id="floatChat">
-  <div class="float-chat-header" id="floatChatHeader">
-    <span class="float-chat-title">✦ AI 修改助手</span>
-    <span class="float-chat-hint">告诉 AI 哪里不准确，它会统筹修改</span>
-    <button class="float-chat-close" onclick="toggleFloatChat()">×</button>
-  </div>
-  <div class="float-chat-log" id="floatChatLog">
-    <div class="fc-msg ai">你好！请告诉我哪里的内容不准确，或者需要如何调整，我会统筹修改所有相关内容。例如：「人物小传里艾琳的描述不准确，她其实是…」</div>
-  </div>
-  <div class="float-chat-input-row">
-    <textarea class="float-chat-input" id="floatChatInput" placeholder="描述需要修改的内容…" rows="2" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendFloatChat();}"></textarea>
-    <button class="float-chat-send" id="floatChatSend" onclick="sendFloatChat()">↑</button>
-  </div>
-</div>
-
 <script>
 // ── STATE ──
 let videoFile = null, videoUrl = '', inputMode = 'file', videoObjectURL = '';
@@ -2164,14 +2046,11 @@ function saveToHistory(data) {
     subtitleData: subtitleData,
     analysisData: { ...data },
   };
-  // 同名记录去重（同一个视频文件名，更新而不新增）
   const existIdx = history.findIndex(h => h.title === record.title);
   if (existIdx >= 0) history.splice(existIdx, 1);
   history.unshift(record);
-  // 最多保留 HISTORY_MAX 条
   if (history.length > HISTORY_MAX) history.splice(HISTORY_MAX);
   try { localStorage.setItem(HISTORY_KEY, JSON.stringify(history)); } catch(e) {
-    // 空间不足时删掉最旧的再试
     history.splice(-3);
     try { localStorage.setItem(HISTORY_KEY, JSON.stringify(history)); } catch {}
   }
@@ -2225,14 +2104,12 @@ function loadHistoryItem(id) {
   subtitleData = record.subtitleData || [];
   analysisData = record.analysisData || {};
 
-  // 恢复界面
   document.getElementById('welcomeScreen').style.display = 'none';
   document.getElementById('tabsBar').classList.add('show');
 
   if (subtitleData.length) renderSubs();
   if (analysisData.logline || analysisData.highlights) renderAnalysis();
 
-  // 切换到双语字幕 tab
   document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('pane-subtitles').classList.add('active');
@@ -2240,7 +2117,7 @@ function loadHistoryItem(id) {
   updateTabActions();
   setStatus('active', '已加载历史记录');
   toast(`已加载：${record.title}`, 'ok');
-  renderHistoryList(); // 更新 active 状态
+  renderHistoryList();
 }
 
 function saveSession() {
@@ -2278,8 +2155,7 @@ function restoreSession() {
 window.addEventListener('load', () => {
   loadSettings();
   checkConfig();
-  renderHistoryList(); // 初始化历史记录显示
-  // 尝试恢复上次分析结果
+  renderHistoryList();
   const restoredTab = restoreSession();
   if (restoredTab) {
     try {
@@ -2287,7 +2163,6 @@ window.addEventListener('load', () => {
       if (analysisData.logline || analysisData.highlights) renderAnalysis();
       document.getElementById('welcomeScreen').style.display = 'none';
       document.getElementById('tabsBar').classList.add('show');
-      // 恢复到刷新前的 tab
       document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
       const tabToRestore = restoredTab;
@@ -2396,7 +2271,6 @@ function updateBtn() {
 }
 
 // ── TABS ──
-// ── TAB ACTIONS：右上角按钮随 tab 动态更新 ──
 function updateTabActions() {
   const activeBtn = document.querySelector('.tab-btn.active');
   const tab = activeBtn?.dataset.tab;
@@ -2404,7 +2278,6 @@ function updateTabActions() {
   if (!container) return;
 
   if (tab === 'subtitles') {
-    // 双语字幕 tab：只有导出剧本（剧本生成后才显示）
     const scriptGenerated = document.getElementById('subScriptContent')?.style.display !== 'none'
       && document.getElementById('subScriptContent')?.innerText?.trim().length > 0;
     container.innerHTML = scriptGenerated
@@ -2433,12 +2306,9 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.classList.add('active');
     document.getElementById('pane-'+btn.dataset.tab).classList.add('active');
     updateTabActions();
-    // 切换到 overview tab 时重绘关系图（tab 隐藏时 offsetWidth=0）
     if (btn.dataset.tab === 'overview' && analysisData.relations) {
       requestAnimationFrame(() => renderRelationGraph(analysisData.relations||[], analysisData.characters||[]));
     }
-    updateFloatChatVisibility();
-    // 保存当前 tab 状态，刷新后可恢复
     if (subtitleData.length || analysisData.logline) saveSession();
   });
 });
@@ -2478,13 +2348,12 @@ async function runAnalysis() {
 
 async function doRunAnalysis() {
   const c = getConfig();
-  localStorage.removeItem('dl_session'); // 新分析开始，清除旧缓存
+  localStorage.removeItem('dl_session');
   document.getElementById('btnAnalyze').disabled = true;
   document.getElementById('progressWrap').classList.add('show');
   document.getElementById('welcomeScreen').style.display = 'none';
   document.getElementById('procOverlay').classList.add('show');
   document.getElementById('tabsBar').classList.remove('show');
-  // 隐藏所有 pane，让 procOverlay 占满空间
   document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
   setStatus('loading','处理中');
   setProg(0);
@@ -2524,12 +2393,10 @@ async function doRunAnalysis() {
     setStatus('active','分析完成');
     toast('分析完成！','ok');
 
-    // 保存视频文件名供后续导出使用
     analysisData._title = videoFile?.name?.replace(/\.[^.]+$/,'') || videoUrl || '内容分析';
-    saveSession(); // 持久化当前 session
-    saveToHistory(analysisData); // 保存到历史记录
+    saveSession();
+    saveToHistory(analysisData);
 
-    // 分析完成后重置上传区，方便用户继续上传新视频
     clearFile();
     document.getElementById('videoUrl').value = '';
     videoUrl = '';
@@ -2547,10 +2414,9 @@ async function doRunAnalysis() {
 
 // ── AUDIO ──
 const SAMPLE_RATE = 16000;
-const SPLIT_THRESHOLD_SEC = 8 * 60;    // >8分钟走分片（单片64kbps MP3上限约3.7MB）
-const CHUNK_SEC = 8 * 60;              // 每片8分钟（64kbps MP3约3.7MB，安全上传）
+const SPLIT_THRESHOLD_SEC = 8 * 60;
+const CHUNK_SEC = 8 * 60;
 
-// 提取音频：返回 { pcm, sampleRate, duration }
 async function extractAudio(file) {
   setLabel('提取音频轨道…');
   const ab = await file.arrayBuffer();
@@ -2575,7 +2441,6 @@ async function fetchExtract(url) {
   return extractAudio(new File([await r.blob()], 'v.mp4', {type:'video/mp4'}));
 }
 
-// PCM Float32Array → MP3 Blob
 function encodeMp3(pcm, sampleRate) {
   const mp3enc = new lamejs.Mp3Encoder(1, sampleRate, 64);
   const blockSize = 1152;
@@ -2595,7 +2460,6 @@ function encodeMp3(pcm, sampleRate) {
   return new Blob(mp3Data, {type: 'audio/mp3'});
 }
 
-// 单段音频：上传 + ASR + 轮询，返回时间码已偏移的 utterances
 async function transcribeSegment(pcm, sampleRate, offsetSec, label) {
   const cfg = getConfig();
   setLabel(`${label} 编码MP3…`);
@@ -2641,9 +2505,9 @@ async function transcribeSegment(pcm, sampleRate, offsetSec, label) {
         throw new Error('转录返回内容为空');
       return result.utterances.map(u => ({
         ...u,
-        start_time: u.start + offsetSec,   // start 已是秒，直接加偏移
+        start_time: u.start + offsetSec,
         end_time:   u.end   + offsetSec,
-        tc:         u.start + offsetSec,   // 直接可用的秒级时间码
+        tc:         u.start + offsetSec,
         tcEnd:      u.end   + offsetSec,
         text:       u.text,
       }));
@@ -2654,7 +2518,6 @@ async function transcribeSegment(pcm, sampleRate, offsetSec, label) {
   throw new Error('转录超时，请重试');
 }
 
-// ── ASR 主入口：自动判断是否分片 ──
 async function transcribeAudio(audioData) {
   const cfg = getConfig();
   if (!cfg.asrAppId || !cfg.asrToken) throw new Error('请先在设置中填写 ASR APP ID 和 Access Token');
@@ -2668,7 +2531,6 @@ async function transcribeAudio(audioData) {
     const totalChunks = Math.ceil(pcm.length / chunkSamples);
     setLabel(`音频 ${Math.round(duration/60)} 分钟，分 ${totalChunks} 段转录…`);
     const allUtterances = [];
-    // 每批3片并行，兼顾速度和稳定性
     const BATCH = 3;
     for (let i = 0; i < totalChunks; i += BATCH) {
       const batchEnd = Math.min(i + BATCH, totalChunks);
@@ -2686,8 +2548,6 @@ async function transcribeAudio(audioData) {
   }
 }
 
-
-// ── TRANSLATE ──
 async function translateSubs(subs, key, model) {
   const B=30, result=[];
   for(let i=0;i<subs.length;i+=B){
@@ -2702,7 +2562,6 @@ async function translateSubs(subs, key, model) {
 }
 
 // ── ANALYZE ──
-// ── 截取场景帧（Canvas，纯前端，无需后端）──
 async function captureSceneFrames(source, intervalSec = 15) {
   return new Promise(resolve => {
     const video = document.createElement('video');
@@ -2719,11 +2578,10 @@ async function captureSceneFrames(source, intervalSec = 15) {
 
       const times = [];
       for (let t = intervalSec / 2; t < duration; t += intervalSec) times.push(t);
-      // 最多20帧，避免过多
       const capTimes = times.slice(0, 20);
 
       const canvas = document.createElement('canvas');
-      canvas.width = 480; canvas.height = 270; // 16:9 缩略图
+      canvas.width = 480; canvas.height = 270;
       const ctx = canvas.getContext('2d');
       const frames = [];
 
@@ -2744,27 +2602,24 @@ async function captureSceneFrames(source, intervalSec = 15) {
       resolve(frames);
     };
 
-    video.onerror = () => resolve([]); // 截帧失败不影响主流程
+    video.onerror = () => resolve([]);
   });
 }
 
 async function analyzeContent(text, key, model, scenes = []) {
-  const t = text.length > 15000 ? text.slice(0, 15000) + '…' : text;
+  // 不再截断文本，使用完整台词
+  const t = text;
 
-  // ── 1. 详细梗概（台词 + 截帧，信息最完整，先生成作为后续分析的基础）──
+  // 详细梗概
   setLabel('生成详细梗概…');
   let r3;
-  if (scenes && scenes.length > 0) {
-    const prompt = `你是专业影视内容分析师。根据以下英文短剧的台词文本和视频截图，写全剧剧情梗概。
-
-截图使用说明：
-- 截图是视频关键帧，用于补充台词无法传达的视觉信息：场景环境、人物表情/动作、画面氛围
-- 结合截图画面来判断场景切换、人物状态、情绪变化，让梗概描述更准确生动
-- 截图信息服务于叙事，不需要逐帧描述画面，只在有助于理解剧情时融入文字
+  const promptBase = `你是专业影视内容分析师。根据以下英文短剧的台词文本，写全剧剧情梗概。
+你必须严格覆盖台词中出现的所有事件，从第一句到最后一句，不得遗漏任何情节。
 
 输出要求：
 - 总字数控制在3000-5000字
 - 按「起承转合」四幕结构划分，每幕下细分事件节拍，全剧共10-15个节拍点
+- 每幕开头用「【起】开篇设定」「【承】矛盾激化」「【转】危机爆发」「【合】高潮收束」标注，幕标题后另起一行写具体内容
 - 每个节拍点格式：【节拍标题】正文（150-350字）
 - 节拍标题直接点明该段核心事件，禁用「场景一」「第X段」等格式
 - 重点写清楚：事件起因→发展→结果的因果链，以及人物情感/动机的转变逻辑
@@ -2774,42 +2629,31 @@ async function analyzeContent(text, key, model, scenes = []) {
 - 直接输出纯文本，节点间空行
 
 台词：\n${t}`;
+
+  if (scenes && scenes.length > 0) {
     const selectedFrames = scenes.length > 8 ? scenes.filter((_, i) => i % Math.ceil(scenes.length / 8) === 0).slice(0, 8) : scenes;
-    const content = [{ type: 'text', text: prompt }];
+    const content = [{ type: 'text', text: promptBase }];
     selectedFrames.forEach(f => { content.push({ type: 'image_url', image_url: { url: `data:image/jpeg;base64,${f.b64}` } }); });
     const vResp = await fetch('https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
       method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
       body: JSON.stringify({ model: 'doubao-1-5-vision-pro-32k-250115', max_tokens: 5500, temperature: 0.3, messages: [{ role: 'user', content }] })
     });
     r3 = vResp.ok ? ((await vResp.json()).choices?.[0]?.message?.content || '') : '';
-    if (!r3) r3 = await callLLM(`根据以下英文短剧台词写全剧剧情梗概。总字数3000-5000字，按起承转合四幕结构划分，每幕下细分节拍点，全剧10-15个节拍点。每节拍格式：【节拍标题】正文（150-350字）。重点写因果链和人物情感转变逻辑，台词极度克制（全文不超过5处直接引语，只保留关键转折台词）。转折标注【转折】，高潮标注【高潮】，只还原台词中实际出现的情节。\n台词：\n${t}`, key, model, 5500);
+    if (!r3) r3 = await callLLM(promptBase, key, model, 5500);
   } else {
-    r3 = await callLLM(`你是专业影视内容分析师。根据以下英文短剧台词写全剧剧情梗概。
-
-输出要求：
-- 总字数控制在3000-5000字
-- 按「起承转合」四幕结构划分，每幕下细分事件节拍，全剧共10-15个节拍点
-- 每个节拍点格式：【节拍标题】正文（150-350字）
-- 节拍标题直接点明该段核心事件，禁用「场景一」「第X段」等格式
-- 重点写清楚：事件起因→发展→结果的因果链，以及人物情感/动机的转变逻辑
-- 台词极度克制：全文不超过5处直接引语，只保留对情节转折有决定性作用的关键台词
-- 转折节点标注【转折】，高潮节点标注【高潮】
-- 只还原台词中实际出现的情节，绝对不要补充原视频之外的新剧情
-- 直接输出纯文本，不要JSON，节点间空行
-
-台词：
-${t}`, key, model, 5500);
+    r3 = await callLLM(promptBase, key, model, 5500);
   }
+
   const outlineRaw = r3.replace(/```[\s\S]*?```/g,'').trim();
   const outlineBlocks = outlineRaw.split(/\n\s*\n/).filter(b => b.trim());
   let outline = outlineBlocks.map(block => {
     const lines = block.trim().split('\n');
     const pointMatch = lines[0].match(/【([^】]+)】/);
     const point = pointMatch ? pointMatch[1] : lines[0]
-      .replace(/\*+/g, '')                                          // 剥掉 markdown 加粗
-      .replace(/^\d+[\.、\s]+/, '')                                 // 剥掉序号
-      .replace(/^场景\s*[一二三四五六七八九十百\d]+\s*[：:：\s]+/, '') // 剥掉「场景X：」
-      .replace(/^第\s*[一二三四五六七八九十百\d]+\s*[场幕节集]+\s*[：:：\s]*/, '') // 剥掉「第X场」
+      .replace(/\*+/g, '')
+      .replace(/^\d+[\.、\s]+/, '')
+      .replace(/^场景\s*[一二三四五六七八九十百\d]+\s*[：:：\s]+/, '')
+      .replace(/^第\s*[一二三四五六七八九十百\d]+\s*[场幕节集]+\s*[：:：\s]*/, '')
       .trim()
       .slice(0, 30);
     const content = lines.join('\n').replace(/^【[^】]+】\s*/,'').trim();
@@ -2817,10 +2661,9 @@ ${t}`, key, model, 5500);
   });
   if (!outline.length) outline = [{ point: '梗概', content: outlineRaw.slice(0, 800) }];
 
-  // 梗概摘要（供后续两步使用，取前3000字避免token过多）
   const outlineSummary = outlineRaw.slice(0, 3000);
 
-  // ── 2. 人物小传 + 人物关系 + 一句话简介（基于梗概，信息更完整准确）──
+  // 人物小传 + 关系 + 一句话简介
   setLabel('提取人物与关系…');
   const r_chars = await callLLM(`根据以下中文剧情梗概，提取主要人物和一句话简介。只输出JSON，不加任何说明：
 {
@@ -2839,16 +2682,13 @@ ${t}`, key, model, 5500);
 剧情梗概：\n${outlineSummary}`, key, model, 2500);
   let charData; try { charData = JSON.parse(r_chars.replace(/```json|```/g,'').trim()); } catch { charData = { logline: '', characters: [], relations: [] }; }
 
-  // 用人物名校准梗概中的模糊指代（「一位女子」→女主名，「男子」→男主名等）
   if (charData.characters && charData.characters.length > 0 && outline.length > 0) {
-    // 取主要人物的中文简称
     const mainChars = charData.characters.slice(0, 4).map(c => {
-      const cnName = c.name.replace(/[\/／].*/,'').trim(); // 取斜杠前的中文名
+      const cnName = c.name.replace(/[\/／].*/,'').trim();
       return cnName;
     });
-    const female = mainChars[0] || '';  // 女主通常排第一
-    const male   = mainChars[1] || '';  // 男主通常排第二
-    // 简单替换最常见的模糊指代
+    const female = mainChars[0] || '';
+    const male   = mainChars[1] || '';
     outline = outline.map(item => {
       let c = item.content || '';
       if (female) {
@@ -2863,7 +2703,7 @@ ${t}`, key, model, 5500);
     });
   }
 
-  // ── 3. 策划逻辑（基于梗概，分析更有依据）──
+  // 策划逻辑
   setLabel('拆解策划逻辑…');
   const r_plan = await callLLM(`你是资深短剧策划。根据以下中文剧情梗概，深度拆解策划逻辑，只输出JSON，不加任何说明：
 {
@@ -2879,7 +2719,6 @@ ${t}`, key, model, 5500);
 剧情梗概：\n${outlineSummary}`, key, model, 3000);
   let plan; try { plan = JSON.parse(r_plan.replace(/```json|```/g,'').trim()); } catch { plan = {}; }
 
-  // ── 5. 构建策划逻辑摘要（供改编方案使用，不调用 LLM）──
   const planSummary = [
     `【核心亮点】${plan.highlights||''}`,
     `【结构逻辑】${plan.structure_acts||''}`,
@@ -2903,7 +2742,6 @@ ${t}`, key, model, 5500);
   };
 }
 
-// ── 复制单个改编方案 ──
 function copyAdaptPlan(btn) {
   const card = btn.closest('.adapt-plan-card');
   const title    = card.querySelector('.adapt-plan-title')?.innerText || '';
@@ -3000,1384 +2838,4 @@ async function callLLM(prompt, key, model, maxTok=1500) {
   const r=await fetch('https://ark.cn-beijing.volces.com/api/v3/chat/completions',{
     method:'POST',
     headers:{'Content-Type':'application/json','Authorization':`Bearer ${key}`},
-    body:JSON.stringify({model,max_tokens:maxTok,temperature:0.3,messages:[{role:'user',content:prompt}]})
-  });
-  if(!r.ok) throw new Error('豆包 API: '+await r.text());
-  const d=await r.json(); return d.choices?.[0]?.message?.content||'';
-}
-
-function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
-
-// ── RENDER ──
-function renderSubs() {
-  const list = document.getElementById('subList'); list.innerHTML = '';
-
-  // 挂载视频播放器
-  const player = document.getElementById('subVideoPlayer');
-  const placeholder = document.getElementById('subVideoPlaceholder');
-  const src = videoObjectURL || (inputMode === 'url' ? videoUrl : '');
-  if (src) {
-    player.src = src;
-    player.style.display = 'block';
-    placeholder.style.display = 'none';
-  } else {
-    player.style.display = 'none';
-    placeholder.style.display = 'flex';
-    // 区分历史记录加载（有字幕但无视频源）和初次空状态
-    const fromHistory = subtitleData.length > 0 && !videoFile && !videoUrl;
-    placeholder.innerHTML = fromHistory
-      ? `<span style="font-size:24px">📂</span><span style="font-size:12px;color:var(--text-light);text-align:center;line-height:1.6">历史记录不保存视频文件<br>如需回看，请重新上传该视频</span>`
-      : `<span style="font-size:28px">🎬</span><span style="font-size:12px">视频加载中…</span>`;
-  }
-
-  // 渲染字幕行
-  subtitleData.forEach((item, idx) => {
-    const d = document.createElement('div'); d.className = 'sub-item';
-    d.dataset.idx = idx;
-    // 英文台词拆成可悬浮单词 span
-    const enHtml = item.en.replace(/([a-zA-Z''-]+)/g, (w) => {
-      const clean = w.replace(/^['-]+|['-]+$/g,'');
-      if (!clean || clean.length < 2) return esc(w);
-      return `<span class="word-span" data-word="${clean.toLowerCase()}" data-sentence="${esc(item.en)}">${esc(w)}</span>`;
-    }).replace(/([^a-zA-Z'']+)/g, t => esc(t).replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>'));
-    d.innerHTML = `<div class="sub-tc">${fmtTC(item.tc)}</div>
-      <div class="sub-texts"><div class="sub-en">${enHtml}</div><div class="sub-zh">${esc(item.zh)}</div></div>`;
-    d.addEventListener('click', () => {
-      // 1. 视频跳转到对应时间
-      if (player.src) { player.currentTime = item.tc; player.play(); }
-      // 2. 字幕列高亮并滚动到点击项居中
-      document.querySelectorAll('.sub-item').forEach(el => el.classList.remove('active'));
-      d.classList.add('active');
-      const subList = document.getElementById('subList');
-      if (subList) {
-        const listRect = subList.getBoundingClientRect();
-        const dRect = d.getBoundingClientRect();
-        const target = subList.scrollTop + (dRect.top - listRect.top) - listRect.height / 2 + dRect.height / 2;
-        subList.scrollTo({ top: Math.max(0, target), behavior: 'smooth' });
-      }
-      // 3. 剧本面板同步定位到包含该台词的段落
-      syncScriptToDialogue(item.en);
-    });
-    list.appendChild(d);
-  });
-
-  // 播放时自动高亮字幕
-  player.removeEventListener('timeupdate', player._syncFn);
-  player._syncFn = () => {
-    const t = player.currentTime;
-    const items = document.querySelectorAll('.sub-item');
-    let activeIdx = -1;
-    subtitleData.forEach((item, idx) => {
-      const end = subtitleData[idx+1] ? subtitleData[idx+1].tc : item.tc + 5;
-      if (t >= item.tc && t < end) activeIdx = idx;
-    });
-    items.forEach((el, i) => {
-      if (i === activeIdx) {
-        if (!el.classList.contains('active')) {
-          el.classList.add('active');
-          // subList 独立滚动，让高亮字幕居中显示
-          const subList = document.getElementById('subList');
-          if (subList) {
-            const listRect = subList.getBoundingClientRect();
-            const elRect = el.getBoundingClientRect();
-            const scrollTarget = subList.scrollTop + (elRect.top - listRect.top) - listRect.height / 2 + elRect.height / 2;
-            subList.scrollTo({ top: Math.max(0, scrollTarget), behavior: 'smooth' });
-          }
-          // 剧本同步定位
-          syncScriptToDialogue(subtitleData[i]?.en || '');
-        }
-      } else { el.classList.remove('active'); }
-    });
-  };
-  player.addEventListener('timeupdate', player._syncFn);
-
-  document.getElementById('subBadge').textContent = subtitleData.length;
-  document.getElementById('subEmpty').style.display = 'none';
-  document.getElementById('subView').style.display = 'flex';
-  bindSyncScroll();
-}
-
-function renderAnalysis() {
-  const d = analysisData;
-  const toP = t => (t||'').split('\n').filter(Boolean).map(p=>`<p>${esc(p)}</p>`).join('');
-
-  // 重置语言状态
-  ['script'].forEach(sec => {
-    sectionLang[sec] = 'zh';
-    const badge = document.getElementById(sec+'LangBadge');
-    if (badge) { badge.textContent = '原语言'; badge.classList.remove('en'); }
-    const tb = document.getElementById(sec+'TransBtn');
-    const rb = document.getElementById(sec+'RestoreBtn');
-    if (tb) tb.style.display = '';
-    if (rb) rb.style.display = 'none';
-  });
-
-  // ── 剧情概要 tab ──
-  // 一句话简介
-  document.getElementById('loglineText').innerHTML = toP(d.logline);
-  // 人物小传
-  const cg = document.getElementById('charGrid'); cg.innerHTML = '';
-  (d.characters||[]).forEach(c => {
-    const card = document.createElement('div'); card.className = 'char-card';
-    card.innerHTML = `<button class="char-card-del" onclick="this.closest('.char-card').remove()" title="删除">✕</button><div class="char-name" contenteditable="true" spellcheck="false">${esc(c.name)}</div><div class="char-bio" contenteditable="true" spellcheck="false">${esc(c.bio)}</div>`;
-    cg.appendChild(card);
-  });
-  // 人物关系图
-  renderRelationGraph(d.relations || [], d.characters || []);
-  // 剧情梗概
-  renderOutline(d.outline || []);
-  document.getElementById('overviewEmpty').style.display = 'none';
-  document.getElementById('overviewView').style.display = 'flex';
-
-  // ── 策划逻辑 tab ──
-  // 剥掉 LLM 返回内容里重复的标题前缀（如「核心亮点：」）
-  const stripPrefix = (text, label) => {
-    if (!text) return '';
-    return text.replace(new RegExp(`^[\\s\\u3000]*${label}[：:：\\s]*`, 'i'), '').trim();
-  };
-  document.getElementById('highlightsText').innerHTML = toP(stripPrefix(d.highlights, '核心亮点'));
-  const lg = document.getElementById('logicGrid');
-  lg.innerHTML = toP(stripPrefix(d.structureActs, '(三幕结构|结构逻辑)'));
-  document.getElementById('charLogicText').innerHTML = toP(stripPrefix(d.characterLogic, '人物逻辑'));
-  document.getElementById('emotionText').innerHTML = toP(stripPrefix(d.emotion, '情感逻辑'));
-  document.getElementById('rhythmText').innerHTML = toP(stripPrefix(d.rhythm, '节奏逻辑'));
-  document.getElementById('hookText').innerHTML = toP(stripPrefix(d.hooks, '(悬念布局|卡点布局)'));
-  document.getElementById('highlightScenesText').innerHTML = toP(stripPrefix(d.highlightScenes, '高光情节'));
-  document.getElementById('planningEmpty').style.display = 'none';
-  document.getElementById('planningView').style.display = 'flex';
-
-  // ── 策划改编 tab（右侧重置）──
-  document.getElementById('adaptPlansGrid').innerHTML = '';
-  document.getElementById('adaptPlansView').style.display = 'flex';
-
-  const btn = document.getElementById('btnGenAdapt');
-  if (btn) { btn.textContent = '▶ 生成改编方案'; btn.disabled = false; }
-  document.getElementById('planningEmpty').style.display = 'none';
-  document.getElementById('planningView').style.display = 'flex';
-
-  // ── 剧本推演：显示生成按钮 ──
-  document.getElementById('btnGenScript').style.display = '';
-
-  // 更新 tab 右上角按钮（含导出报告）
-  updateTabActions();
-  // 显示 AI 精准度提示
-  const hint = document.getElementById('tabHint');
-  if (hint) hint.textContent = '✦ AI 生成内容准确率约 85%，细节可点击直接编辑校准';
-  // 显示悬浮修改助手按钮
-  setTimeout(updateFloatChatVisibility, 100);
-}
-
-function renderRelationGraph(relations, characters) {
-  const container = document.getElementById('relationGraph');
-  if (!relations.length && !characters.length) {
-    container.innerHTML = '<div style="color:var(--text-ghost);font-size:12px;padding:16px">暂无人物关系数据</div>';
-    return;
-  }
-
-  const n = characters.length;
-  // 宽度自适应容器，fallback 到父容器宽度的一半
-  const rawW = container.offsetWidth || (container.parentElement?.offsetWidth ? Math.floor(container.parentElement.offsetWidth * 0.48) : 400);
-  const W = Math.max(240, Math.min(800, rawW));
-  // 动态高度：节点少时紧凑，多时扩展
-  const H = n <= 3 ? 220 : n <= 5 ? 290 : 360;
-  // 半径：保证节点间距足够
-  const R = n <= 2 ? Math.min(W,H)*0.35 : n <= 4 ? Math.min(W,H)*0.36 : Math.min(W,H)*0.40;
-  const cx = W / 2, cy = H / 2;
-
-  const nodes = characters.map((c, i) => {
-    const angle = (2 * Math.PI * i) / n - Math.PI / 2;
-    return {
-      id: c.name,
-      x: cx + R * Math.cos(angle),
-      y: cy + R * Math.sin(angle),
-    };
-  });
-  const nodeMap = Object.fromEntries(nodes.map(nd => [nd.id, nd]));
-
-  let svg = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
-
-  // ── 先画连线 ──
-  relations.forEach(rel => {
-    const a = nodeMap[rel.from], b = nodeMap[rel.to];
-    if (!a || !b) return;
-    svg += `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="var(--border)" stroke-width="1.5" stroke-dasharray="5 3"/>`;
-  });
-
-  // ── 再画标签（不旋转，带背景框，紧贴中点偏移避免压线）──
-  relations.forEach(rel => {
-    const a = nodeMap[rel.from], b = nodeMap[rel.to];
-    if (!a || !b) return;
-    const label = (rel.label || '').slice(0, 10); // 最多10字避免过长
-    if (!label) return;
-    const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
-    // 垂直于连线方向偏移14px
-    const dx = b.x - a.x, dy = b.y - a.y;
-    const len = Math.sqrt(dx*dx + dy*dy) || 1;
-    const ox = -dy / len * 14, oy = dx / len * 14;
-    const lx = Math.max(40, Math.min(W - 40, mx + ox));
-    const ly = Math.max(14, Math.min(H - 14, my + oy));
-    // 中文字符宽约12px，英文约7px
-    const labelW = Array.from(label).reduce((w, c) => w + (/[\u4e00-\u9fa5]/.test(c) ? 12 : 7), 0);
-    const bw = Math.max(labelW + 14, 32);
-    svg += `<g>
-      <rect x="${lx - bw/2}" y="${ly - 9}" width="${bw}" height="18" rx="4"
-        fill="var(--surface)" fill-opacity="0.97" stroke="var(--border-soft)" stroke-width="1"/>
-      <text x="${lx}" y="${ly + 4}" text-anchor="middle" font-size="10"
-        fill="var(--text-light)" font-family="'Noto Sans SC',sans-serif">${esc(label)}</text>
-    </g>`;
-  });
-
-  // ── 最后画节点（在最上层）──
-  // 检测视频语言决定圆圈内显示中文名还是英文名
-  const useEnglish = subtitleData.length > 0 && !/[\u4e00-\u9fa5]/.test(subtitleData.slice(0,3).map(s=>s.en).join(''));
-  const colors = ['#1E5C3A','#2A6B45','#4A7A5A','#B8944A','#6B8070','#3D5C47'];
-  nodes.forEach((nd, i) => {
-    const color = colors[i % colors.length];
-    const parts = nd.id.replace(/[·•\/]/g,' ').trim().split(/\s+/);
-    const cnPart = parts.find(p => /[\u4e00-\u9fa5]/.test(p));
-    const enPart = parts.find(p => /[a-zA-Z]{2,}/.test(p));
-    // 英文视频优先显示英文名，中文视频优先显示中文名
-    let inner;
-    if (useEnglish) {
-      inner = enPart ? enPart.slice(0, 5) : (cnPart ? cnPart.slice(-2) : nd.id.slice(0, 4));
-    } else {
-      inner = cnPart ? cnPart.slice(-2) : (enPart ? enPart.slice(0, 4) : nd.id.slice(0, 4));
-    }
-    // 节点下方全名
-    const fullLabel = nd.id.length > 10 ? nd.id.slice(0, 10) + '…' : nd.id;
-    const fontSize = inner.length <= 3 ? 13 : 11;
-    svg += `<g>
-      <circle cx="${nd.x}" cy="${nd.y}" r="28" fill="${color}" fill-opacity=".12" stroke="${color}" stroke-width="1.5"/>
-      <text x="${nd.x}" y="${nd.y + 5}" text-anchor="middle" font-size="${fontSize}"
-        fill="${color}" font-weight="600" font-family="'Noto Sans SC','DM Mono',sans-serif">${esc(inner)}</text>
-      <text x="${nd.x}" y="${nd.y + 44}" text-anchor="middle" font-size="10"
-        fill="var(--text-ghost)" font-family="'Noto Sans SC',sans-serif">${esc(fullLabel)}</text>
-    </g>`;
-  });
-
-  svg += '</svg>';
-  container.innerHTML = svg;
-}
-
-// ── 剧本推演 ──
-let scriptGenerated = false;
-async function generateScript() {
-  const cfg = getConfig();
-  if (!cfg.llmKey) { toast('请先配置 API Key','err'); return; }
-  if (!subtitleData.length) { toast('请先完成分析','err'); return; }
-
-  const btn = document.getElementById('btnGenScript');
-  btn.textContent = '生成中…'; btn.disabled = true;
-
-  try {
-    const dialogues = subtitleData.map(s => `${fmtTC(s.tc)}  ${s.en}`).join('\n');
-    // 完整梗概（所有节拍完整内容）
-    const fullOutlineText = (analysisData.outline || [])
-      .map((item, i) => `${String(i+1).padStart(2,'0')} 【${item.point}】\n${item.content || ''}`)
-      .join('\n\n');
-    // 完整人物小传
-    const charInfo = (analysisData.characters || [])
-      .map(c => `${c.name}：${c.bio || ''}`)
-      .join('\n\n');
-    // 检测台词语言
-    const sampleText = subtitleData.slice(0, 5).map(s => s.en).join('');
-    const isChinese = /[\u4e00-\u9fa5]/.test(sampleText);
-    const langNote = isChinese
-      ? '输出中文标准剧本格式，对白100%使用原台词，场景行和动作行用中文描述'
-      : '输出英文标准剧本格式，对白100%使用原台词，场景行和动作行用英文描述';
-
-    const scriptRaw = await callLLM(`你是专业剧本编剧。根据以下短剧台词时间轴、完整人物小传和完整剧情梗概，还原成标准格式剧本。
-
-要求：
-- ${langNote}
-- 人物名必须严格使用下方「人物小传」中的名字，不得自创或替换
-- 场景行：INT./EXT. 场景描述 - 时间（结合梗概中的场景信息）
-- 动作行：描述人物动作、表情、场景氛围（结合梗概中的情绪和行为描述）
-- 对白：人物名 + 台词（100%使用原台词，不要改动）
-- 括号注释：标注情绪或动作
-- 直接输出剧本正文，不要任何说明
-
-人物小传（人物名和性格参考，剧本中必须使用这些名字）：
-${charInfo}
-
-完整剧情梗概（严格按照每个节拍的场景、情绪、行为还原）：
-${fullOutlineText}
-
-台词时间轴：
-${dialogues}`, cfg.llmKey, cfg.model, 6000);
-
-    // 显示到右侧面板
-    document.getElementById('subScriptEmpty').style.display = 'none';
-    const contentEl = document.getElementById('subScriptContent');
-    contentEl.textContent = scriptRaw;
-    contentEl.style.display = 'block';
-
-    // 显示翻译按钮，更新 tab 右上角（含导出剧本按钮）
-    document.getElementById('scriptTransBtn').style.display = '';
-    bindSyncScroll();
-    updateTabActions();
-
-    scriptGenerated = true;
-    toast('剧本推演生成完成','ok');
-  } catch (e) {
-    toast('生成失败：' + e.message, 'err');
-  } finally {
-    btn.textContent = '▶ 重新生成'; btn.disabled = false;
-  }
-}
-
-function exportScriptWord() {
-  if (!scriptGenerated) { toast('请先生成剧本','err'); return; }
-  const title = analysisData._title || videoFile?.name?.replace(/\.[^.]+$/,'') || videoUrl || '剧本推演';
-  const text = document.getElementById('subScriptContent').innerText || '';
-  const para = t => `{\\pard\\f1\\fs20 ${rtfEsc(t)}\\par}\n`;
-  let body = '';
-  text.split('\n').forEach(line => { body += para(line); });
-  dlRtf(`${title}_剧本推演.doc`, makeRtf(body, title + ' · 剧本推演'));
-  toast('剧本已下载','ok');
-}
-
-// ── TRANSLATE & EDIT ──
-// 每个 section 的语言状态：'zh' | 'en'
-const sectionLang = { script:'zh' };
-
-async function translateSection(sec) {
-  const cfg = getConfig();
-  if(!cfg.llmKey){ toast('请先配置 API Key','err'); return; }
-
-  const transBtn = document.getElementById(sec+'TransBtn');
-  const restoreBtn = document.getElementById(sec+'RestoreBtn');
-  const badge = document.getElementById(sec+'LangBadge');
-
-  // script 用右侧面板容器，其他用 analysis-scroll
-  const isScript = sec === 'script';
-  const scrollEl = isScript
-    ? document.getElementById('subScriptPanel')
-    : document.querySelector(`#${sec}View .analysis-scroll`);
-
-  if (!scrollEl) { toast('请先生成内容','err'); return; }
-
-  const overlay = document.createElement('div');
-  overlay.className = 'translating-overlay';
-  overlay.innerHTML = '<div class="spinner" style="width:20px;height:20px;border-width:2px"></div><span>翻译中…</span>';
-  if (!isScript) scrollEl.appendChild(overlay);
-  if (transBtn) transBtn.disabled = true;
-
-  try {
-    const content = extractSectionText(sec);
-    if (!content.trim()) { toast('暂无内容可翻译','err'); return; }
-
-    const isChToEn = !isScript;
-    const prompt = isChToEn
-      ? `将以下中文影视分析内容翻译成流畅的英文，保留所有段落结构和标点格式，保持专业影视术语。直接输出译文，不加任何说明：\n\n${content}`
-      : `将以下英文剧本翻译成流畅的中文，保留剧本格式（场景行/动作行/对白格式），保持人物名称原文。直接输出译文，不加任何说明：\n\n${content}`;
-
-    const result = await callLLM(prompt, cfg.llmKey, cfg.model || 'doubao-seed-2-0-pro-260215', 4000);
-
-    applySectionTranslation(sec, result);
-    sectionLang[sec] = 'en';
-    if (badge) { badge.textContent = isScript ? '中文译本' : 'English'; badge.classList.add('en'); }
-    if (transBtn) transBtn.style.display = 'none';
-    if (restoreBtn) restoreBtn.style.display = '';
-    toast('翻译完成','ok');
-  } catch(e) {
-    toast('翻译失败：'+e.message,'err');
-  } finally {
-    overlay.remove();
-    if (transBtn) transBtn.disabled = false;
-  }
-}
-
-function restoreSection(sec) {
-  const badge = document.getElementById(sec+'LangBadge');
-  const transBtn = document.getElementById(sec+'TransBtn');
-  const restoreBtn = document.getElementById(sec+'RestoreBtn');
-  const d = analysisData;
-  const toP = t => (t||'').split('\n').filter(Boolean).map(p=>`<p>${esc(p)}</p>`).join('');
-
-  if (sec === 'overview') {
-    document.getElementById('loglineText').innerHTML = toP(d.logline);
-    const cg = document.getElementById('charGrid'); cg.innerHTML = '';
-    (d.characters||[]).forEach(c => {
-      const card = document.createElement('div'); card.className = 'char-card';
-      card.innerHTML = `<button class="char-card-del" onclick="this.closest('.char-card').remove()" title="删除">✕</button><div class="char-name" contenteditable="true" spellcheck="false">${esc(c.name)}</div><div class="char-bio" contenteditable="true" spellcheck="false">${esc(c.bio)}</div>`;
-      cg.appendChild(card);
-    });
-    const outItems = d.outline||[];
-    renderOutline(outItems);
-  } else if (sec === 'planning') {
-    const stripPrefix = (text, label) => {
-      if (!text) return '';
-      return text.replace(new RegExp(`^[\\s\\u3000]*${label}[：:：\\s]*`, 'i'), '').trim();
-    };
-    document.getElementById('highlightsText').innerHTML = toP(stripPrefix(d.highlights, '核心亮点'));
-    document.getElementById('charLogicText').innerHTML = toP(stripPrefix(d.characterLogic, '人物逻辑'));
-    document.getElementById('emotionText').innerHTML = toP(stripPrefix(d.emotion, '情感逻辑'));
-    document.getElementById('rhythmText').innerHTML = toP(stripPrefix(d.rhythm, '节奏逻辑'));
-    document.getElementById('hookText').innerHTML = toP(stripPrefix(d.hooks, '(悬念布局|卡点布局)'));
-    document.getElementById('highlightScenesText').innerHTML = toP(stripPrefix(d.highlightScenes, '高光情节'));
-      const lg = document.getElementById('logicGrid');
-    lg.innerHTML = toP(stripPrefix(d.structureActs, '(三幕结构|结构逻辑)'));
-  } else if (sec === 'script') {
-    const orig = analysisData._scriptOriginal;
-    if (orig) document.getElementById('subScriptContent').textContent = orig;
-  }
-
-  sectionLang[sec] = 'zh';
-  badge.textContent = sec === 'script' ? '原语言' : '中文';
-  badge.classList.remove('en');
-  transBtn.style.display = '';
-  restoreBtn.style.display = 'none';
-}
-
-function extractSectionText(sec) {
-  if (sec === 'overview') return [
-    '一句话简介\n'+(document.getElementById('loglineText').innerText||''),
-    '人物小传\n'+(document.getElementById('charGrid').innerText||''),
-    '剧情梗概\n'+(document.getElementById('outlineContainer')?.innerText||'').trim(),
-  ].join('\n\n');
-  if (sec === 'planning') return [
-    '核心亮点\n'+(document.getElementById('highlightsText').innerText||''),
-    '结构逻辑\n'+(document.getElementById('logicGrid').innerText||''),
-    '人物逻辑\n'+(document.getElementById('charLogicText').innerText||''),
-    '情感逻辑\n'+(document.getElementById('emotionText').innerText||''),
-    '节奏逻辑\n'+(document.getElementById('rhythmText').innerText||''),
-    '悬念布局\n'+(document.getElementById('hookText').innerText||''),
-    '高光情节\n'+(document.getElementById('highlightScenesText').innerText||''),
-    '改编方案\n'+(document.getElementById('adaptPlansGrid').innerText||''),
-  ].join('\n\n');
-  if (sec === 'script') return document.getElementById('subScriptContent').innerText || '';
-  return '';
-}
-
-function applySectionTranslation(sec, enText) {
-  const paras = enText.split('\n').filter(Boolean);
-  const toP = arr => arr.map(p=>`<p>${esc(p)}</p>`).join('');
-  if (sec === 'overview') {
-    document.getElementById('loglineText').innerHTML = toP(paras.slice(0,2));
-  } else if (sec === 'planning') {
-    document.getElementById('highlightsText').innerHTML = toP(paras);
-  } else if (sec === 'script') {
-    analysisData._scriptOriginal = document.getElementById('subScriptContent').innerText;
-    document.getElementById('subScriptContent').textContent = enText;
-    document.getElementById('scriptTransBtn').style.display = 'none';
-    document.getElementById('scriptRestoreBtn').style.display = '';
-  }
-}
-
-// ── 重整梗概（基于已有数据，无需重新解析）──
-async function reformatOutline() {
-  const cfg = getConfig();
-  if (!cfg.llmKey) { toast('请先配置 API Key','err'); return; }
-
-  const existingOutline = analysisData.outline || [];
-  const rawText = analysisData._rawText || '';
-  const existingText = existingOutline.map(item => `【${item.point}】\n${item.content||''}`).join('\n\n');
-
-  // ── 诊断：计算当前数据覆盖情况 ──
-  const nodeCount = existingOutline.length;
-  const totalChars = existingText.length;
-  const rawChars = rawText.length;
-
-  // 有原始台词 → 可以完整重跑梗概（最优）
-  if (rawText && rawChars > 500) {
-    const confirmed = confirm(
-      `检测到原始台词数据（约${Math.round(rawChars/500)}分钟视频内容）。\n\n` +
-      `当前梗概：${nodeCount} 个节拍点，约 ${totalChars} 字\n\n` +
-      `推荐操作：用原始台词重新生成完整梗概（覆盖全部剧情，约需30秒）\n` +
-      `点「确定」→ 基于完整台词重生成\n点「取消」→ 仅重新整理现有梗概格式`
-    );
-    if (confirmed) {
-      await _regenOutlineFromRaw(rawText, cfg);
-      return;
-    }
-  } else if (!existingText.trim()) {
-    toast('暂无梗概数据，请重新解析视频','err');
-    return;
-  } else {
-    // 无原始台词，告知用户限制
-    const charCount = totalChars;
-    const msg = nodeCount < 8
-      ? `当前梗概只有 ${nodeCount} 个节拍点（约${charCount}字），数据可能不完整。\n\n重整梗概只能重新整理已有内容，无法补充缺失的剧情。\n如需完整梗概，建议重新上传视频解析。\n\n仍然继续重整格式？`
-      : `当前梗概有 ${nodeCount} 个节拍点（约${charCount}字）。\n\n将按起承转合结构重新整理，约需20秒。\n\n继续？`;
-    if (!confirm(msg)) return;
-  }
-
-  await _reformatFromExisting(existingText, cfg);
-}
-
-async function _regenOutlineFromRaw(rawText, cfg) {
-  const btn = document.querySelector('[onclick="reformatOutline()"]');
-  if (btn) { btn.textContent = '重生成中…'; btn.disabled = true; }
-  toast('基于完整台词重新生成梗概，请稍候…');
-
-  try {
-    const t = rawText.length > 15000 ? rawText.slice(0, 15000) + '…' : rawText;
-    const result = await callLLM(`你是专业影视内容分析师。根据以下英文短剧台词写全剧剧情梗概。
-
-输出要求：
-- 总字数控制在3000-5000字
-- 按「起承转合」四幕结构划分，每幕下细分事件节拍，全剧共10-15个节拍点
-- 每个节拍点格式：【节拍标题】正文（150-350字）
-- 节拍标题直接点明该段核心事件，禁用「场景一」「第X段」等格式
-- 重点写清楚：事件起因→发展→结果的因果链，以及人物情感/动机的转变逻辑
-- 台词极度克制：全文不超过5处直接引语，只保留对情节转折有决定性作用的关键台词
-- 转折节点标注【转折】，高潮节点标注【高潮】
-- 只还原台词中实际出现的情节，不补充原视频之外的剧情
-- 直接输出纯文本，节点间空行
-
-台词：
-${t}`, cfg.llmKey, cfg.model, 5500);
-
-    _applyNewOutline(result);
-    toast('基于完整台词的梗概已重新生成','ok');
-  } catch(e) {
-    toast('生成失败：'+e.message,'err');
-  } finally {
-    const btn = document.querySelector('[onclick="reformatOutline()"]');
-    if (btn) { btn.textContent = '↺ 重整梗概'; btn.disabled = false; }
-  }
-}
-
-async function _reformatFromExisting(existingText, cfg) {
-  const btn = document.querySelector('[onclick="reformatOutline()"]');
-  if (btn) { btn.textContent = '整理中…'; btn.disabled = true; }
-  toast('正在重新整理梗概结构…');
-
-  try {
-    const result = await callLLM(`你是专业影视内容分析师。以下是一部短剧的剧情梗概（原始版本），请按起承转合四幕结构重新整理，生成结构清晰的最终版本。
-
-输出要求：
-- 总字数控制在3000-5000字
-- 按「起承转合」四幕结构划分，每幕下细分事件节拍，全剧共10-15个节拍点
-- 每个节拍点格式：【节拍标题】正文（150-350字）
-- 节拍标题直接点明该段核心事件，禁用「场景一」「第X段」等格式
-- 重点写清楚：事件起因→发展→结果的因果链，以及人物情感/动机的转变逻辑
-- 台词极度克制：全文不超过5处直接引语，只保留对情节转折有决定性作用的关键台词
-- 转折节点标注【转折】，高潮节点标注【高潮】
-- 必须覆盖原梗概中所有重要情节节点，不要遗漏关键事件
-- 直接输出纯文本，节点间空行
-
-原始梗概：
-${existingText}`, cfg.llmKey, cfg.model, 5500);
-
-    _applyNewOutline(result);
-    toast('梗概已按起承转合结构重新整理','ok');
-  } catch(e) {
-    toast('整理失败：'+e.message,'err');
-  } finally {
-    const btn = document.querySelector('[onclick="reformatOutline()"]');
-    if (btn) { btn.textContent = '↺ 重整梗概'; btn.disabled = false; }
-  }
-}
-
-function _applyNewOutline(result) {
-  const outlineRaw = result.replace(/```[\s\S]*?```/g,'').trim();
-  const blocks = outlineRaw.split(/\n\s*\n/).filter(b=>b.trim());
-  const newOutline = blocks.map(block => {
-    const lines = block.trim().split('\n');
-    const m = lines[0].match(/【([^】]+)】/);
-    const point = m ? m[1] : lines[0].replace(/\*+/g,'').replace(/^\d+[\.、\s]+/,'').trim().slice(0,30);
-    const content = lines.join('\n').replace(/^【[^】]+】\s*/,'').trim();
-    return { point, content };
-  });
-  if (!newOutline.length) { toast('解析结果为空，请重试','err'); return; }
-  analysisData.outline = newOutline;
-  renderOutline(newOutline);
-  saveSession();
-}
-
-// ── 复制板块 ──
-// ── 剧情梗概渲染（起承转合结构）──
-const ACT_DEFS = [
-  { keys: ['起','开篇','第一幕','一、起'], label: '起', title: '开篇设定', sub: '人物登场 · 冲突起点 · 世界规则确立', cls: 'qi' },
-  { keys: ['承','发展','第二幕','二、承'], label: '承', title: '矛盾激化', sub: '日常摩擦 · 能力彰显 · 情感暗流',   cls: 'cheng' },
-  { keys: ['转','转折','第三幕','三、转'], label: '转', title: '危机爆发', sub: '关键转折 · 最低谷 · 真相揭露',      cls: 'zhuan' },
-  { keys: ['合','结局','第四幕','四、合'], label: '合', title: '高潮收束', sub: '对决 · 情感爆发 · 结局落定',        cls: 'he' },
-];
-
-function detectAct(text) {
-  // 标题里含【起】【承】【转】【合】或对应关键词
-  const t = text.replace(/[\s\u3000]/g, '');
-  for (let i = 0; i < ACT_DEFS.length; i++) {
-    const def = ACT_DEFS[i];
-    if (new RegExp(`【(${def.keys.join('|')})】`).test(t)) return i;
-    if (new RegExp(`^(${def.keys.join('|')})[：:「]`).test(t)) return i;
-  }
-  return -1; // 没检测到幕标记
-}
-
-function renderOutline(items) {
-  const container = document.getElementById('outlineContainer');
-  if (!container) return;
-  container.innerHTML = '';
-
-  // 判断是否有幕标记
-  const hasActMarkers = items.some(item => detectAct(item.point) >= 0 || detectAct(item.content?.slice(0,30)||'') >= 0);
-
-  // 自动分幕：如果没有幕标记，按 10-15个节拍均匀切4幕
-  let groups; // [{actIdx, items:[]}]
-  if (hasActMarkers) {
-    groups = []; let curGroup = null;
-    items.forEach(item => {
-      const actIdx = detectAct(item.point) >= 0 ? detectAct(item.point) : detectAct(item.content?.slice(0,30)||'');
-      if (actIdx >= 0) {
-        curGroup = { actIdx, items: [] };
-        groups.push(curGroup);
-      }
-      if (!curGroup) { curGroup = { actIdx: 0, items: [] }; groups.push(curGroup); }
-      curGroup.items.push(item);
-    });
-  } else {
-    // 均匀切4幕
-    const n = items.length;
-    const cuts = [
-      Math.ceil(n * 0.2),
-      Math.ceil(n * 0.5),
-      Math.ceil(n * 0.75),
-      n
-    ];
-    groups = [];
-    let prev = 0;
-    cuts.forEach((cut, i) => {
-      const slice = items.slice(prev, cut);
-      if (slice.length) groups.push({ actIdx: i, items: slice });
-      prev = cut;
-    });
-  }
-
-  let beatIndex = 0;
-  groups.forEach(group => {
-    const def = ACT_DEFS[group.actIdx] || ACT_DEFS[0];
-
-    // 幕标题行
-    const header = document.createElement('div');
-    header.className = 'act-header';
-    header.innerHTML = `
-      <div class="act-badge ${def.cls}">${def.label}</div>
-      <div class="act-title">${def.title}</div>
-      <div class="act-subtitle">${def.sub}</div>
-      <div class="act-line"></div>`;
-    container.appendChild(header);
-
-    // 节拍条目
-    group.items.forEach(item => {
-      beatIndex++;
-      // 清理标题里的幕标记
-      const rawPoint = (item.point || '').replace(/【(起|承|转|合|开篇|发展|转折|结局|第[一二三四]幕|[一二三四]、[起承转合])】/g,'').trim();
-      // 处理正文里的【转折】【高潮】标签
-      const rawContent = esc(item.content || '')
-        .replace(/【转折】/g, '<span class="beat-tag zhuan">转折</span>')
-        .replace(/【高潮】/g, '<span class="beat-tag gaochao">高潮</span>');
-
-      const beat = document.createElement('div');
-      beat.className = 'beat-item';
-      beat.dataset.beatIndex = beatIndex - 1;
-      beat.innerHTML = `
-        <div class="beat-num">${beatIndex}</div>
-        <div class="beat-body">
-          <span class="beat-title" contenteditable="true" spellcheck="false">${esc(rawPoint)}</span>
-          <span class="beat-text" contenteditable="true" spellcheck="false">${rawContent}</span>
-        </div>`;
-      container.appendChild(beat);
-    });
-  });
-}
-
-function copySection(sec) {
-  let text = extractSectionText(sec);
-  if (sec === 'subtitles') {
-    text = subtitleData.map(s => `${fmtTC(s.tc)}  ${s.en}\n${s.zh}`).join('\n\n');
-  }
-  navigator.clipboard.writeText(text)
-    .then(()=>toast('已复制到剪贴板','ok'))
-    .catch(()=>{
-      const ta=document.createElement('textarea'); ta.value=text;
-      ta.style.cssText='position:fixed;opacity:0'; document.body.appendChild(ta);
-      ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
-      toast('已复制到剪贴板','ok');
-    });
-}
-
-// ── 导出分析报告 Word（不含剧本）──
-function exportFullWord() {
-  const title = analysisData._title || videoFile?.name?.replace(/\.[^.]+$/,'') || videoUrl || '内容分析';
-  const para    = t => `{\\pard\\f0\\fs22\\sl380\\slmult1\\sb80\\sa40 ${rtfEsc(t)}\\par}\n`;
-  const heading = t => `{\\pard\\f0\\b\\fs30\\cf1\\sb400\\sa160 ${rtfEsc(t)}\\par}\n`;
-  const subH    = t => `{\\pard\\f0\\b\\fs24\\cf2\\sb240\\sa80 ${rtfEsc(t)}\\par}\n`;
-  const subH2   = t => `{\\pard\\f0\\b\\fs22\\sb180\\sa60 ${rtfEsc(t)}\\par}\n`;
-  const divider = () => `{\\pard\\sb240\\sa240\\brdrb\\brdrs\\brdrw8\\brsp60\\brdrcf3 \\par}\n`;
-  let body = '';
-
-  // 剧情概要
-  const d = analysisData;
-  body += heading('一、剧情概要');
-  body += subH('一句话简介');
-  body += para(document.getElementById('loglineText').innerText||'');
-  body += subH('人物小传');
-  document.querySelectorAll('#charGrid .char-card').forEach(card => {
-    body += subH2('  '+( card.querySelector('.char-name')?.innerText||''));
-    body += para(card.querySelector('.char-bio')?.innerText||'');
-  });
-  body += subH('剧情梗概');
-  document.querySelectorAll('#outlineContainer .beat-item').forEach((item, i) => {
-    const pt = item.querySelector('.beat-title')?.innerText||'';
-    const content = item.querySelector('.beat-text')?.innerText||'';
-    body += subH2(`  ${String(i+1).padStart(2,'0')}.  ${pt}`);
-    body += para(content);
-  });
-  body += divider();
-
-  // 策划逻辑
-  body += heading('二、策划逻辑');
-  const planSections = [
-    ['核心亮点','highlightsText'],['人物逻辑','charLogicText'],
-    ['情感逻辑','emotionText'],['节奏逻辑','rhythmText'],
-    ['悬念布局','hookText'],['高光情节','highlightScenesText'],
-  ];
-  body += subH('结构逻辑');
-  body += para(document.getElementById('logicGrid').innerText||'');
-  planSections.forEach(([label, id]) => {
-    body += subH(label);
-    body += para(document.getElementById(id).innerText||'');
-  });
-  body += divider();
-
-  // 改编方案
-  body += heading('三、改编方案');
-  document.querySelectorAll('#adaptPlansGrid .adapt-plan-card').forEach((card,i) => {
-    body += subH(`  方案${i+1}：${card.querySelector('.adapt-plan-title')?.innerText||''}`);
-    body += para(card.querySelector('.adapt-plan-body')?.innerText||'');
-    const synopsis = card.querySelector('.adapt-plan-synopsis')?.innerText||'';
-    if (synopsis) {
-      body += subH2('  故事简介');
-      body += para(synopsis);
-    }
-    body += `{\\pard\\par}\n`;
-  });
-
-  dlRtf(`${title}_内容分析报告.doc`, makeRtf(body, title+' · 内容分析报告'));
-  toast('分析报告已下载','ok');
-}
-
-// ── RTF UTILS ──
-function rtfEsc(t){return String(t||'').replace(/\\/g,'\\\\').replace(/\{/g,'\\{').replace(/\}/g,'\\}').replace(/[\u0080-\uffff]/g,c=>`\\u${c.charCodeAt(0)}?`);}
-function makeRtf(body, docTitle) {
-  const t = rtfEsc(docTitle);
-  return `{\\rtf1\\ansi\\ansicpg936\\deff0
-{\\fonttbl{\\f0\\fnil\\fcharset134 \\u23435?\\u20307?;}{\\f1\\froman\\fcharset0 Georgia;}}
-{\\colortbl;\\red24\\green78\\blue50;\\red44\\green92\\blue68;\\red180\\green180\\blue180;\\red80\\green80\\blue80;}
-{\\pard\\qc\\f0\\b\\fs40\\cf1\\sb600\\sa160 ${t}\\par}
-{\\pard\\qc\\f0\\fs20\\cf4\\sa400 DramaLens \\u23548?\\u20986?\\par}
-${body}
-}`;
-}
-function dlRtf(filename,rtf){const b=new Blob([rtf],{type:'application/rtf'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=filename;a.click();}
-
-// ── 剧本同步定位到对应台词 ──
-function syncScriptToDialogue(enText) {
-  const scriptEl = document.getElementById('subScriptContent');
-  if (!scriptEl || scriptEl.style.display === 'none' || !enText) return;
-
-  // 取台词前20个字符作为搜索锚点（避免标点差异）
-  const anchor = enText.trim().slice(0, 20).toLowerCase().replace(/[^a-z0-9\s]/g, '');
-  if (!anchor) return;
-
-  // 在剧本文本中找到对应行的位置
-  const fullText = scriptEl.innerText || '';
-  const lines = fullText.split('\n');
-  let charOffset = 0;
-  let foundLine = -1;
-  for (let i = 0; i < lines.length; i++) {
-    const lineClean = lines[i].toLowerCase().replace(/[^a-z0-9\s]/g, '');
-    if (lineClean.includes(anchor)) { foundLine = i; break; }
-    charOffset += lines[i].length + 1;
-  }
-  if (foundLine < 0) return;
-
-  // 计算该行在 scriptEl 中的滚动位置
-  const lineHeight = parseFloat(getComputedStyle(scriptEl).lineHeight) || 22;
-  const scrollTo = foundLine * lineHeight - scriptEl.clientHeight / 2;
-  scriptEl.scrollTo({ top: Math.max(0, scrollTo), behavior: 'smooth' });
-}
-
-// ── 三列同步滚动 ──
-// 字幕列(subList)和剧本列(subScriptContent)各自独立滚动，滚动时互相同步比例
-let _syncLock = false;
-function bindSyncScroll() {
-  const subList = document.getElementById('subList');
-  const scriptContent = document.getElementById('subScriptContent');
-  if (!subList || !scriptContent) return;
-
-  subList._syncHandler && subList.removeEventListener('scroll', subList._syncHandler);
-  scriptContent._syncHandler && scriptContent.removeEventListener('scroll', scriptContent._syncHandler);
-
-  subList._syncHandler = () => {
-    if (_syncLock || scriptContent.style.display === 'none') return;
-    _syncLock = true;
-    const ratio = subList.scrollTop / Math.max(1, subList.scrollHeight - subList.clientHeight);
-    scriptContent.scrollTop = ratio * Math.max(0, scriptContent.scrollHeight - scriptContent.clientHeight);
-    requestAnimationFrame(() => { _syncLock = false; });
-  };
-
-  scriptContent._syncHandler = () => {
-    if (_syncLock) return;
-    _syncLock = true;
-    const ratio = scriptContent.scrollTop / Math.max(1, scriptContent.scrollHeight - scriptContent.clientHeight);
-    subList.scrollTop = ratio * Math.max(0, subList.scrollHeight - subList.clientHeight);
-    requestAnimationFrame(() => { _syncLock = false; });
-  };
-
-  subList.addEventListener('scroll', subList._syncHandler);
-  scriptContent.addEventListener('scroll', scriptContent._syncHandler);
-}
-
-// ── RESIZE ──
-(function(){
-  const handle = document.getElementById('resizeHandle');
-  const sidebar = document.querySelector('.sidebar');
-  let dragging = false, startX = 0, startW = 0;
-  handle.addEventListener('mousedown', e => {
-    dragging = true;
-    startX = e.clientX;
-    startW = sidebar.offsetWidth;
-    handle.classList.add('dragging');
-    document.body.style.cursor = 'col-resize';
-    document.body.style.userSelect = 'none';
-  });
-  document.addEventListener('mousemove', e => {
-    if(!dragging) return;
-    const newW = Math.min(520, Math.max(220, startW + e.clientX - startX));
-    sidebar.style.width = newW + 'px';
-  });
-  document.addEventListener('mouseup', () => {
-    if(!dragging) return;
-    dragging = false;
-    handle.classList.remove('dragging');
-    document.body.style.cursor = '';
-    document.body.style.userSelect = '';
-  });
-})();
-
-// ── 字幕区三列 RESIZE ──
-(function(){
-  // 分隔条1：控制视频面板宽度（向右拖=扩大视频）
-  (function(){
-    const handle = document.getElementById('subResize1');
-    const panel = document.getElementById('subVideoPanel');
-    if (!handle || !panel) return;
-    let dragging = false, startX = 0, startW = 0;
-    handle.addEventListener('mousedown', e => {
-      e.preventDefault();
-      dragging = true; startX = e.clientX; startW = panel.offsetWidth;
-      handle.classList.add('dragging');
-      document.body.style.cursor = 'col-resize';
-      document.body.style.userSelect = 'none';
-    });
-    document.addEventListener('mousemove', e => {
-      if (!dragging) return;
-      const newW = Math.min(window.innerWidth * 0.6, Math.max(160, startW + e.clientX - startX));
-      panel.style.width = newW + 'px';
-      panel.style.flexShrink = '0';
-    });
-    document.addEventListener('mouseup', () => {
-      if (!dragging) return; dragging = false;
-      handle.classList.remove('dragging');
-      document.body.style.cursor = ''; document.body.style.userSelect = '';
-    });
-  })();
-
-  // 分隔条2：控制剧本面板宽度（向左拖=扩大剧本）
-  (function(){
-    const handle = document.getElementById('subResize2');
-    const panel = document.getElementById('subScriptPanel');
-    if (!handle || !panel) return;
-    let dragging = false, startX = 0, startW = 0;
-    handle.addEventListener('mousedown', e => {
-      e.preventDefault();
-      dragging = true; startX = e.clientX; startW = panel.offsetWidth;
-      handle.classList.add('dragging');
-      document.body.style.cursor = 'col-resize';
-      document.body.style.userSelect = 'none';
-    });
-    document.addEventListener('mousemove', e => {
-      if (!dragging) return;
-      const delta = startX - e.clientX; // 反向
-      const newW = Math.min(window.innerWidth * 0.55, Math.max(160, startW + delta));
-      panel.style.width = newW + 'px';
-      panel.style.flexShrink = '0';
-    });
-    document.addEventListener('mouseup', () => {
-      if (!dragging) return; dragging = false;
-      handle.classList.remove('dragging');
-      document.body.style.cursor = ''; document.body.style.userSelect = '';
-    });
-  })();
-})();
-// ── 内容区双列 RESIZE ──
-(function(){
-  function makeColResizer(handleId, leftId, minLeft, minRight) {
-    const handle = document.getElementById(handleId);
-    const leftEl = document.getElementById(leftId);
-    if (!handle || !leftEl) return;
-    let dragging = false, startX = 0, startW = 0;
-    handle.addEventListener('mousedown', e => {
-      e.preventDefault();
-      dragging = true; startX = e.clientX; startW = leftEl.offsetWidth;
-      handle.classList.add('dragging');
-      document.body.style.cursor = 'col-resize';
-      document.body.style.userSelect = 'none';
-    });
-    document.addEventListener('mousemove', e => {
-      if (!dragging) return;
-      const container = leftEl.parentElement;
-      const maxW = container.offsetWidth - minRight - 4;
-      const newW = Math.min(maxW, Math.max(minLeft, startW + e.clientX - startX));
-      leftEl.style.width = newW + 'px';
-      leftEl.style.flexShrink = '0';
-    });
-    document.addEventListener('mouseup', () => {
-      if (!dragging) return;
-      dragging = false;
-      handle.classList.remove('dragging');
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
-    });
-  }
-  makeColResizer('planningDivider',  'planningLeft',  200, 200);
-
-  // 行2：关系图 | 人物小传 分隔条
-  (function(){
-    const handle = document.getElementById('row2Divider');
-    const leftEl = document.getElementById('relationGraphCol');
-    if (!handle || !leftEl) return;
-    let dragging = false, startX = 0, startW = 0;
-    handle.addEventListener('mousedown', e => {
-      e.preventDefault(); dragging = true; startX = e.clientX; startW = leftEl.offsetWidth;
-      handle.style.background = 'var(--green-main)';
-      document.body.style.cursor = 'col-resize'; document.body.style.userSelect = 'none';
-    });
-    document.addEventListener('mousemove', e => {
-      if (!dragging) return;
-      const container = document.getElementById('row2Wrapper');
-      const maxW = container.offsetWidth - 200 - 17;
-      const newW = Math.min(maxW, Math.max(200, startW + e.clientX - startX));
-      leftEl.style.flex = '0 0 ' + newW + 'px';
-      // 重绘关系图适应新宽度
-      if (analysisData.relations) renderRelationGraph(analysisData.relations||[], analysisData.characters||[]);
-    });
-    document.addEventListener('mouseup', () => {
-      if (!dragging) return; dragging = false;
-      handle.style.background = '';
-      document.body.style.cursor = ''; document.body.style.userSelect = '';
-    });
-  })();
-
-  // outline 节拍左右列分隔条（动态绑定，因为列在 overview 渲染后才出现）
-  // outline 已改为单列，无需分隔条绑定
-})();
-function setStatus(s,t){document.getElementById('statusDot').className='status-dot '+s;document.getElementById('statusText').textContent=t;}
-function setProg(p){document.getElementById('progressBar').style.width=p+'%';}
-function setStep(n,s){document.getElementById('s'+n).className='p-step '+s;}
-function setLabel(t){document.getElementById('procLabel').textContent=t;}
-function fmtSize(b){return b<1048576?(b/1024).toFixed(1)+' KB':(b/1048576).toFixed(1)+' MB';}
-function fmtDur(s){const m=Math.floor(s/60),sc=Math.floor(s%60);return `${m}:${String(sc).padStart(2,'0')}`;}
-function fmtTC(s){const m=Math.floor(s/60),sc=Math.floor(s%60);return `${String(m).padStart(2,'0')}:${String(sc).padStart(2,'0')}`;}
-function srtTC(s){const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sc=Math.floor(s%60),ms=Math.round((s-Math.floor(s))*1000);return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sc).padStart(2,'0')},${String(ms).padStart(3,'0')}`;}
-function esc(t){return String(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-function dl(name,c){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([c],{type:'text/plain;charset=utf-8'}));a.download=name;a.click();}
-// ── 生词本 ──
-const VOCAB_KEY = 'dl_vocab';
-let _tooltipWord = null, _tooltipData = null, _tooltipTimer = null;
-
-function getVocab() { try { return JSON.parse(localStorage.getItem(VOCAB_KEY)||'[]'); } catch { return []; } }
-function saveVocab(v) { try { localStorage.setItem(VOCAB_KEY, JSON.stringify(v)); } catch {} }
-
-function updateVocabBadge() {
-  const n = getVocab().length;
-  const el = document.getElementById('vocabBadge');
-  if (el) el.textContent = n;
-}
-
-// 拆词后的 hover 事件（事件委托到 subList）
-document.addEventListener('DOMContentLoaded', () => {
-  updateVocabBadge();
-  const subList = document.getElementById('subList');
-  if (!subList) return;
-
-  subList.addEventListener('mouseover', e => {
-    const span = e.target.closest('.word-span');
-    if (!span) return;
-    clearTimeout(_tooltipTimer);
-    _tooltipTimer = setTimeout(() => showWordTooltip(span), 280);
-  });
-
-  subList.addEventListener('mouseout', e => {
-    const span = e.target.closest('.word-span');
-    if (!span) return;
-    clearTimeout(_tooltipTimer);
-    _tooltipTimer = setTimeout(() => {
-      const tt = document.getElementById('wordTooltip');
-      if (tt && !tt.matches(':hover')) hideWordTooltip();
-    }, 300);
-  });
-
-  subList.addEventListener('click', e => {
-    const span = e.target.closest('.word-span');
-    if (!span) return;
-    if (e.shiftKey) { e.stopPropagation(); showWordTooltip(span, true); return; }
-  });
-});
-
-document.getElementById('wordTooltip')?.addEventListener('mouseleave', () => {
-  _tooltipTimer = setTimeout(hideWordTooltip, 200);
-});
-document.getElementById('wordTooltip')?.addEventListener('mouseenter', () => {
-  clearTimeout(_tooltipTimer);
-});
-
-async function showWordTooltip(span, quickAdd = false) {
-  const word = span.dataset.word;
-  const sentence = span.dataset.sentence || '';
-  if (!word) return;
-
-  _tooltipWord = word;
-  const tt = document.getElementById('wordTooltip');
-  const wtWord = document.getElementById('wtWord');
-  const wtPhonetic = document.getElementById('wtPhonetic');
-  const wtDefs = document.getElementById('wtDefs');
-  const wtAddBtn = document.getElementById('wtAddBtn');
-
-  // 位置计算
-  const rect = span.getBoundingClientRect();
-  tt.style.display = 'flex';
-  tt.classList.remove('show');
-  const ttW = 260, ttH = 140;
-  let left = rect.left, top = rect.bottom + 6;
-  if (left + ttW > window.innerWidth - 8) left = window.innerWidth - ttW - 8;
-  if (top + ttH > window.innerHeight - 8) top = rect.top - ttH - 6;
-  tt.style.left = left + 'px';
-  tt.style.top = top + 'px';
-  tt.classList.add('show');
-
-  // 已在生词本中
-  const inVocab = getVocab().some(v => v.word === word);
-  wtAddBtn.textContent = inVocab ? '✓ 已在生词本' : '+ 加入生词本';
-  wtAddBtn.className = 'wt-add-btn' + (inVocab ? ' added' : '');
-  wtAddBtn.onclick = () => addToVocab();
-
-  // 显示加载中
-  wtWord.textContent = word;
-  wtPhonetic.textContent = '';
-  wtDefs.innerHTML = '<span class="wt-loading">查询中…</span>';
-  _tooltipData = null;
-
-  // 查 Free Dictionary API
-  try {
-    const r = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
-    if (!r.ok) throw new Error('not found');
-    const data = await r.json();
-    _tooltipData = { word, data, sentence };
-
-    const entry = data[0];
-    const phonetic = entry.phonetics?.find(p => p.text)?.text || entry.phonetic || '';
-    wtPhonetic.textContent = phonetic;
-
-    // 取前3个释义（不同词性各一条）
-    const defs = [];
-    const seenPos = new Set();
-    for (const meaning of (entry.meanings || [])) {
-      if (defs.length >= 3) break;
-      if (seenPos.has(meaning.partOfSpeech)) continue;
-      seenPos.add(meaning.partOfSpeech);
-      const def = meaning.definitions?.[0]?.definition || '';
-      if (def) defs.push({ pos: meaning.partOfSpeech, def });
-    }
-    wtDefs.innerHTML = defs.map(d =>
-      `<div class="wt-def"><span class="wt-pos">${d.pos}</span>${d.def}</div>`
-    ).join('') || '<div class="wt-def">暂无释义</div>';
-
-    if (quickAdd && !inVocab) addToVocab();
-  } catch {
-    wtPhonetic.textContent = '';
-    wtDefs.innerHTML = '<div class="wt-def" style="color:rgba(255,255,255,0.5)">未找到释义（仅支持英文单词）</div>';
-    _tooltipData = { word, data: null, sentence };
-  }
-}
-
-function hideWordTooltip() {
-  const tt = document.getElementById('wordTooltip');
-  if (tt) { tt.classList.remove('show'); tt.style.display = 'none'; }
-  _tooltipWord = null;
-}
-
-function addToVocab() {
-  const word = _tooltipWord;
-  if (!word) return;
-  const vocab = getVocab();
-  if (vocab.some(v => v.word === word)) { toast('已在生词本中'); return; }
-
-  let phonetic = '', defs = [], sentence = '';
-  if (_tooltipData) {
-    sentence = _tooltipData.sentence || '';
-    if (_tooltipData.data) {
-      const entry = _tooltipData.data[0];
-      phonetic = entry.phonetics?.find(p => p.text)?.text || entry.phonetic || '';
-      const seenPos = new Set();
-      for (const meaning of (entry.meanings || [])) {
-        if (defs.length >= 2) break;
-        if (seenPos.has(meaning.partOfSpeech)) continue;
-        seenPos.add(meaning.partOfSpeech);
-        const def = meaning.definitions?.[0]?.definition || '';
-        if (def) defs.push(`${meaning.partOfSpeech}: ${def}`);
-      }
-    }
-  }
-
-  vocab.unshift({ word, phonetic, defs, sentence, addedAt: Date.now() });
-  saveVocab(vocab);
-  updateVocabBadge();
-  renderVocabList();
-
-  // 更新 tooltip 按钮状态
-  const btn = document.getElementById('wtAddBtn');
-  if (btn) { btn.textContent = '✓ 已加入'; btn.className = 'wt-add-btn added'; }
-  toast(`「${word}」已加入生词本`, 'ok');
-}
-
-function toggleVocabPanel() {
-  const panel = document.getElementById('vocabPanel');
-  if (!panel) return;
-  const isOpen = panel.classList.contains('open');
-  if (!isOpen) { renderVocabList(); panel.style.display = 'flex'; requestAnimationFrame(() => panel.classList.add('open')); }
-  else { panel.classList.remove('open'); setTimeout(() => panel.style.display = 'none', 250); }
-}
-
-function renderVocabList() {
-  const vocab = getVocab();
-  const q = (document.getElementById('vocabSearch')?.value || '').toLowerCase();
-  const filtered = q ? vocab.filter(v => v.word.includes(q)) : vocab;
-  const list = document.getElementById('vocabList');
-  const cnt = document.getElementById('vocabCount');
-  if (cnt) cnt.textContent = `${vocab.length} 词`;
-  updateVocabBadge();
-  if (!list) return;
-
-  if (!filtered.length) {
-    list.innerHTML = `<div class="vocab-empty">${q ? '没有匹配的单词' : '还没有加入任何单词<br>悬浮字幕中的单词即可查词'}</div>`;
-    return;
-  }
-
-  list.innerHTML = filtered.map((v, i) => `
-    <div class="vocab-item">
-      <div class="vi-word">${esc(v.word)}</div>
-      ${v.phonetic ? `<div class="vi-phonetic">${esc(v.phonetic)}</div>` : ''}
-      ${v.defs?.length ? `<div class="vi-def">${v.defs.map(d => esc(d)).join('<br>')}</div>` : ''}
-      ${v.sentence ? `<div class="vi-sentence">"${esc(v.sentence)}"</div>` : ''}
-      <button class="vi-del" onclick="deleteVocabWord('${esc(v.word)}')" title="删除">✕</button>
-    </div>`).join('');
-}
-
-function deleteVocabWord(word) {
-  const vocab = getVocab().filter(v => v.word !== word);
-  saveVocab(vocab);
-  renderVocabList();
-  updateVocabBadge();
-}
-
-function clearVocab() {
-  if (!confirm('确认清空全部生词？')) return;
-  saveVocab([]);
-  renderVocabList();
-  updateVocabBadge();
-  toast('生词本已清空');
-}
-
-function exportVocab() {
-  const vocab = getVocab();
-  if (!vocab.length) { toast('生词本为空'); return; }
-  const txt = vocab.map(v => {
-    let line = v.word;
-    if (v.phonetic) line += `  ${v.phonetic}`;
-    if (v.defs?.length) line += `\n  ${v.defs.join('\n  ')}`;
-    if (v.sentence) line += `\n  "${v.sentence}"`;
-    return line;
-  }).join('\n\n');
-  dl('DramaLens_生词本.txt', txt);
-  toast('生词本已导出', 'ok');
-}
-
-// 点击其他地方关闭 tooltip
-document.addEventListener('click', e => {
-  if (!e.target.closest('.word-span') && !e.target.closest('#wordTooltip')) {
-    hideWordTooltip();
-  }
-});
-
-function toast(msg,type=''){const t=document.getElementById('toast');t.textContent=msg;t.className='toast show '+type;setTimeout(()=>t.className='toast',3000);}
-
-// ── 悬浮对话框 ──
-let floatChatHistory = [];
-
-function toggleFloatChat() {
-  const panel = document.getElementById('floatChat');
-  const btn = document.getElementById('floatChatToggle');
-  const isOpen = panel.classList.contains('open');
-  panel.classList.toggle('open', !isOpen);
-  btn.style.display = isOpen ? 'flex' : 'none';
-}
-
-function updateFloatChatVisibility() {
-  const tab = document.querySelector('.tab-btn.active')?.dataset.tab;
-  const btn = document.getElementById('floatChatToggle');
-  const panel = document.getElementById('floatChat');
-  const show = (tab === 'overview' || tab === 'planning') && Object.keys(analysisData).length > 0;
-  if (btn) btn.classList.toggle('visible', show);
-  if (!show && panel) { panel.classList.remove('open'); if (btn) btn.style.display = show ? 'flex' : 'none'; }
-  if (show && btn) btn.style.display = 'flex';
-}
-
-async function sendFloatChat() {
-  const input = document.getElementById('floatChatInput');
-  const log = document.getElementById('floatChatLog');
-  const sendBtn = document.getElementById('floatChatSend');
-  const msg = input.value.trim();
-  if (!msg) return;
-
-  const cfg = getConfig();
-  if (!cfg.llmKey) { toast('请先配置 API Key','err'); return; }
-
-  // 显示用户消息
-  const userDiv = document.createElement('div');
-  userDiv.className = 'fc-msg user';
-  userDiv.textContent = msg;
-  log.appendChild(userDiv);
-  input.value = '';
-  sendBtn.disabled = true;
-
-  // 显示 loading
-  const loadDiv = document.createElement('div');
-  loadDiv.className = 'fc-msg ai loading';
-  loadDiv.textContent = 'AI 正在分析并修改…';
-  log.appendChild(loadDiv);
-  log.scrollTop = log.scrollHeight;
-
-  // 构建当前内容摘要
-  const currentData = {
-    logline: document.getElementById('loglineText')?.innerText || '',
-    characters: Array.from(document.querySelectorAll('#charGrid .char-card')).map(c => ({
-      name: c.querySelector('.char-name')?.innerText || '',
-      bio: c.querySelector('.char-bio')?.innerText || ''
-    })),
-    outline: document.querySelectorAll('#outlineContainer .beat-item').length
-      ? [...document.querySelectorAll('#outlineContainer .beat-item')].map(el => ({
-          point: el.querySelector('.beat-title')?.innerText || '',
-          content: el.querySelector('.beat-text')?.innerText || ''
-        }))
-      : (analysisData.outline || []),
-    highlights: document.getElementById('highlightsText')?.innerText || '',
-    structureActs: document.getElementById('logicGrid')?.innerText || '',
-    characterLogic: document.getElementById('charLogicText')?.innerText || '',
-  };
-
-  floatChatHistory.push({ role: 'user', content: msg });
-
-  try {
-    const systemPrompt = `你是DramaLens内容修改助手。用户会告诉你哪里不准确或需要调整，你需要统筹理解全局，输出修改后的完整内容。
-
-当前分析内容：
-【一句话简介】${currentData.logline}
-
-【人物小传】${currentData.characters.map(c=>`${c.name}：${c.bio}`).join('\n')}
-
-【剧情梗概节拍】${currentData.outline.map((o,i)=>`${String(i+1).padStart(2,'0')}【${o.point}】${o.content}`).join('\n\n')}
-
-【核心亮点】${currentData.highlights}
-【结构逻辑】${currentData.structureActs}
-【人物逻辑】${currentData.characterLogic}
-
-修改原则：
-1. 根据用户反馈，判断哪些模块需要修改
-2. 修改必须保持全局一致——例如改了人名，所有出现该名字的地方都要同步
-3. 只输出需要修改的字段，格式为JSON，未修改的字段不输出
-4. 支持的字段：logline / characters（数组，全量替换）/ outline（数组，全量替换）/ highlights / structureActs / characterLogic
-
-只输出JSON，不加任何说明：{"修改说明":"简述做了什么修改","changes":{"logline":"...","characters":[...],"outline":[...]}}`;
-
-    const r = await fetch('https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${cfg.llmKey}` },
-      body: JSON.stringify({
-        model: cfg.model || 'doubao-seed-2-0-pro-260215',
-        max_tokens: 3000, temperature: 0.3,
-        messages: [{ role: 'system', content: systemPrompt }, ...floatChatHistory]
-      })
-    });
-    const data = await r.json();
-    const raw = data.choices?.[0]?.message?.content || '';
-    floatChatHistory.push({ role: 'assistant', content: raw });
-
-    let parsed;
-    try { parsed = JSON.parse(raw.replace(/```json|```/g,'').trim()); } catch { parsed = null; }
-
-    loadDiv.classList.remove('loading');
-    if (parsed?.changes) {
-      const ch = parsed.changes;
-      // 应用修改
-      if (ch.logline) {
-        document.getElementById('loglineText').innerText = ch.logline;
-        analysisData.logline = ch.logline;
-      }
-      if (ch.characters?.length) {
-        analysisData.characters = ch.characters;
-        const cg = document.getElementById('charGrid'); cg.innerHTML = '';
-        ch.characters.forEach(c => {
-          const card = document.createElement('div'); card.className = 'char-card';
-          card.innerHTML = `<button class="char-card-del" onclick="this.closest('.char-card').remove()" title="删除">✕</button><div class="char-name" contenteditable="true" spellcheck="false">${esc(c.name)}</div><div class="char-bio" contenteditable="true" spellcheck="false">${esc(c.bio)}</div>`;
-          cg.appendChild(card);
-        });
-      }
-      if (ch.outline?.length) {
-        analysisData.outline = ch.outline;
-        renderOutline(ch.outline);
-      }
-      if (ch.highlights) { document.getElementById('highlightsText').innerHTML = ch.highlights; analysisData.highlights = ch.highlights; }
-      if (ch.structureActs) { document.getElementById('logicGrid').innerHTML = ch.structureActs; analysisData.structureActs = ch.structureActs; }
-      if (ch.characterLogic) { document.getElementById('charLogicText').innerHTML = ch.characterLogic; analysisData.characterLogic = ch.characterLogic; }
-      if (ch.relations) { analysisData.relations = ch.relations; renderRelationGraph(ch.relations, ch.characters||analysisData.characters||[]); }
-
-      saveSession();
-      loadDiv.textContent = `✓ ${parsed.修改说明 || '已完成修改，涉及的所有模块均已同步更新'}`;
-    } else {
-      loadDiv.textContent = raw.slice(0, 200) || '修改完成';
-    }
-  } catch(e) {
-    loadDiv.classList.remove('loading');
-    loadDiv.textContent = '出错：' + e.message;
-    floatChatHistory.pop();
-  } finally {
-    sendBtn.disabled = false;
-    log.scrollTop = log.scrollHeight;
-  }
-}
-
-// 拖动悬浮框
-(function(){
-  const header = document.getElementById('floatChatHeader');
-  const panel = document.getElementById('floatChat');
-  if (!header || !panel) return;
-  let dragging=false, ox=0, oy=0;
-  header.addEventListener('mousedown', e=>{
-    dragging=true; ox=e.clientX-panel.offsetLeft; oy=e.clientY-panel.offsetTop;
-    panel.style.right='auto'; document.body.style.userSelect='none';
-  });
-  document.addEventListener('mousemove', e=>{
-    if(!dragging)return;
-    panel.style.left=Math.max(0,e.clientX-ox)+'px';
-    panel.style.top=Math.max(0,e.clientY-oy)+'px';
-  });
-  document.addEventListener('mouseup',()=>{ dragging=false; document.body.style.userSelect=''; });
-})();
-</script>
-</body>
-</html>
+    body:JSON.stringify({model,max_tokens:maxTok,temperature:0.3,messages:[{role:'user',content
