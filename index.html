@@ -1425,92 +1425,6 @@ header {
 .toast.ok { background: var(--success); }
 .toast.err { background: var(--red); }
 /* ── 悬浮对话框 ── */
-.float-chat {
-  position: fixed;
-  bottom: 24px; right: 24px;
-  width: 420px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  box-shadow: var(--shadow-lg);
-  display: none;
-  flex-direction: column;
-  z-index: 200;
-  overflow: hidden;
-  transition: box-shadow 0.2s;
-}
-.float-chat.open { display: flex; }
-.float-chat-header {
-  display: flex; align-items: center; gap: 8px;
-  padding: 12px 16px;
-  background: var(--green-deep);
-  color: white;
-  flex-shrink: 0;
-  cursor: move;
-  user-select: none;
-}
-.float-chat-title { font-size: 13px; font-weight: 500; flex: 1; }
-.float-chat-hint { font-size: 11px; color: rgba(255,255,255,0.5); }
-.float-chat-close {
-  background: none; border: none; color: rgba(255,255,255,0.7);
-  cursor: pointer; font-size: 16px; padding: 0 2px; line-height: 1;
-  transition: color 0.15s;
-}
-.float-chat-close:hover { color: white; }
-.float-chat-log {
-  flex: 1; overflow-y: auto; padding: 12px 14px;
-  max-height: 280px; min-height: 80px;
-  display: flex; flex-direction: column; gap: 10px;
-}
-.float-chat-log::-webkit-scrollbar { width: 4px; }
-.float-chat-log::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-.fc-msg { font-size: 12.5px; line-height: 1.6; }
-.fc-msg.user { color: var(--ink); background: var(--green-pale); border-radius: 8px; padding: 8px 10px; align-self: flex-end; max-width: 90%; }
-.fc-msg.ai { color: var(--text-body); background: var(--surface-2); border-radius: 8px; padding: 8px 10px; max-width: 95%; }
-.fc-msg.ai.loading { color: var(--text-ghost); font-style: italic; }
-.float-chat-input-row {
-  display: flex; align-items: flex-end; gap: 8px;
-  padding: 10px 12px;
-  border-top: 1px solid var(--border-soft);
-  flex-shrink: 0;
-}
-.float-chat-input {
-  flex: 1; min-height: 36px; max-height: 120px;
-  padding: 8px 11px;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  font-family: 'Noto Sans SC', sans-serif;
-  font-size: 12.5px; color: var(--ink);
-  outline: none; resize: none;
-  transition: border-color 0.2s;
-  line-height: 1.5;
-}
-.float-chat-input:focus { border-color: var(--green-main); background: white; }
-.float-chat-input::placeholder { color: var(--text-ghost); }
-.float-chat-send {
-  height: 36px; width: 36px; flex-shrink: 0;
-  background: var(--green-main); color: white;
-  border: none; border-radius: 8px; cursor: pointer;
-  font-size: 14px; display: flex; align-items: center; justify-content: center;
-  transition: all 0.2s;
-}
-.float-chat-send:hover:not(:disabled) { background: var(--green-dark); }
-.float-chat-send:disabled { opacity: 0.4; cursor: not-allowed; }
-.float-chat-toggle {
-  position: fixed; bottom: 24px; right: 24px;
-  width: 48px; height: 48px;
-  background: var(--green-main);
-  color: white; border: none; border-radius: 50%;
-  cursor: pointer; font-size: 20px;
-  box-shadow: var(--shadow-md);
-  z-index: 199;
-  display: none;
-  align-items: center; justify-content: center;
-  transition: all 0.2s;
-}
-.float-chat-toggle.visible { display: flex; }
-.float-chat-toggle:hover { background: var(--green-dark); transform: scale(1.05); }
 /* ── 单词悬浮 tooltip ── */
 .word-span {
   cursor: pointer;
@@ -1967,24 +1881,20 @@ header {
             <div class="a-body editable" id="loglineText" contenteditable="true" spellcheck="false"></div>
           </div>
 
-          <!-- 行2：人物关系图 + 人物小传（flex + 可拖拽分隔条） -->
-          <div style="display:flex;gap:0;align-items:flex-start;min-width:0;width:100%" id="row2Wrapper">
-            <!-- 关系图 -->
-            <div style="flex:1;min-width:200px;overflow:hidden" id="relationGraphCol">
-              <div class="a-head" style="margin-bottom:10px"><div class="a-num">02</div><div class="a-title">人物关系图</div><div class="a-line"></div></div>
-              <div id="relationGraph" style="width:100%;overflow:hidden;"></div>
-            </div>
-            <!-- 分隔条 -->
-            <div id="row2Divider" style="width:5px;flex-shrink:0;cursor:col-resize;background:var(--border-soft);margin:0 6px;border-radius:3px;align-self:stretch;min-height:40px;transition:background .15s" onmouseenter="this.style.background='var(--green-light)'" onmouseleave="this.style.background='var(--border-soft)'"></div>
-            <!-- 人物小传 -->
-            <div style="flex:1;min-width:200px;overflow:hidden" id="charGridCol">
-              <div class="a-head" style="margin-bottom:10px"><div class="a-num">03</div><div class="a-title">人物小传</div><div class="a-line"></div></div>
-              <div class="char-grid" id="charGrid" style="padding-left:0;grid-template-columns:repeat(auto-fill,minmax(180px,1fr))"></div>
-            </div>
+          <!-- 行2：人物小传 -->
+          <div id="charGridCol">
+            <div class="a-head" style="margin-bottom:10px"><div class="a-num">02</div><div class="a-title">人物小传</div><div class="a-line"></div></div>
+            <div class="char-grid" id="charGrid" style="padding-left:0;grid-template-columns:repeat(auto-fill,minmax(180px,1fr))"></div>
           </div>
 
-          <!-- 行3：剧情梗概节拍（全宽单列，起承转合分幕展示） -->
-          <div style="border-top:1px solid var(--border-soft);padding-top:4px">
+          <!-- 行3：人物关系图 -->
+          <div id="relationGraphCol">
+            <div class="a-head" style="margin-bottom:10px"><div class="a-num">03</div><div class="a-title">人物关系图</div><div class="a-line"></div></div>
+            <div id="relationGraph" style="width:100%;overflow:hidden;"></div>
+          </div>
+
+          <!-- 行4：剧情梗概节拍（全宽单列，起承转合分幕展示） -->
+          <div>
             <div class="a-head" style="margin-bottom:16px"><div class="a-num">04</div><div class="a-title">剧情梗概节拍</div><div class="a-line"></div></div>
             <div id="outlineContainer" style="display:flex;flex-direction:column;gap:0"></div>
           </div>
@@ -2122,24 +2032,7 @@ header {
 
 <div class="toast" id="toast"></div>
 
-<!-- 悬浮对话按钮 -->
-<button class="float-chat-toggle" id="floatChatToggle" onclick="toggleFloatChat()" title="AI 修改助手">✦</button>
 
-<!-- 悬浮对话框 -->
-<div class="float-chat" id="floatChat">
-  <div class="float-chat-header" id="floatChatHeader">
-    <span class="float-chat-title">✦ AI 修改助手</span>
-    <span class="float-chat-hint">告诉 AI 哪里不准确，它会统筹修改</span>
-    <button class="float-chat-close" onclick="toggleFloatChat()">×</button>
-  </div>
-  <div class="float-chat-log" id="floatChatLog">
-    <div class="fc-msg ai">你好！请告诉我哪里的内容不准确，或者需要如何调整，我会统筹修改所有相关内容。例如：「人物小传里艾琳的描述不准确，她其实是…」</div>
-  </div>
-  <div class="float-chat-input-row">
-    <textarea class="float-chat-input" id="floatChatInput" placeholder="描述需要修改的内容…" rows="2" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendFloatChat();}"></textarea>
-    <button class="float-chat-send" id="floatChatSend" onclick="sendFloatChat()">↑</button>
-  </div>
-</div>
 
 <script>
 // ── STATE ──
@@ -2437,7 +2330,6 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     if (btn.dataset.tab === 'overview' && analysisData.relations) {
       requestAnimationFrame(() => renderRelationGraph(analysisData.relations||[], analysisData.characters||[]));
     }
-    updateFloatChatVisibility();
     // 保存当前 tab 状态，刷新后可恢复
     if (subtitleData.length || analysisData.logline) saveSession();
   });
@@ -2509,8 +2401,9 @@ async function doRunAnalysis() {
     const scenes = await captureSceneFrames(videoFile || videoUrl, 10);
     setLabel('内容拆解分析… (约1-2分钟，共3步)');
     const rawText = asr.map(s=>s.text).join(' ');
-    analysisData = await analyzeContent(rawText, c.llmKey, c.model, scenes);
+    analysisData = await analyzeContent(rawText, c.llmKey, c.model, scenes, audio.duration);
     analysisData._rawText = rawText;
+    analysisData._duration = audio.duration;
     renderAnalysis();
     setStep(5,'done'); setProg(100);
 
@@ -2748,13 +2641,40 @@ async function captureSceneFrames(source, intervalSec = 15) {
   });
 }
 
-async function analyzeContent(text, key, model, scenes = []) {
-  const t = text.length > 15000 ? text.slice(0, 15000) + '…' : text;
+function outlineWordRange(durationSec) {
+  const min = (durationSec || 0) / 60;
+  if (min <= 20) return { range: '3000-5000字', beats: '约12-20个节拍' };
+  if (min <= 45) return { range: '5000-8000字', beats: '约20-32个节拍' };
+  return { range: '8000-12000字', beats: '约32-48个节拍' };
+}
 
+async function analyzeContent(text, key, model, scenes = [], durationSec = 0) {
+  const wc = outlineWordRange(durationSec);
   // ── 1. 详细梗概（台词 + 截帧，信息最完整，先生成作为后续分析的基础）──
   setLabel('生成详细梗概…');
   let r3;
-  if (scenes && scenes.length > 0) {
+
+  // 长文本分段处理：超过15000字符时先分段提炼，再合并生成完整梗概
+  const CHUNK_SIZE = 14000;
+  let fullText = text;
+  if (text.length > CHUNK_SIZE) {
+    setLabel('台词较长，分段提炼剧情…');
+    const chunks = [];
+    for (let i = 0; i < text.length; i += CHUNK_SIZE) {
+      chunks.push(text.slice(i, i + CHUNK_SIZE));
+    }
+    const chunkSummaries = [];
+    for (let i = 0; i < chunks.length; i++) {
+      setLabel(`分段提炼剧情… (${i+1}/${chunks.length})`);
+      const summary = await callLLM(`你是影视内容分析师。以下是一部英文短剧台词的第${i+1}/${chunks.length}段，请用中文简要概述这段台词中发生的主要情节（300-600字），按时间顺序列出关键事件、人物行为和情感变化，不要遗漏重要情节节点。直接输出纯文本。\n\n台词：\n${chunks[i]}`, key, model, 1500);
+      chunkSummaries.push(`【第${i+1}段】\n${summary}`);
+    }
+    fullText = chunkSummaries.join('\n\n');
+    setLabel('整合全剧梗概…');
+  }
+
+  if (scenes && scenes.length > 0 && text.length <= CHUNK_SIZE) {
+    // 短视频：直接用台词+截帧生成梗概
     const prompt = `你是专业影视内容分析师。根据以下英文短剧的台词文本和视频截图，写全剧剧情梗概。
 
 截图使用说明：
@@ -2763,9 +2683,9 @@ async function analyzeContent(text, key, model, scenes = []) {
 - 截图信息服务于叙事，不需要逐帧描述画面，只在有助于理解剧情时融入文字
 
 输出要求：
-- 总字数控制在3000-5000字
-- 按「起承转合」四幕结构划分，每幕下细分事件节拍，全剧共10-15个节拍点
-- 每个节拍点格式：【节拍标题】正文（150-350字）
+- 总字数控制在${wc.range}
+- 按「起承转合」四幕结构划分，每幕下细分事件节拍，节拍数量以完整覆盖剧情为准
+- 每个节拍点格式：【节拍标题】正文（平均250字，视情节密度可在150-400字之间浮动）
 - 节拍标题直接点明该段核心事件，禁用「场景一」「第X段」等格式
 - 重点写清楚：事件起因→发展→结果的因果链，以及人物情感/动机的转变逻辑
 - 台词极度克制：全文不超过5处直接引语，只保留对情节转折有决定性作用的关键台词
@@ -2773,32 +2693,34 @@ async function analyzeContent(text, key, model, scenes = []) {
 - 只还原视频中实际发生的情节，绝对不要补充原视频之外的新剧情
 - 直接输出纯文本，节点间空行
 
-台词：\n${t}`;
+台词：\n${fullText}`;
     const selectedFrames = scenes.length > 8 ? scenes.filter((_, i) => i % Math.ceil(scenes.length / 8) === 0).slice(0, 8) : scenes;
     const content = [{ type: 'text', text: prompt }];
     selectedFrames.forEach(f => { content.push({ type: 'image_url', image_url: { url: `data:image/jpeg;base64,${f.b64}` } }); });
     const vResp = await fetch('https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
       method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
-      body: JSON.stringify({ model: 'doubao-1-5-vision-pro-32k-250115', max_tokens: 5500, temperature: 0.3, messages: [{ role: 'user', content }] })
+      body: JSON.stringify({ model: 'doubao-1-5-vision-pro-32k-250115', max_tokens: 8000, temperature: 0.3, messages: [{ role: 'user', content }] })
     });
     r3 = vResp.ok ? ((await vResp.json()).choices?.[0]?.message?.content || '') : '';
-    if (!r3) r3 = await callLLM(`根据以下英文短剧台词写全剧剧情梗概。总字数3000-5000字，按起承转合四幕结构划分，每幕下细分节拍点，全剧10-15个节拍点。每节拍格式：【节拍标题】正文（150-350字）。重点写因果链和人物情感转变逻辑，台词极度克制（全文不超过5处直接引语，只保留关键转折台词）。转折标注【转折】，高潮标注【高潮】，只还原台词中实际出现的情节。\n台词：\n${t}`, key, model, 5500);
+    if (!r3) r3 = await callLLM(`根据以下英文短剧台词写全剧剧情梗概。总字数${wc.range}，按起承转合四幕结构划分，每幕下细分节拍点，节拍数量以完整覆盖剧情为准。每节拍格式：【节拍标题】正文（平均250字）。重点写因果链和人物情感转变逻辑，台词极度克制（全文不超过5处直接引语，只保留关键转折台词）。转折标注【转折】，高潮标注【高潮】，只还原台词中实际出现的情节。\n台词：\n${fullText}`, key, model, 8000);
   } else {
-    r3 = await callLLM(`你是专业影视内容分析师。根据以下英文短剧台词写全剧剧情梗概。
+    // 长视频或无截帧：用完整台词（或分段摘要）生成梗概
+    const inputLabel = text.length > CHUNK_SIZE ? '以下是全剧各段剧情摘要（已覆盖完整视频内容）' : '以下是英文短剧台词';
+    r3 = await callLLM(`你是专业影视内容分析师。${inputLabel}，请写全剧完整剧情梗概，必须覆盖从开头到结尾的所有情节。
 
 输出要求：
-- 总字数控制在3000-5000字
-- 按「起承转合」四幕结构划分，每幕下细分事件节拍，全剧共10-15个节拍点
-- 每个节拍点格式：【节拍标题】正文（150-350字）
+- 总字数控制在${wc.range}
+- 按「起承转合」四幕结构划分，每幕下细分事件节拍，节拍数量以完整覆盖剧情为准
+- 每个节拍点格式：【节拍标题】正文（平均250字，视情节密度可在150-400字之间浮动）
 - 节拍标题直接点明该段核心事件，禁用「场景一」「第X段」等格式
 - 重点写清楚：事件起因→发展→结果的因果链，以及人物情感/动机的转变逻辑
 - 台词极度克制：全文不超过5处直接引语，只保留对情节转折有决定性作用的关键台词
 - 转折节点标注【转折】，高潮节点标注【高潮】
-- 只还原台词中实际出现的情节，绝对不要补充原视频之外的新剧情
+- 只还原实际出现的情节，绝对不要补充原视频之外的新剧情
 - 直接输出纯文本，不要JSON，节点间空行
 
-台词：
-${t}`, key, model, 5500);
+${text.length > CHUNK_SIZE ? '剧情摘要' : '台词'}：
+${fullText}`, key, model, 8000);
   }
   const outlineRaw = r3.replace(/```[\s\S]*?```/g,'').trim();
   const outlineBlocks = outlineRaw.split(/\n\s*\n/).filter(b => b.trim());
@@ -3163,8 +3085,6 @@ function renderAnalysis() {
   // 显示 AI 精准度提示
   const hint = document.getElementById('tabHint');
   if (hint) hint.textContent = '✦ AI 生成内容准确率约 85%，细节可点击直接编辑校准';
-  // 显示悬浮修改助手按钮
-  setTimeout(updateFloatChatVisibility, 100);
 }
 
 function renderRelationGraph(relations, characters) {
@@ -3512,22 +3432,39 @@ async function _regenOutlineFromRaw(rawText, cfg) {
   toast('基于完整台词重新生成梗概，请稍候…');
 
   try {
-    const t = rawText.length > 15000 ? rawText.slice(0, 15000) + '…' : rawText;
-    const result = await callLLM(`你是专业影视内容分析师。根据以下英文短剧台词写全剧剧情梗概。
+    // 长文本分段处理，确保覆盖完整剧情
+    const CHUNK_SIZE = 14000;
+    let inputText = rawText;
+    if (rawText.length > CHUNK_SIZE) {
+      const chunks = [];
+      for (let i = 0; i < rawText.length; i += CHUNK_SIZE) {
+        chunks.push(rawText.slice(i, i + CHUNK_SIZE));
+      }
+      const summaries = [];
+      for (let i = 0; i < chunks.length; i++) {
+        const s = await callLLM(`以下是英文短剧台词第${i+1}/${chunks.length}段，用中文概述这段的主要情节（300-600字），按时间顺序列出关键事件和人物行为，不要遗漏重要节点。直接输出纯文本。\n\n台词：\n${chunks[i]}`, cfg.llmKey, cfg.model, 1500);
+        summaries.push(`【第${i+1}段】\n${s}`);
+      }
+      inputText = summaries.join('\n\n');
+    }
+
+    const isChunked = rawText.length > CHUNK_SIZE;
+    const wc = outlineWordRange(analysisData._duration || 0);
+    const result = await callLLM(`你是专业影视内容分析师。${isChunked ? '以下是全剧各段剧情摘要（已覆盖完整视频内容）' : '根据以下英文短剧台词'}，写全剧完整剧情梗概，必须覆盖从开头到结尾的所有情节。
 
 输出要求：
-- 总字数控制在3000-5000字
-- 按「起承转合」四幕结构划分，每幕下细分事件节拍，全剧共10-15个节拍点
-- 每个节拍点格式：【节拍标题】正文（150-350字）
+- 总字数控制在${wc.range}
+- 按「起承转合」四幕结构划分，每幕下细分事件节拍，节拍数量以完整覆盖剧情为准
+- 每个节拍点格式：【节拍标题】正文（平均250字，视情节密度可在150-400字之间浮动）
 - 节拍标题直接点明该段核心事件，禁用「场景一」「第X段」等格式
 - 重点写清楚：事件起因→发展→结果的因果链，以及人物情感/动机的转变逻辑
 - 台词极度克制：全文不超过5处直接引语，只保留对情节转折有决定性作用的关键台词
 - 转折节点标注【转折】，高潮节点标注【高潮】
-- 只还原台词中实际出现的情节，不补充原视频之外的剧情
+- 只还原实际出现的情节，不补充原视频之外的剧情
 - 直接输出纯文本，节点间空行
 
-台词：
-${t}`, cfg.llmKey, cfg.model, 5500);
+${isChunked ? '剧情摘要' : '台词'}：
+${inputText}`, cfg.llmKey, cfg.model, 8000);
 
     _applyNewOutline(result);
     toast('基于完整台词的梗概已重新生成','ok');
@@ -3545,12 +3482,13 @@ async function _reformatFromExisting(existingText, cfg) {
   toast('正在重新整理梗概结构…');
 
   try {
+    const wc = outlineWordRange(analysisData._duration || 0);
     const result = await callLLM(`你是专业影视内容分析师。以下是一部短剧的剧情梗概（原始版本），请按起承转合四幕结构重新整理，生成结构清晰的最终版本。
 
 输出要求：
-- 总字数控制在3000-5000字
-- 按「起承转合」四幕结构划分，每幕下细分事件节拍，全剧共10-15个节拍点
-- 每个节拍点格式：【节拍标题】正文（150-350字）
+- 总字数控制在${wc.range}
+- 按「起承转合」四幕结构划分，每幕下细分事件节拍，节拍数量以完整覆盖剧情为准
+- 每个节拍点格式：【节拍标题】正文（平均250字，视情节密度可在150-400字之间浮动）
 - 节拍标题直接点明该段核心事件，禁用「场景一」「第X段」等格式
 - 重点写清楚：事件起因→发展→结果的因果链，以及人物情感/动机的转变逻辑
 - 台词极度克制：全文不超过5处直接引语，只保留对情节转折有决定性作用的关键台词
@@ -3559,7 +3497,7 @@ async function _reformatFromExisting(existingText, cfg) {
 - 直接输出纯文本，节点间空行
 
 原始梗概：
-${existingText}`, cfg.llmKey, cfg.model, 5500);
+${existingText}`, cfg.llmKey, cfg.model, 8000);
 
     _applyNewOutline(result);
     toast('梗概已按起承转合结构重新整理','ok');
@@ -3585,6 +3523,7 @@ function _applyNewOutline(result) {
   analysisData.outline = newOutline;
   renderOutline(newOutline);
   saveSession();
+  saveToHistory(analysisData);
 }
 
 // ── 复制板块 ──
@@ -3650,13 +3589,19 @@ function renderOutline(items) {
   groups.forEach(group => {
     const def = ACT_DEFS[group.actIdx] || ACT_DEFS[0];
 
+    // 动态小字：取本幕前3个节拍标题，去掉幕标记后拼接
+    const dynamicSub = group.items.slice(0, 3)
+      .map(it => (it.point || '').replace(/【(起|承|转|合|开篇|发展|转折|结局|第[一二三四]幕|[一二三四]、[起承转合])】/g,'').trim())
+      .filter(Boolean)
+      .join(' · ');
+
     // 幕标题行
     const header = document.createElement('div');
     header.className = 'act-header';
     header.innerHTML = `
       <div class="act-badge ${def.cls}">${def.label}</div>
       <div class="act-title">${def.title}</div>
-      <div class="act-subtitle">${def.sub}</div>
+      <div class="act-subtitle">${dynamicSub || def.sub}</div>
       <div class="act-line"></div>`;
     container.appendChild(header);
 
@@ -3946,33 +3891,6 @@ function bindSyncScroll() {
   }
   makeColResizer('planningDivider',  'planningLeft',  200, 200);
 
-  // 行2：关系图 | 人物小传 分隔条
-  (function(){
-    const handle = document.getElementById('row2Divider');
-    const leftEl = document.getElementById('relationGraphCol');
-    if (!handle || !leftEl) return;
-    let dragging = false, startX = 0, startW = 0;
-    handle.addEventListener('mousedown', e => {
-      e.preventDefault(); dragging = true; startX = e.clientX; startW = leftEl.offsetWidth;
-      handle.style.background = 'var(--green-main)';
-      document.body.style.cursor = 'col-resize'; document.body.style.userSelect = 'none';
-    });
-    document.addEventListener('mousemove', e => {
-      if (!dragging) return;
-      const container = document.getElementById('row2Wrapper');
-      const maxW = container.offsetWidth - 200 - 17;
-      const newW = Math.min(maxW, Math.max(200, startW + e.clientX - startX));
-      leftEl.style.flex = '0 0 ' + newW + 'px';
-      // 重绘关系图适应新宽度
-      if (analysisData.relations) renderRelationGraph(analysisData.relations||[], analysisData.characters||[]);
-    });
-    document.addEventListener('mouseup', () => {
-      if (!dragging) return; dragging = false;
-      handle.style.background = '';
-      document.body.style.cursor = ''; document.body.style.userSelect = '';
-    });
-  })();
-
   // outline 节拍左右列分隔条（动态绑定，因为列在 overview 渲染后才出现）
   // outline 已改为单列，无需分隔条绑定
 })();
@@ -4215,169 +4133,6 @@ document.addEventListener('click', e => {
 });
 
 function toast(msg,type=''){const t=document.getElementById('toast');t.textContent=msg;t.className='toast show '+type;setTimeout(()=>t.className='toast',3000);}
-
-// ── 悬浮对话框 ──
-let floatChatHistory = [];
-
-function toggleFloatChat() {
-  const panel = document.getElementById('floatChat');
-  const btn = document.getElementById('floatChatToggle');
-  const isOpen = panel.classList.contains('open');
-  panel.classList.toggle('open', !isOpen);
-  btn.style.display = isOpen ? 'flex' : 'none';
-}
-
-function updateFloatChatVisibility() {
-  const tab = document.querySelector('.tab-btn.active')?.dataset.tab;
-  const btn = document.getElementById('floatChatToggle');
-  const panel = document.getElementById('floatChat');
-  const show = (tab === 'overview' || tab === 'planning') && Object.keys(analysisData).length > 0;
-  if (btn) btn.classList.toggle('visible', show);
-  if (!show && panel) { panel.classList.remove('open'); if (btn) btn.style.display = show ? 'flex' : 'none'; }
-  if (show && btn) btn.style.display = 'flex';
-}
-
-async function sendFloatChat() {
-  const input = document.getElementById('floatChatInput');
-  const log = document.getElementById('floatChatLog');
-  const sendBtn = document.getElementById('floatChatSend');
-  const msg = input.value.trim();
-  if (!msg) return;
-
-  const cfg = getConfig();
-  if (!cfg.llmKey) { toast('请先配置 API Key','err'); return; }
-
-  // 显示用户消息
-  const userDiv = document.createElement('div');
-  userDiv.className = 'fc-msg user';
-  userDiv.textContent = msg;
-  log.appendChild(userDiv);
-  input.value = '';
-  sendBtn.disabled = true;
-
-  // 显示 loading
-  const loadDiv = document.createElement('div');
-  loadDiv.className = 'fc-msg ai loading';
-  loadDiv.textContent = 'AI 正在分析并修改…';
-  log.appendChild(loadDiv);
-  log.scrollTop = log.scrollHeight;
-
-  // 构建当前内容摘要
-  const currentData = {
-    logline: document.getElementById('loglineText')?.innerText || '',
-    characters: Array.from(document.querySelectorAll('#charGrid .char-card')).map(c => ({
-      name: c.querySelector('.char-name')?.innerText || '',
-      bio: c.querySelector('.char-bio')?.innerText || ''
-    })),
-    outline: document.querySelectorAll('#outlineContainer .beat-item').length
-      ? [...document.querySelectorAll('#outlineContainer .beat-item')].map(el => ({
-          point: el.querySelector('.beat-title')?.innerText || '',
-          content: el.querySelector('.beat-text')?.innerText || ''
-        }))
-      : (analysisData.outline || []),
-    highlights: document.getElementById('highlightsText')?.innerText || '',
-    structureActs: document.getElementById('logicGrid')?.innerText || '',
-    characterLogic: document.getElementById('charLogicText')?.innerText || '',
-  };
-
-  floatChatHistory.push({ role: 'user', content: msg });
-
-  try {
-    const systemPrompt = `你是DramaLens内容修改助手。用户会告诉你哪里不准确或需要调整，你需要统筹理解全局，输出修改后的完整内容。
-
-当前分析内容：
-【一句话简介】${currentData.logline}
-
-【人物小传】${currentData.characters.map(c=>`${c.name}：${c.bio}`).join('\n')}
-
-【剧情梗概节拍】${currentData.outline.map((o,i)=>`${String(i+1).padStart(2,'0')}【${o.point}】${o.content}`).join('\n\n')}
-
-【核心亮点】${currentData.highlights}
-【结构逻辑】${currentData.structureActs}
-【人物逻辑】${currentData.characterLogic}
-
-修改原则：
-1. 根据用户反馈，判断哪些模块需要修改
-2. 修改必须保持全局一致——例如改了人名，所有出现该名字的地方都要同步
-3. 只输出需要修改的字段，格式为JSON，未修改的字段不输出
-4. 支持的字段：logline / characters（数组，全量替换）/ outline（数组，全量替换）/ highlights / structureActs / characterLogic
-
-只输出JSON，不加任何说明：{"修改说明":"简述做了什么修改","changes":{"logline":"...","characters":[...],"outline":[...]}}`;
-
-    const r = await fetch('https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${cfg.llmKey}` },
-      body: JSON.stringify({
-        model: cfg.model || 'doubao-seed-2-0-pro-260215',
-        max_tokens: 3000, temperature: 0.3,
-        messages: [{ role: 'system', content: systemPrompt }, ...floatChatHistory]
-      })
-    });
-    const data = await r.json();
-    const raw = data.choices?.[0]?.message?.content || '';
-    floatChatHistory.push({ role: 'assistant', content: raw });
-
-    let parsed;
-    try { parsed = JSON.parse(raw.replace(/```json|```/g,'').trim()); } catch { parsed = null; }
-
-    loadDiv.classList.remove('loading');
-    if (parsed?.changes) {
-      const ch = parsed.changes;
-      // 应用修改
-      if (ch.logline) {
-        document.getElementById('loglineText').innerText = ch.logline;
-        analysisData.logline = ch.logline;
-      }
-      if (ch.characters?.length) {
-        analysisData.characters = ch.characters;
-        const cg = document.getElementById('charGrid'); cg.innerHTML = '';
-        ch.characters.forEach(c => {
-          const card = document.createElement('div'); card.className = 'char-card';
-          card.innerHTML = `<button class="char-card-del" onclick="this.closest('.char-card').remove()" title="删除">✕</button><div class="char-name" contenteditable="true" spellcheck="false">${esc(c.name)}</div><div class="char-bio" contenteditable="true" spellcheck="false">${esc(c.bio)}</div>`;
-          cg.appendChild(card);
-        });
-      }
-      if (ch.outline?.length) {
-        analysisData.outline = ch.outline;
-        renderOutline(ch.outline);
-      }
-      if (ch.highlights) { document.getElementById('highlightsText').innerHTML = ch.highlights; analysisData.highlights = ch.highlights; }
-      if (ch.structureActs) { document.getElementById('logicGrid').innerHTML = ch.structureActs; analysisData.structureActs = ch.structureActs; }
-      if (ch.characterLogic) { document.getElementById('charLogicText').innerHTML = ch.characterLogic; analysisData.characterLogic = ch.characterLogic; }
-      if (ch.relations) { analysisData.relations = ch.relations; renderRelationGraph(ch.relations, ch.characters||analysisData.characters||[]); }
-
-      saveSession();
-      loadDiv.textContent = `✓ ${parsed.修改说明 || '已完成修改，涉及的所有模块均已同步更新'}`;
-    } else {
-      loadDiv.textContent = raw.slice(0, 200) || '修改完成';
-    }
-  } catch(e) {
-    loadDiv.classList.remove('loading');
-    loadDiv.textContent = '出错：' + e.message;
-    floatChatHistory.pop();
-  } finally {
-    sendBtn.disabled = false;
-    log.scrollTop = log.scrollHeight;
-  }
-}
-
-// 拖动悬浮框
-(function(){
-  const header = document.getElementById('floatChatHeader');
-  const panel = document.getElementById('floatChat');
-  if (!header || !panel) return;
-  let dragging=false, ox=0, oy=0;
-  header.addEventListener('mousedown', e=>{
-    dragging=true; ox=e.clientX-panel.offsetLeft; oy=e.clientY-panel.offsetTop;
-    panel.style.right='auto'; document.body.style.userSelect='none';
-  });
-  document.addEventListener('mousemove', e=>{
-    if(!dragging)return;
-    panel.style.left=Math.max(0,e.clientX-ox)+'px';
-    panel.style.top=Math.max(0,e.clientY-oy)+'px';
-  });
-  document.addEventListener('mouseup',()=>{ dragging=false; document.body.style.userSelect=''; });
-})();
 </script>
 </body>
 </html>
