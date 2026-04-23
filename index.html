@@ -3655,6 +3655,8 @@ function detectAct(text) {
     const def = ACT_DEFS[i];
     if (new RegExp(`【(${def.keys.join('|')})】`).test(t)) return i;
     if (new RegExp(`^(${def.keys.join('|')})[：:「]`).test(t)) return i;
+    // 匹配裸幕标记（如 point 存储为 "起"/"第一幕" 而非 【起】）
+    if (def.keys.some(k => t === k)) return i;
   }
   return -1; // 没检测到幕标记
 }
@@ -3727,6 +3729,9 @@ function renderOutline(items) {
 
     // 节拍条目
     group.items.forEach(item => {
+      // 跳过纯幕标记条目（如 point="起"/"第一幕"，是结构分隔符而非真实节拍）
+      const pointClean = (item.point || '').replace(/[\s　【】]/g, '');
+      if (ACT_DEFS.some(d => d.keys.includes(pointClean)) && !(item.content || '').trim()) return;
       beatIndex++;
       // 清理标题里的幕标记
       const rawPoint = (item.point || '').replace(/【(起|承|转|合|开篇|发展|转折|结局|第[一二三四]幕|[一二三四]、[起承转合])】/g,'').trim();
