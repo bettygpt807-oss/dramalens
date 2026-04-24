@@ -1166,10 +1166,14 @@ header {
 
 /* 改编方案卡片新样式 */
 .adapt-plan-card {
-  border: 1.5px solid var(--border-soft); border-radius: 10px;
-  padding: 16px 18px; margin-bottom: 12px; transition: border-color .2s;
+  position: relative; border: 1.5px solid var(--border-soft); border-radius: 10px;
+  padding: 16px 18px; margin-bottom: 12px; transition: border-color .2s, background .2s;
 }
 .adapt-plan-card:hover { border-color: var(--green-light); box-shadow: var(--shadow-sm); }
+.adapt-plan-card.selected { border-color: var(--green-main); background: rgba(30,92,58,0.04); }
+.adapt-plan-check { position: absolute; top: 10px; right: 12px; width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--border-soft); background: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 11px; transition: all .15s; padding: 0; line-height: 1; }
+.adapt-plan-check:hover { border-color: var(--green-light); }
+.adapt-plan-check.checked { background: var(--green-main); border-color: var(--green-main); color: #fff; }
 .adapt-plan-actions {
   display: flex; gap: 6px; margin-top: 12px; padding-top: 10px;
   border-top: 1px solid var(--border-soft);
@@ -2965,8 +2969,11 @@ function renderAdaptPlansWithHistory(activeIdx) {
   const plans = history[activeIdx]?.plans || [];
   apg.innerHTML = '';
   plans.forEach((plan, i) => {
-    const card = document.createElement('div'); card.className = 'adapt-plan-card';
-    card.innerHTML = `<div class="adapt-plan-num">方案 ${String(i+1).padStart(2,'0')}</div>
+    const checked = !!plan.selected;
+    const card = document.createElement('div');
+    card.className = 'adapt-plan-card' + (checked ? ' selected' : '');
+    card.innerHTML = `<button class="adapt-plan-check${checked ? ' checked' : ''}" onclick="toggleAdaptPlanSelect(this,${activeIdx},${i})" title="勾选导出">${checked ? '✓' : ''}</button>
+      <div class="adapt-plan-num">方案 ${String(i+1).padStart(2,'0')}</div>
       <div class="adapt-plan-title" contenteditable="true" spellcheck="false">${esc(plan.title||'')}</div>
       <div class="adapt-plan-body" contenteditable="true" spellcheck="false">${esc(plan.description||'')}</div>
       <div class="adapt-plan-synopsis-head">故事简介</div>
@@ -2976,6 +2983,18 @@ function renderAdaptPlansWithHistory(activeIdx) {
       </div>`;
     apg.appendChild(card);
   });
+}
+
+function toggleAdaptPlanSelect(btn, gi, pi) {
+  const plan = analysisData.adaptPlansHistory?.[gi]?.plans?.[pi];
+  if (!plan) return;
+  plan.selected = !plan.selected;
+  const card = btn.closest('.adapt-plan-card');
+  card.classList.toggle('selected', plan.selected);
+  btn.classList.toggle('checked', plan.selected);
+  btn.textContent = plan.selected ? '✓' : '';
+  saveSession();
+  saveToHistory(analysisData);
 }
 
 async function generateAdaptPlans() {
@@ -3904,17 +3923,21 @@ function exportFullWord() {
   body += heading('三、改编方案');
   const plansHistory = analysisData.adaptPlansHistory;
   if (plansHistory?.length) {
+    // 判断是否有任何勾选
+    const hasAnySelected = plansHistory.some(e => e.plans?.some(p => p.selected));
+    let exportCount = 0;
     plansHistory.forEach((entry, gi) => {
+      const toExport = entry.plans?.filter(p => !hasAnySelected || p.selected) || [];
+      if (!toExport.length) return;
       const d = new Date(entry.generatedAt);
       const timeStr = `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
       body += subH(`  第${gi+1}次生成（${timeStr}）`);
-      (entry.plans || []).forEach((plan, i) => {
+      toExport.forEach((plan, i) => {
         body += subH2(`    方案${i+1}：${plan.title||''}`);
         body += para(plan.description||'');
-        if (plan.synopsis) {
-          body += para('【故事简介】' + plan.synopsis);
-        }
+        if (plan.synopsis) body += para('【故事简介】' + plan.synopsis);
         body += `{\\pard\\par}\n`;
+        exportCount++;
       });
       if (gi < plansHistory.length - 1) body += `{\\pard\\sb120\\sa120\\par}\n`;
     });
@@ -3923,10 +3946,7 @@ function exportFullWord() {
       body += subH(`  方案${i+1}：${card.querySelector('.adapt-plan-title')?.innerText||''}`);
       body += para(card.querySelector('.adapt-plan-body')?.innerText||'');
       const synopsis = card.querySelector('.adapt-plan-synopsis')?.innerText||'';
-      if (synopsis) {
-        body += subH2('  故事简介');
-        body += para(synopsis);
-      }
+      if (synopsis) { body += subH2('  故事简介'); body += para(synopsis); }
       body += `{\\pard\\par}\n`;
     });
   }
