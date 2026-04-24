@@ -1442,6 +1442,10 @@ header {
 .adapt-plan-synopsis-head { font-size: 10px; font-weight: 600; color: var(--green-main); margin-top: 12px; margin-bottom: 4px; letter-spacing: 0.04em; }
 .adapt-plan-synopsis { font-size: 12.5px; color: var(--text-body); line-height: 1.8; outline: none; border-radius: 3px; padding: 8px 10px; background: var(--surface-2); border-radius: 6px; margin-bottom: 10px; }
 .adapt-plan-body:focus { background: rgba(30,92,58,0.04); }
+#adaptPlansHistoryBar { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px; }
+.adapt-hist-btn { font-size:11px; padding:4px 10px; border-radius:12px; border:1px solid var(--border-soft); background:var(--surface-2); cursor:pointer; color:var(--text-body); transition:all .15s; }
+.adapt-hist-btn:hover { border-color:var(--green-light); }
+.adapt-hist-btn.active { background:var(--green-main); color:#fff; border-color:var(--green-main); }
 
 /* Script Body */
 .script-body { font-family: 'DM Mono','Courier New',monospace; font-size: 13px; line-height: 2; color: var(--ink); white-space: pre-wrap; padding: 8px 4px; outline: none; }
@@ -2016,7 +2020,7 @@ header {
                   <div class="adapt-form-item">
                     <label class="adapt-form-label">题材类型</label>
                     <select class="adapt-form-select" id="adaptGenre">
-                      <option value="AI向（玄幻/奇幻/科幻/末世/神话/狼人/吸血鬼）">AI向（玄幻/奇幻/科幻/末世/神话/狼人/吸血鬼）</option>
+                      <option value="AI向（魔幻/玄幻/奇幻/科幻/末世/神话/狼人/吸血鬼）">AI向（魔幻/玄幻/奇幻/科幻/末世/神话/狼人/吸血鬼）</option>
                       <option value="真人向（霸总/都市/甜宠/虐恋/情感流/复仇）">真人向（霸总/都市/甜宠/虐恋/情感流/复仇）</option>
                     </select>
                   </div>
@@ -2035,6 +2039,8 @@ header {
                 </div>
                 <button class="btn-primary" id="btnGenAdapt" onclick="generateAdaptPlans()" style="margin-top:14px;font-size:12px;padding:8px 18px">▶ 生成改编方案</button>
               </div>
+              <!-- 历史方案导航栏 -->
+              <div id="adaptPlansHistoryBar" style="display:none;"></div>
               <!-- 方案卡片列表 -->
               <div id="adaptPlansGrid"></div>
             </div>
@@ -2937,6 +2943,41 @@ function copyAdaptPlan(btn) {
     });
 }
 
+// ── 渲染改编方案（含历史导航）──
+function renderAdaptPlansWithHistory(activeIdx) {
+  const history = analysisData.adaptPlansHistory || [];
+  const bar = document.getElementById('adaptPlansHistoryBar');
+  const apg = document.getElementById('adaptPlansGrid');
+
+  if (history.length === 0) {
+    bar.style.display = 'none';
+    apg.innerHTML = '';
+    return;
+  }
+
+  bar.style.display = 'flex';
+  bar.innerHTML = history.map((entry, i) => {
+    const d = new Date(entry.generatedAt);
+    const label = `第${i+1}次 ${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    return `<button class="adapt-hist-btn${i === activeIdx ? ' active' : ''}" onclick="renderAdaptPlansWithHistory(${i})">${esc(label)}</button>`;
+  }).join('');
+
+  const plans = history[activeIdx]?.plans || [];
+  apg.innerHTML = '';
+  plans.forEach((plan, i) => {
+    const card = document.createElement('div'); card.className = 'adapt-plan-card';
+    card.innerHTML = `<div class="adapt-plan-num">方案 ${String(i+1).padStart(2,'0')}</div>
+      <div class="adapt-plan-title" contenteditable="true" spellcheck="false">${esc(plan.title||'')}</div>
+      <div class="adapt-plan-body" contenteditable="true" spellcheck="false">${esc(plan.description||'')}</div>
+      <div class="adapt-plan-synopsis-head">故事简介</div>
+      <div class="adapt-plan-synopsis" contenteditable="true" spellcheck="false">${esc(plan.synopsis||'')}</div>
+      <div class="adapt-plan-actions">
+        <button class="btn-sm" onclick="copyAdaptPlan(this)">⎘ 复制方案</button>
+      </div>`;
+    apg.appendChild(card);
+  });
+}
+
 async function generateAdaptPlans() {
   const cfg = getConfig();
   if (!cfg.llmKey) { toast('请先配置 API Key','err'); return; }
@@ -2991,20 +3032,15 @@ ${fullOutline}`, cfg.llmKey, cfg.model, 5000);
     let plans; try { plans = JSON.parse(r.replace(/```json|```/g,'').trim()); } catch { plans = []; }
     analysisData.adaptPlans = plans;
 
-    const apg = document.getElementById('adaptPlansGrid'); apg.innerHTML = '';
-    plans.forEach((plan, i) => {
-      const card = document.createElement('div'); card.className = 'adapt-plan-card';
-      card.innerHTML = `<div class="adapt-plan-num">方案 ${String(i+1).padStart(2,'0')}</div>
-        <div class="adapt-plan-title" contenteditable="true" spellcheck="false">${esc(plan.title||'')}</div>
-        <div class="adapt-plan-body" contenteditable="true" spellcheck="false">${esc(plan.description||'')}</div>
-        <div class="adapt-plan-synopsis-head">故事简介</div>
-        <div class="adapt-plan-synopsis" contenteditable="true" spellcheck="false">${esc(plan.synopsis||'')}</div>
-        <div class="adapt-plan-actions">
-          <button class="btn-sm" onclick="copyAdaptPlan(this)">⎘ 复制方案</button>
-        </div>`;
-      apg.appendChild(card);
+    if (!analysisData.adaptPlansHistory) analysisData.adaptPlansHistory = [];
+    analysisData.adaptPlansHistory.push({
+      id: Date.now().toString(),
+      generatedAt: Date.now(),
+      params: { market, type, genre, volume, custom },
+      plans,
     });
 
+    renderAdaptPlansWithHistory(analysisData.adaptPlansHistory.length - 1);
     saveSession();
     saveToHistory(analysisData);
     toast('改编方案生成完成','ok');
@@ -3170,11 +3206,16 @@ function renderAnalysis() {
   document.getElementById('planningView').style.display = 'flex';
 
   // ── 策划改编 tab（右侧重置）──
-  document.getElementById('adaptPlansGrid').innerHTML = '';
+  if (analysisData.adaptPlansHistory?.length) {
+    renderAdaptPlansWithHistory(analysisData.adaptPlansHistory.length - 1);
+  } else {
+    document.getElementById('adaptPlansGrid').innerHTML = '';
+    document.getElementById('adaptPlansHistoryBar').style.display = 'none';
+  }
   document.getElementById('adaptPlansView').style.display = 'flex';
 
   const btn = document.getElementById('btnGenAdapt');
-  if (btn) { btn.textContent = '▶ 生成改编方案'; btn.disabled = false; }
+  if (btn) { btn.textContent = analysisData.adaptPlansHistory?.length ? '▶ 重新生成' : '▶ 生成改编方案'; btn.disabled = false; }
   document.getElementById('planningEmpty').style.display = 'none';
   document.getElementById('planningView').style.display = 'flex';
 
@@ -3861,16 +3902,34 @@ function exportFullWord() {
 
   // 改编方案
   body += heading('三、改编方案');
-  document.querySelectorAll('#adaptPlansGrid .adapt-plan-card').forEach((card,i) => {
-    body += subH(`  方案${i+1}：${card.querySelector('.adapt-plan-title')?.innerText||''}`);
-    body += para(card.querySelector('.adapt-plan-body')?.innerText||'');
-    const synopsis = card.querySelector('.adapt-plan-synopsis')?.innerText||'';
-    if (synopsis) {
-      body += subH2('  故事简介');
-      body += para(synopsis);
-    }
-    body += `{\\pard\\par}\n`;
-  });
+  const plansHistory = analysisData.adaptPlansHistory;
+  if (plansHistory?.length) {
+    plansHistory.forEach((entry, gi) => {
+      const d = new Date(entry.generatedAt);
+      const timeStr = `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+      body += subH(`  第${gi+1}次生成（${timeStr}）`);
+      (entry.plans || []).forEach((plan, i) => {
+        body += subH2(`    方案${i+1}：${plan.title||''}`);
+        body += para(plan.description||'');
+        if (plan.synopsis) {
+          body += para('【故事简介】' + plan.synopsis);
+        }
+        body += `{\\pard\\par}\n`;
+      });
+      if (gi < plansHistory.length - 1) body += `{\\pard\\sb120\\sa120\\par}\n`;
+    });
+  } else {
+    document.querySelectorAll('#adaptPlansGrid .adapt-plan-card').forEach((card,i) => {
+      body += subH(`  方案${i+1}：${card.querySelector('.adapt-plan-title')?.innerText||''}`);
+      body += para(card.querySelector('.adapt-plan-body')?.innerText||'');
+      const synopsis = card.querySelector('.adapt-plan-synopsis')?.innerText||'';
+      if (synopsis) {
+        body += subH2('  故事简介');
+        body += para(synopsis);
+      }
+      body += `{\\pard\\par}\n`;
+    });
+  }
 
   dlRtf(`${title}_内容分析报告.doc`, makeRtf(body, title+' · 内容分析报告'));
   toast('分析报告已下载','ok');
