@@ -2873,9 +2873,12 @@ async function captureSceneFrames(source, intervalSec = 15) {
 
 function outlineWordRange(durationSec) {
   const min = (durationSec || 0) / 60;
-  if (min <= 20) return { range: '3000-5000字', beats: '约12-20个节拍' };
-  if (min <= 45) return { range: '5000-8000字', beats: '约20-32个节拍' };
-  return { range: '8000-12000字', beats: '约32-48个节拍' };
+  if (min <= 10)  return { range: '2000-3500字',  beats: '8-12个节拍',  maxBeats: 12 };
+  if (min <= 25)  return { range: '3500-5500字',  beats: '12-18个节拍', maxBeats: 18 };
+  if (min <= 50)  return { range: '5000-8000字',  beats: '16-22个节拍', maxBeats: 22 };
+  if (min <= 80)  return { range: '7000-10000字', beats: '20-25个节拍', maxBeats: 25 };
+  if (min <= 120) return { range: '9000-13000字', beats: '24-32个节拍', maxBeats: 32 };
+  return                 { range: '12000-18000字', beats: '30-40个节拍', maxBeats: 40 };
 }
 
 // ── 纯文本节拍生成 prompt（无截帧降级用）──
@@ -2886,14 +2889,29 @@ function _buildOutlinePrompt(wc, isLong, fullText) {
 
 输出要求（必须严格遵守）：
 - 总字数必须达到 ${wc.range}，这是硬性要求，不能少于下限
-- 按「起承转合」四幕结构划分，每幕下细分事件节拍，节拍数量：${wc.beats}
-- 每个节拍点格式：【节拍标题】正文
+- 必须按起承转合四幕结构划分，每幕开头单独一行写幕标记：【起】、【承】、【转】、【合】（这四行是幕分隔符，不是节拍标题）
+- 每幕下细分事件节拍，节拍数量：${wc.beats}（均匀分布在四幕中）
+- 每个节拍点格式：【节拍标题】正文（节拍标题3-12字，直接点明该段核心事件）
 - 每个节拍正文必须在 200-400 字之间，详细描写事件起因→经过→结果的完整因果链，人物的具体行为、动机、情绪变化，不能只写结论，必须写过程
-- 节拍标题直接点明该段核心事件，禁用「场景一」「第X段」等格式，禁止使用 Markdown 标题格式（禁止 #、##、### 等）
+- 禁止在节拍标题中使用「场景一」「第X段」等格式，禁止使用 Markdown 标题格式（禁止 #、##、### 等）
 - 台词克制：全文不超过5处直接引语，只保留对情节转折有决定性作用的关键台词
-- 转折节点标注【转折】，高潮节点标注【高潮】
-- 只还原实际出现的情节，绝对不要补充原视频之外的新剧情
-- 直接输出纯文本，节点间空行，禁止使用任何 Markdown 语法（禁止 ---、###、**、## 等符号）
+- 转折节点在正文中标注【转折】，高潮节点标注【高潮】
+- 只还原台词中实际出现的情节，绝对不要补充、推断或编造原视频之外的剧情
+- 直接输出纯文本，节点间空行，禁止使用任何 Markdown 语法
+
+输出结构示例：
+【起】
+
+【第一个节拍标题】
+正文内容…
+
+【第二个节拍标题】
+正文内容…
+
+【承】
+
+【第三个节拍标题】
+正文内容…
 
 ${contentDesc}：\n${fullText}`;
 }
@@ -2904,21 +2922,32 @@ async function _genOutlineWithFrames(wc, isLong, fullText, scenes, key) {
   const contentDesc = isLong ? '剧情摘要' : '台词';
   const prompt = `你是专业影视内容分析师。${inputLabel}，同时提供了视频关键帧截图，请综合两者写全剧完整剧情梗概。
 
-截图使用说明：
-- 截图是视频关键帧（每5秒一帧），用于补充台词无法传达的视觉信息：场景环境、人物表情/动作/位置、画面氛围
-- 结合截图判断场景切换、人物状态、情绪变化，让梗概描述更准确生动
-- 截图信息服务于叙事，不需要逐帧描述画面，只在有助于理解剧情时融入文字
+信源优先级（严格遵守）：
+- 台词是第一信源：所有情节、对话、人物行为必须以台词为准，台词说什么就写什么
+- 截图是辅助信源：仅用于补充台词无法传达的纯视觉信息（场景环境、人物服装/表情/位置、画面氛围）
+- 严禁用截图"推断"或"补充"台词没有提到的情节，严禁编造任何对话或剧情
 
 输出要求（必须严格遵守）：
 - 总字数必须达到 ${wc.range}，这是硬性要求，不能少于下限
-- 按「起承转合」四幕结构划分，每幕下细分事件节拍，节拍数量：${wc.beats}
-- 每个节拍点格式：【节拍标题】正文
+- 必须按起承转合四幕结构划分，每幕开头单独一行写幕标记：【起】、【承】、【转】、【合】（这四行是幕分隔符，不是节拍标题）
+- 每幕下细分事件节拍，节拍数量：${wc.beats}（均匀分布在四幕中）
+- 每个节拍点格式：【节拍标题】正文（节拍标题3-12字，直接点明该段核心事件）
 - 每个节拍正文必须在 200-400 字之间，详细描写事件起因→经过→结果的完整因果链，人物的具体行为、对话动机、情绪变化，不能只写结论，必须写过程
-- 节拍标题直接点明该段核心事件，禁用「场景一」「第X段」等格式，禁止使用 Markdown 标题格式（禁止 #、##、### 等）
+- 禁止在节拍标题中使用「场景一」「第X段」等格式，禁止使用 Markdown 标题格式（禁止 #、##、### 等）
 - 台词克制：全文不超过5处直接引语，只保留对情节转折有决定性作用的关键台词
-- 转折节点标注【转折】，高潮节点标注【高潮】
-- 只还原视频中实际发生的情节，绝对不要补充原视频之外的新剧情
-- 直接输出纯文本，节点间空行，禁止使用任何 Markdown 语法（禁止 ---、###、**、## 等符号）
+- 转折节点在正文中标注【转折】，高潮节点标注【高潮】
+- 直接输出纯文本，节点间空行，禁止使用任何 Markdown 语法
+
+输出结构示例：
+【起】
+
+【节拍标题】
+正文内容…
+
+【承】
+
+【节拍标题】
+正文内容…
 
 ${contentDesc}：\n${fullText}`;
 
@@ -2967,9 +2996,9 @@ async function analyzeContent(text, key, model, scenes = [], durationSec = 0) {
   // 无论长短视频，只要有截帧就走视觉模型；长视频用摘要+截帧
   if (scenes && scenes.length > 0) {
     r3 = await _genOutlineWithFrames(wc, isLong, fullText, scenes, key);
-    if (!r3) r3 = await callLLM(_buildOutlinePrompt(wc, isLong, fullText), key, model, 8000); // 降级
+    if (!r3) r3 = await callLLM(_buildOutlinePrompt(wc, isLong, fullText), key, model, 12000); // 降级
   } else {
-    r3 = await callLLM(_buildOutlinePrompt(wc, isLong, fullText), key, model, 8000);
+    r3 = await callLLM(_buildOutlinePrompt(wc, isLong, fullText), key, model, 12000);
   }
   const outlineRaw = r3.replace(/```[\s\S]*?```/g,'').trim();
   const outlineBlocks = outlineRaw.split(/\n\s*\n/).filter(b => b.trim());
@@ -3943,9 +3972,9 @@ async function _regenOutlineFromRaw(rawText, cfg) {
     if (scenes.length > 0) {
       toast(`截帧完成（${scenes.length} 帧），结合画面生成节拍…`);
       result = await _genOutlineWithFrames(wc, isLong, fullText, scenes, cfg.llmKey);
-      if (!result) result = await callLLM(_buildOutlinePrompt(wc, isLong, fullText), cfg.llmKey, cfg.model, 8000);
+      if (!result) result = await callLLM(_buildOutlinePrompt(wc, isLong, fullText), cfg.llmKey, cfg.model, 12000);
     } else {
-      result = await callLLM(_buildOutlinePrompt(wc, isLong, fullText), cfg.llmKey, cfg.model, 8000);
+      result = await callLLM(_buildOutlinePrompt(wc, isLong, fullText), cfg.llmKey, cfg.model, 12000);
     }
 
     _applyNewOutline(result);
@@ -3977,17 +4006,18 @@ async function _reformatFromExisting(existingText, cfg) {
 
 输出要求（必须严格遵守）：
 - 总字数必须达到 ${wc.range}，这是硬性要求，不能少于下限
-- 按「起承转合」四幕结构划分，每幕下细分事件节拍，节拍数量：${wc.beats}
-- 每个节拍点格式：【节拍标题】正文
+- 必须按起承转合四幕结构划分，每幕开头单独一行写幕标记：【起】、【承】、【转】、【合】（这四行是幕分隔符，不是节拍标题）
+- 每幕下细分事件节拍，节拍数量：${wc.beats}（均匀分布在四幕中）
+- 每个节拍点格式：【节拍标题】正文（节拍标题3-12字，直接点明该段核心事件）
 - 每个节拍正文必须在 200-400 字之间，详细描写事件起因→经过→结果的完整因果链，人物的具体行为、动机、情绪变化，不能只写结论，必须写过程
-- 节拍标题直接点明该段核心事件，禁用「场景一」「第X段」等格式，禁止使用 Markdown 标题格式（禁止 #、##、### 等）
+- 禁止在节拍标题中使用「场景一」「第X段」等格式，禁止使用 Markdown 标题格式（禁止 #、##、### 等）
 - 台词克制：全文不超过5处直接引语，只保留对情节转折有决定性作用的关键台词
-- 转折节点标注【转折】，高潮节点标注【高潮】
+- 转折节点在正文中标注【转折】，高潮节点标注【高潮】
 - 必须覆盖原梗概中所有重要情节节点，不要遗漏关键事件
-- 直接输出纯文本，节点间空行，禁止使用任何 Markdown 语法（禁止 ---、###、**、## 等符号）
+- 直接输出纯文本，节点间空行，禁止使用任何 Markdown 语法
 
 原始梗概：
-${existingText}`, cfg.llmKey, cfg.model, 8000);
+${existingText}`, cfg.llmKey, cfg.model, 12000);
 
     _applyNewOutline(result);
     toast('节拍已按起承转合结构重新整理','ok');
@@ -4356,21 +4386,22 @@ function _isValidBeat(item) {
   // point 和 content 都为空 → 无效
   if (!pt && !ct) return false;
 
+  // 起承转合幕标记：保留！renderOutline 的 detectAct 需要它们来正确分幕
+  // （renderOutline 内部会跳过无内容的幕标记，不会渲染成节拍）
+  if (/^(起|承|转|合|第[一二三四]幕)$/.test(pt)) return true;
+
   // point 是纯 Markdown 分隔符或噪声
   const noisePatterns = [
     /^-{2,}$/,           // --- 或 ----
     /^={2,}$/,           // === 或 ====
     /^\*{2,}$/,          // *** 或 ****
     /^#{1,6}(\s|$)/,     // ### 第二幕·承 等 Markdown 标题
-    /^第[一二三四]幕$/,   // 纯幕标记（无内容）
-    /^(起|承|转|合)$/,   // 单字幕标记
     /^\s*$/,             // 纯空白
   ];
   if (noisePatterns.some(re => re.test(pt))) {
     // 即使 point 是噪声，如果 content 有实质内容，仍保留（用 content 首行当标题）
     if (ct.length > 10) {
       const firstLine = ct.split('\n')[0].replace(/^【[^】]+】\s*/, '').trim().slice(0, 30);
-      // 不能用 '节拍' 做标题，取 content 首行有意义的文字
       item.point = firstLine && firstLine.length > 2 ? firstLine : ct.slice(0, 20).replace(/\n/g, ' ').trim();
       item.content = ct.split('\n').slice(firstLine ? 1 : 0).join('\n').trim() || ct;
       return true;
@@ -4378,7 +4409,7 @@ function _isValidBeat(item) {
     return false;
   }
 
-  // content 全是 Markdown 分隔符 / 空白 且 point 也没有意义
+  // content 全是空白 且 point 也没有意义（非幕标记）
   if (!ct && pt.length < 3) return false;
 
   return true;
