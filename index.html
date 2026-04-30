@@ -2941,56 +2941,64 @@ function _buildOutlinePrompt(wc, isLong, fullText) {
 ${contentDesc}：\n${fullText}`;
 }
 
-// ── 用视觉模型生成节拍（台词+截帧）──
+// ── 用视觉模型生成节拍（两步：先台词生成准确骨架，再截帧补充视觉细节）──
 async function _genOutlineWithFrames(wc, isLong, fullText, scenes, key) {
-  const inputLabel = isLong ? '以下是全剧各段剧情摘要（已覆盖完整视频内容）' : '以下是英文短剧台词';
-  const contentDesc = isLong ? '剧情摘要' : '台词';
-  const prompt = `你是专业影视内容分析师。${inputLabel}，同时提供了视频关键帧截图，请综合两者写全剧完整剧情梗概。
+  // ── 第一步：纯台词生成准确的内容骨架（不带截帧，避免视觉模型用画面填充情节）──
+  const textPrompt = _buildOutlinePrompt(wc, isLong, fullText);
+  let draftOutline;
+  try {
+    const draftResp = await fetch('https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+      body: JSON.stringify({ model: 'doubao-seed-2-0-pro-260215', max_tokens: 12000, temperature: 0.2,
+        messages: [{ role: 'user', content: textPrompt }] })
+    });
+    draftOutline = draftResp.ok ? ((await draftResp.json()).choices?.[0]?.message?.content || '') : '';
+  } catch { draftOutline = ''; }
 
-信源优先级（严格遵守）：
-- 台词是第一信源：所有情节、对话、人物行为必须以台词为准，台词说什么就写什么
-- 截图是辅助信源：仅用于补充台词无法传达的纯视觉信息（场景环境、人物服装/表情/位置、画面氛围）
-- 严禁用截图"推断"或"补充"台词没有提到的情节，严禁编造任何对话或剧情
+  if (!draftOutline) return null; // 降级到纯文本路径
 
-输出要求（必须严格遵守）：
-- 总字数必须达到 ${wc.range}，这是硬性要求，不能少于下限
-- 必须按起承转合四幕结构划分，每幕开头单独一行写幕标记：【起】、【承】、【转】、【合】（这四行是幕分隔符，不是节拍标题）
-- 每幕下细分事件节拍，节拍数量：${wc.beats}（均匀分布在四幕中）
-- 每个节拍点格式：【节拍标题】正文（节拍标题3-12字，直接点明该段核心事件）
-- 每个节拍正文控制在 250-300 字，以台词内容为准，重点写清楚因果逻辑（起因→经过→结果），人物关键行为和动机，不要凑字数，不要编造台词中没有的情节；节拍正文末尾用小括号标注实际字数，如（共187字）
-- 禁止在节拍标题中使用「场景一」「第X段」等格式，禁止使用 Markdown 标题格式（禁止 #、##、### 等）
-- 台词克制：全文不超过5处直接引语，只保留对情节转折有决定性作用的关键台词
-- 转折节点在正文中标注【转折】，高潮节点标注【高潮】
-- 直接输出纯文本，节点间空行，禁止使用任何 Markdown 语法
+  // ── 第二步：把台词骨架 + 截帧一起发给视觉模型，只让它补充视觉层信息 ──
+  const inputLabel = isLong ? '以下是全剧各段剧情摘要' : '以下是英文短剧台词';
+  const enrichPrompt = `你是专业影视内容分析师。以下是根据台词已生成的剧情节拍草稿，同时提供了视频关键帧截图。
 
-输出结构示例：
-【起】
+你的任务：在【严格不改变任何情节内容和因果逻辑】的前提下，仅用截图补充以下视觉细节：
+- 场景环境和氛围描述（室内/室外、天气、建筑风格等）
+- 人物外貌、服装、表情的具体描写
+- 重要道具或画面细节
+- 确认并修正节拍中明显与画面不符的场景描述（如台词说"室内"但画面是"室外"）
 
-【节拍标题】
-正文内容…
+严禁事项：
+- 严禁增加、删除或修改任何情节节点、人物行为、对话内容
+- 严禁根据画面推断台词没有提到的情节
+- 严禁改变节拍的结构、顺序、标题
+- 如果截图对某个节拍没有帮助，保持原文不动
 
-【承】
+直接输出修订后的完整节拍文本，格式与草稿完全一致，不加任何说明。
 
-【节拍标题】
-正文内容…
+草稿节拍：
+${draftOutline}`;
 
-${contentDesc}：\n${fullText}`;
-
-  // 均匀抽取帧：短视频最多16帧，长视频最多12帧（帧数越多消耗 token 越多，适度控制）
   const maxFrames = isLong ? 12 : 16;
   const selectedFrames = scenes.length > maxFrames
     ? scenes.filter((_, i) => i % Math.ceil(scenes.length / maxFrames) === 0).slice(0, maxFrames)
     : scenes;
-  const content = [{ type: 'text', text: prompt }];
+  const content = [{ type: 'text', text: enrichPrompt }];
   selectedFrames.forEach(f => { content.push({ type: 'image_url', image_url: { url: `data:image/jpeg;base64,${f.b64}` } }); });
 
-  const vResp = await fetch('https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
-    body: JSON.stringify({ model: 'doubao-1-5-vision-pro-32k-250115', max_tokens: 16000, temperature: 0.3, messages: [{ role: 'user', content }] })
-  });
-  if (!vResp.ok) return null;
-  return (await vResp.json()).choices?.[0]?.message?.content || null;
+  try {
+    const vResp = await fetch('https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+      body: JSON.stringify({ model: 'doubao-1-5-vision-pro-32k-250115', max_tokens: 16000, temperature: 0.2,
+        messages: [{ role: 'user', content }] })
+    });
+    if (!vResp.ok) return draftOutline; // 视觉步骤失败，返回纯文本草稿
+    const enriched = (await vResp.json()).choices?.[0]?.message?.content || '';
+    return enriched || draftOutline;
+  } catch {
+    return draftOutline; // 任何异常都回退到纯文本草稿，保证准确性
+  }
 }
 
 async function analyzeContent(text, key, model, scenes = [], durationSec = 0) {
@@ -3443,7 +3451,7 @@ async function callLLM(prompt, key, model, maxTok=1500) {
   const r=await fetch('https://ark.cn-beijing.volces.com/api/v3/chat/completions',{
     method:'POST',
     headers:{'Content-Type':'application/json','Authorization':`Bearer ${key}`},
-    body:JSON.stringify({model,max_tokens:maxTok,temperature:0.3,messages:[{role:'user',content:prompt}]})
+    body:JSON.stringify({model,max_tokens:maxTok,temperature:0.2,messages:[{role:'user',content:prompt}]})
   });
   if(!r.ok) throw new Error('豆包 API: '+await r.text());
   const d=await r.json(); return d.choices?.[0]?.message?.content||'';
