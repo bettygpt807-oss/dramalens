@@ -2184,12 +2184,12 @@ header {
   <div style="width:580px;max-height:80vh;overflow-y:auto;background:var(--surface);border-radius:16px;box-shadow:var(--shadow-lg);border:1px solid var(--border)">
     <div class="modal-header" style="position:sticky;top:0;background:var(--surface);z-index:1;border-radius:16px 16px 0 0">
       <span style="font-size:16px">⚠️</span>
-      <span class="modal-title">台词修正影响检测</span>
+      <span class="modal-title">节拍修正影响检测</span>
       <button class="modal-close" onclick="closeAmbiguityModal()">✕</button>
     </div>
     <div style="padding:24px 28px;display:flex;flex-direction:column;gap:16px">
       <div style="font-size:13px;color:var(--text-body);line-height:1.7">
-        系统检测到以下内容可能受台词修正影响，存在潜在歧义，请确认是否需要自动修正：
+        系统检测到以下内容可能受节拍修正影响（含人物小传），存在潜在歧义，请确认是否需要自动修正：
       </div>
       <div id="ambiguityList" style="display:flex;flex-direction:column;gap:10px;max-height:40vh;overflow-y:auto"></div>
       <div style="display:flex;gap:10px;padding-top:8px;border-top:1px solid var(--border-soft)">
@@ -2318,6 +2318,8 @@ function syncEditablesToData() {
   if (g('rhythmText'))          analysisData.rhythm          = g('rhythmText').innerText.trim();
   if (g('hookText'))            analysisData.hooks           = g('hookText').innerText.trim();
   if (g('highlightScenesText')) analysisData.highlightScenes = g('highlightScenesText').innerText.trim();
+  // 策划字段有变化时同步重建 _planSummary，确保改编方案用的是最新数据
+  if (analysisData._planSummary !== undefined) _rebuildPlanSummary();
   const cards = document.querySelectorAll('#charGrid .char-card:not(.char-card-add)');
   if (cards.length) {
     analysisData.characters = Array.from(cards).map(card => ({
@@ -2327,10 +2329,19 @@ function syncEditablesToData() {
   }
   const beats = document.querySelectorAll('#outlineContainer .beat-item');
   if (beats.length) {
-    analysisData.outline = Array.from(beats).map(b => ({
+    const outlineFromDOM = Array.from(beats).map(b => ({
       point:   b.querySelector('.beat-title')?.innerText.trim() || '',
       content: b.querySelector('.beat-text')?.innerText.trim()  || '',
     }));
+    analysisData.outline = outlineFromDOM;
+    // 同步回当前历史版本，避免切版本时丢失编辑
+    const history = analysisData._outlineHistory;
+    if (history) {
+      const curIdx = analysisData._outlineHistoryIdx !== undefined
+        ? analysisData._outlineHistoryIdx
+        : history.length - 1;
+      if (history[curIdx]) history[curIdx].outline = JSON.parse(JSON.stringify(outlineFromDOM));
+    }
   }
   const planCards = document.querySelectorAll('#adaptPlansGrid .adapt-plan-card');
   if (planCards.length) {
@@ -2867,38 +2878,35 @@ function outlineWordRange(durationSec) {
   return { range: '8000-12000字', beats: '约32-48个节拍' };
 }
 
-async function analyzeContent(text, key, model, scenes = [], durationSec = 0) {
-  const wc = outlineWordRange(durationSec);
-  // ── 1. 详细梗概（台词 + 截帧，信息最完整，先生成作为后续分析的基础）──
-  setLabel('生成详细梗概…');
-  let r3;
+// ── 纯文本节拍生成 prompt（无截帧降级用）──
+function _buildOutlinePrompt(wc, isLong, fullText) {
+  const inputLabel = isLong ? '以下是全剧各段剧情摘要（已覆盖完整视频内容）' : '以下是英文短剧台词';
+  const contentDesc = isLong ? '剧情摘要' : '台词';
+  return `你是专业影视内容分析师。${inputLabel}，请写全剧完整剧情梗概，必须覆盖从开头到结尾的所有情节。
 
-  // 长文本分段处理：超过15000字符时先分段提炼，再合并生成完整梗概
-  const CHUNK_SIZE = 14000;
-  let fullText = text;
-  if (text.length > CHUNK_SIZE) {
-    setLabel('台词较长，分段提炼剧情…');
-    const chunks = [];
-    for (let i = 0; i < text.length; i += CHUNK_SIZE) {
-      chunks.push(text.slice(i, i + CHUNK_SIZE));
-    }
-    const chunkSummaries = [];
-    for (let i = 0; i < chunks.length; i++) {
-      setLabel(`分段提炼剧情… (${i+1}/${chunks.length})`);
-      const summary = await callLLM(`你是影视内容分析师。以下是一部英文短剧台词的第${i+1}/${chunks.length}段，请用中文简要概述这段台词中发生的主要情节（300-600字），按时间顺序列出关键事件、人物行为和情感变化，不要遗漏重要情节节点。直接输出纯文本。\n\n台词：\n${chunks[i]}`, key, model, 1500);
-      chunkSummaries.push(`【第${i+1}段】\n${summary}`);
-    }
-    fullText = chunkSummaries.join('\n\n');
-    setLabel('整合全剧梗概…');
-  }
+输出要求：
+- 总字数控制在${wc.range}
+- 按「起承转合」四幕结构划分，每幕下细分事件节拍，节拍数量以完整覆盖剧情为准
+- 每个节拍点格式：【节拍标题】正文（平均250字，视情节密度可在150-400字之间浮动）
+- 节拍标题直接点明该段核心事件，禁用「场景一」「第X段」等格式
+- 重点写清楚：事件起因→发展→结果的因果链，以及人物情感/动机的转变逻辑
+- 台词极度克制：全文不超过5处直接引语，只保留对情节转折有决定性作用的关键台词
+- 转折节点标注【转折】，高潮节点标注【高潮】
+- 只还原实际出现的情节，绝对不要补充原视频之外的新剧情
+- 直接输出纯文本，节点间空行，禁止使用 Markdown 语法（禁止 ---、###、** 等符号）
 
-  if (scenes && scenes.length > 0 && text.length <= CHUNK_SIZE) {
-    // 短视频：直接用台词+截帧生成梗概
-    const prompt = `你是专业影视内容分析师。根据以下英文短剧的台词文本和视频截图，写全剧剧情梗概。
+${contentDesc}：\n${fullText}`;
+}
+
+// ── 用视觉模型生成节拍（台词+截帧）──
+async function _genOutlineWithFrames(wc, isLong, fullText, scenes, key) {
+  const inputLabel = isLong ? '以下是全剧各段剧情摘要（已覆盖完整视频内容）' : '以下是英文短剧台词';
+  const contentDesc = isLong ? '剧情摘要' : '台词';
+  const prompt = `你是专业影视内容分析师。${inputLabel}，同时提供了视频关键帧截图，请综合两者写全剧完整剧情梗概。
 
 截图使用说明：
-- 截图是视频关键帧，用于补充台词无法传达的视觉信息：场景环境、人物表情/动作、画面氛围
-- 结合截图画面来判断场景切换、人物状态、情绪变化，让梗概描述更准确生动
+- 截图是视频关键帧（每5秒一帧），用于补充台词无法传达的视觉信息：场景环境、人物表情/动作/位置、画面氛围
+- 结合截图判断场景切换、人物状态、情绪变化，让梗概描述更准确生动
 - 截图信息服务于叙事，不需要逐帧描述画面，只在有助于理解剧情时融入文字
 
 输出要求：
@@ -2912,34 +2920,55 @@ async function analyzeContent(text, key, model, scenes = [], durationSec = 0) {
 - 只还原视频中实际发生的情节，绝对不要补充原视频之外的新剧情
 - 直接输出纯文本，节点间空行，禁止使用 Markdown 语法（禁止 ---、###、** 等符号）
 
-台词：\n${fullText}`;
-    const selectedFrames = scenes.length > 8 ? scenes.filter((_, i) => i % Math.ceil(scenes.length / 8) === 0).slice(0, 8) : scenes;
-    const content = [{ type: 'text', text: prompt }];
-    selectedFrames.forEach(f => { content.push({ type: 'image_url', image_url: { url: `data:image/jpeg;base64,${f.b64}` } }); });
-    const vResp = await fetch('https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
-      method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
-      body: JSON.stringify({ model: 'doubao-1-5-vision-pro-32k-250115', max_tokens: 8000, temperature: 0.3, messages: [{ role: 'user', content }] })
-    });
-    r3 = vResp.ok ? ((await vResp.json()).choices?.[0]?.message?.content || '') : '';
-    if (!r3) r3 = await callLLM(`根据以下英文短剧台词写全剧剧情梗概。总字数${wc.range}，按起承转合四幕结构划分，每幕下细分节拍点，节拍数量以完整覆盖剧情为准。每节拍格式：【节拍标题】正文（平均250字）。重点写因果链和人物情感转变逻辑，台词极度克制（全文不超过5处直接引语，只保留关键转折台词）。转折标注【转折】，高潮标注【高潮】，只还原台词中实际出现的情节。\n台词：\n${fullText}`, key, model, 8000);
+${contentDesc}：\n${fullText}`;
+
+  const maxFrames = isLong ? 12 : 10;
+  const selectedFrames = scenes.length > maxFrames
+    ? scenes.filter((_, i) => i % Math.ceil(scenes.length / maxFrames) === 0).slice(0, maxFrames)
+    : scenes;
+  const content = [{ type: 'text', text: prompt }];
+  selectedFrames.forEach(f => { content.push({ type: 'image_url', image_url: { url: `data:image/jpeg;base64,${f.b64}` } }); });
+
+  const vResp = await fetch('https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+    body: JSON.stringify({ model: 'doubao-1-5-vision-pro-32k-250115', max_tokens: 8000, temperature: 0.3, messages: [{ role: 'user', content }] })
+  });
+  if (!vResp.ok) return null;
+  return (await vResp.json()).choices?.[0]?.message?.content || null;
+}
+
+async function analyzeContent(text, key, model, scenes = [], durationSec = 0) {
+  const wc = outlineWordRange(durationSec);
+  // ── 1. 详细梗概（台词 + 截帧，信息最完整，先生成作为后续分析的基础）──
+  setLabel('生成详细梗概…');
+  let r3;
+
+  const CHUNK_SIZE = 14000;
+  let fullText = text;
+  const isLong = text.length > CHUNK_SIZE;
+
+  if (isLong) {
+    // 长视频：先分段提炼台词摘要，再合并生成梗概
+    setLabel('台词较长，分段提炼剧情…');
+    const chunks = [];
+    for (let i = 0; i < text.length; i += CHUNK_SIZE) chunks.push(text.slice(i, i + CHUNK_SIZE));
+    const chunkSummaries = [];
+    for (let i = 0; i < chunks.length; i++) {
+      setLabel(`分段提炼剧情… (${i+1}/${chunks.length})`);
+      const summary = await callLLM(`你是影视内容分析师。以下是一部英文短剧台词的第${i+1}/${chunks.length}段，请用中文简要概述这段台词中发生的主要情节（300-600字），按时间顺序列出关键事件、人物行为和情感变化，不要遗漏重要情节节点。直接输出纯文本。\n\n台词：\n${chunks[i]}`, key, model, 1500);
+      chunkSummaries.push(`【第${i+1}段】\n${summary}`);
+    }
+    fullText = chunkSummaries.join('\n\n');
+    setLabel('整合全剧梗概…');
+  }
+
+  // 无论长短视频，只要有截帧就走视觉模型；长视频用摘要+截帧
+  if (scenes && scenes.length > 0) {
+    r3 = await _genOutlineWithFrames(wc, isLong, fullText, scenes, key);
+    if (!r3) r3 = await callLLM(_buildOutlinePrompt(wc, isLong, fullText), key, model, 8000); // 降级
   } else {
-    // 长视频或无截帧：用完整台词（或分段摘要）生成梗概
-    const inputLabel = text.length > CHUNK_SIZE ? '以下是全剧各段剧情摘要（已覆盖完整视频内容）' : '以下是英文短剧台词';
-    r3 = await callLLM(`你是专业影视内容分析师。${inputLabel}，请写全剧完整剧情梗概，必须覆盖从开头到结尾的所有情节。
-
-输出要求：
-- 总字数控制在${wc.range}
-- 按「起承转合」四幕结构划分，每幕下细分事件节拍，节拍数量以完整覆盖剧情为准
-- 每个节拍点格式：【节拍标题】正文（平均250字，视情节密度可在150-400字之间浮动）
-- 节拍标题直接点明该段核心事件，禁用「场景一」「第X段」等格式
-- 重点写清楚：事件起因→发展→结果的因果链，以及人物情感/动机的转变逻辑
-- 台词极度克制：全文不超过5处直接引语，只保留对情节转折有决定性作用的关键台词
-- 转折节点标注【转折】，高潮节点标注【高潮】
-- 只还原实际出现的情节，绝对不要补充原视频之外的新剧情
-- 直接输出纯文本，不要JSON，节点间空行，禁止使用 Markdown 语法（禁止 ---、###、** 等符号）
-
-${text.length > CHUNK_SIZE ? '剧情摘要' : '台词'}：
-${fullText}`, key, model, 8000);
+    r3 = await callLLM(_buildOutlinePrompt(wc, isLong, fullText), key, model, 8000);
   }
   const outlineRaw = r3.replace(/```[\s\S]*?```/g,'').trim();
   const outlineBlocks = outlineRaw.split(/\n\s*\n/).filter(b => b.trim());
@@ -2959,8 +2988,11 @@ ${fullText}`, key, model, 8000);
   }).filter(item => _isValidBeat(item)); // 过滤无效节拍
   if (!outline.length) outline = [{ point: '梗概', content: outlineRaw.slice(0, 800) }];
 
-  // 梗概摘要（供后续两步使用，取前8000字确保长视频后半段剧情也被覆盖）
-  const outlineSummary = outlineRaw.slice(0, 8000);
+  // 梗概摘要：用解析后的节拍数组重建，比截取 outlineRaw 更干净（无噪声/无Markdown残留）
+  const outlineSummary = outline
+    .map(b => `【${b.point}】${b.content||''}`)
+    .join('\n\n')
+    .slice(0, 8000);
 
   // ── 2. 人物小传 + 人物关系 + 一句话简介（基于梗概，信息更完整准确）──
   setLabel('提取人物与关系…');
@@ -3043,6 +3075,97 @@ ${fullText}`, key, model, 8000);
     adaptPlans: [],
     _planSummary: planSummary,
   };
+}
+
+// ── 获取主版本节拍（用户设为主版本的那个版本，所有分析/生成均基于此）──
+// 优先级：_outlinePrimaryIdx → _outlineHistoryIdx → analysisData.outline
+function _getPrimaryOutline() {
+  const history = analysisData._outlineHistory;
+  if (history && history.length) {
+    const primaryIdx = analysisData._outlinePrimaryIdx !== undefined
+      ? analysisData._outlinePrimaryIdx
+      : (analysisData._outlineHistoryIdx !== undefined
+          ? analysisData._outlineHistoryIdx
+          : history.length - 1);
+    if (history[primaryIdx]?.outline?.length) {
+      return history[primaryIdx].outline;
+    }
+  }
+  // 没有版本历史时回退到 analysisData.outline（初次分析刚完成的状态）
+  return analysisData.outline || [];
+}
+
+// ── 从当前 analysisData 重建 _planSummary（不调用 LLM，纯文本拼接）──
+// 只含策划逻辑7维度，节拍数据由 generateAdaptPlans 里的 fullOutline 完整传入，避免重复和截断
+function _rebuildPlanSummary() {
+  const d = analysisData;
+  d._planSummary = [
+    d.highlights    ? `【核心亮点】${d.highlights}`     : '',
+    d.structureActs ? `【结构逻辑】${d.structureActs}`  : '',
+    d.characterLogic? `【人物逻辑】${d.characterLogic}` : '',
+    d.emotion       ? `【情感逻辑】${d.emotion}`        : '',
+    d.rhythm        ? `【节奏逻辑】${d.rhythm}`         : '',
+    d.hooks         ? `【悬念布局】${d.hooks}`          : '',
+    d.highlightScenes?`【高光情节】${d.highlightScenes}`: '',
+  ].filter(Boolean).join('\n');
+}
+
+// ── 节拍重整后，用新节拍重新生成策划逻辑7维度（1次 LLM 调用）──
+async function _regenerateStrategyFromOutline() {
+  const cfg = getConfig();
+  if (!cfg.llmKey) return;
+  if (!analysisData.outline?.length && !_getPrimaryOutline().length) return;
+
+  toast('正在基于最新节拍同步更新策划逻辑…');
+  const outlineSummary = _getPrimaryOutline()
+    .map(b => `【${b.point}】${b.content||''}`)
+    .join('\n').slice(0, 8000);
+
+  try {
+    const r = await callLLM(`你是资深短剧策划。根据以下中文剧情梗概，深度拆解策划逻辑，只输出JSON，不加任何说明：
+{
+  "highlights": "核心亮点200字：最吸引观众的核心卖点是什么",
+  "structure_acts": "三幕结构150字：开篇/发展/高潮/结局各阶段如何布局",
+  "character_logic": "人物逻辑150字：人物行为动机是否自洽，核心人物弧线",
+  "emotion": "情感逻辑150字：情绪弧线如何设计，共鸣点在哪里",
+  "rhythm": "节奏逻辑150字：张弛节奏、反转密度、信息释放节拍",
+  "hooks": "悬念布局150字：关键卡点和悬念钩子分布在哪里，如何制造追看欲",
+  "highlight_scenes": "高光情节150字：最具爆点的3-5个情节场景"
+}
+每个字段直接输出分析内容，不要重复字段名称作为开头。
+剧情梗概：\n${outlineSummary}`, cfg.llmKey, cfg.model, 3000);
+
+    let plan; try { plan = JSON.parse(r.replace(/```json|```/g,'').trim()); } catch { return; }
+
+    // 写入 analysisData
+    analysisData.highlights    = plan.highlights    || analysisData.highlights;
+    analysisData.structureActs = plan.structure_acts|| analysisData.structureActs;
+    analysisData.characterLogic= plan.character_logic||analysisData.characterLogic;
+    analysisData.emotion       = plan.emotion       || analysisData.emotion;
+    analysisData.rhythm        = plan.rhythm        || analysisData.rhythm;
+    analysisData.hooks         = plan.hooks         || analysisData.hooks;
+    analysisData.highlightScenes=plan.highlight_scenes||analysisData.highlightScenes;
+
+    // 重渲染策划逻辑 DOM
+    const toP = t => (t||'').split('\n').filter(Boolean).map(p=>`<p>${esc(p)}</p>`).join('');
+    const g = id => document.getElementById(id);
+    if (g('highlightsText'))     g('highlightsText').innerHTML     = toP(analysisData.highlights);
+    if (g('charLogicText'))      g('charLogicText').innerHTML      = toP(analysisData.characterLogic);
+    if (g('emotionText'))        g('emotionText').innerHTML        = toP(analysisData.emotion);
+    if (g('rhythmText'))         g('rhythmText').innerHTML         = toP(analysisData.rhythm);
+    if (g('hookText'))           g('hookText').innerHTML           = toP(analysisData.hooks);
+    if (g('highlightScenesText'))g('highlightScenesText').innerHTML= toP(analysisData.highlightScenes);
+
+    // 重建 _planSummary
+    _rebuildPlanSummary();
+    saveSession();
+    saveToHistory(analysisData);
+    toast('策划逻辑已基于最新节拍同步更新', 'ok');
+  } catch(e) {
+    // 策划更新失败不阻断流程，降级只重建 planSummary
+    _rebuildPlanSummary();
+    toast('策划逻辑同步失败，已保留原版本', 'err');
+  }
 }
 
 // ── 复制单个改编方案 ──
@@ -3129,7 +3252,7 @@ async function generateAdaptPlans() {
   const volume   = document.getElementById('adaptVolume').value;
   const custom  = document.getElementById('adaptCustom').value.trim();
 
-  const fullOutline = (analysisData.outline || [])
+  const fullOutline = _getPrimaryOutline()
     .map((item, i) => `${String(i+1).padStart(2,'0')} 【${item.point}】\n${item.content || ''}`)
     .join('\n\n');
 
@@ -3348,6 +3471,16 @@ function renderAnalysis() {
     }];
     analysisData._outlineHistoryIdx = 0;
   }
+  // 恢复时：以 _outlineHistoryIdx 指向的历史版本为准（保留用户上次选中并编辑的版本）
+  if (analysisData._outlineHistory?.length) {
+    const restoreIdx = analysisData._outlineHistoryIdx !== undefined
+      ? analysisData._outlineHistoryIdx
+      : analysisData._outlineHistory.length - 1;
+    const restoreEntry = analysisData._outlineHistory[restoreIdx];
+    if (restoreEntry?.outline?.length) {
+      analysisData.outline = JSON.parse(JSON.stringify(restoreEntry.outline));
+    }
+  }
   renderOutline(d.outline || []);
   document.getElementById('overviewEmpty').style.display = 'none';
   document.getElementById('overviewView').style.display = 'flex';
@@ -3498,7 +3631,7 @@ async function generateScript() {
   try {
     const dialogues = subtitleData.map(s => `${fmtTC(s.tc)}  ${s.en}`).join('\n');
     // 完整梗概（所有节拍完整内容）
-    const fullOutlineText = (analysisData.outline || [])
+    const fullOutlineText = _getPrimaryOutline()
       .map((item, i) => `${String(i+1).padStart(2,'0')} 【${item.point}】\n${item.content || ''}`)
       .join('\n\n');
     // 完整人物小传
@@ -3695,36 +3828,42 @@ async function reformatOutline() {
   const cfg = getConfig();
   if (!cfg.llmKey) { toast('请先配置 API Key','err'); return; }
 
-  const existingOutline = analysisData.outline || [];
-  const rawText = analysisData._rawText || '';
+  const existingOutline = _getPrimaryOutline();
   const existingText = existingOutline.map(item => `【${item.point}】\n${item.content||''}`).join('\n\n');
-
-  // ── 诊断：计算当前数据覆盖情况 ──
   const nodeCount = existingOutline.length;
   const totalChars = existingText.length;
-  const rawChars = rawText.length;
 
-  // 有原始台词 → 可以完整重跑梗概（最优）
-  if (rawText && rawChars > 500) {
+  // 优先使用修正后的台词（subtitleData 是用户编辑过的最新版本）
+  // 其次使用原始 _rawText
+  const correctedText = subtitleData.length > 0
+    ? subtitleData.map(s => s.en).join(' ')
+    : (analysisData._rawText || '');
+  const rawChars = correctedText.length;
+  const hasCorrectedSubs = subtitleData.length > 0;
+  const hasDiffs = hasCorrectedSubs && analysisData._rawText &&
+    correctedText.slice(0, 200) !== analysisData._rawText.slice(0, 200);
+
+  if (correctedText && rawChars > 500) {
+    const sourceLabel = hasCorrectedSubs
+      ? `当前字幕区台词（${subtitleData.length} 条，含用户修正）`
+      : `原始转写台词（约${Math.round(rawChars/500)}分钟）`;
     const confirmed = confirm(
-      `检测到原始台词数据（约${Math.round(rawChars/500)}分钟视频内容）。\n\n` +
-      `当前梗概：${nodeCount} 个节拍点，约 ${totalChars} 字\n\n` +
-      `推荐操作：用原始台词重新生成完整梗概（覆盖全部剧情，约需30秒）\n` +
-      `点「确定」→ 基于完整台词重生成\n点「取消」→ 仅重新整理现有梗概格式`
+      `数据来源：${sourceLabel}\n\n` +
+      `当前节拍：${nodeCount} 个，约 ${totalChars} 字\n\n` +
+      `点「确定」→ 基于${hasCorrectedSubs ? '修正后台词' : '原始台词'}重新生成完整节拍\n` +
+      `点「取消」→ 仅重新整理现有节拍格式`
     );
     if (confirmed) {
-      await _regenOutlineFromRaw(rawText, cfg);
+      await _regenOutlineFromRaw(correctedText, cfg);
       return;
     }
   } else if (!existingText.trim()) {
-    toast('暂无梗概数据，请重新解析视频','err');
+    toast('暂无节拍数据，请重新解析视频','err');
     return;
   } else {
-    // 无原始台词，告知用户限制
-    const charCount = totalChars;
     const msg = nodeCount < 8
-      ? `当前梗概只有 ${nodeCount} 个节拍点（约${charCount}字），数据可能不完整。\n\n重整节拍只能重新整理已有内容，无法补充缺失的剧情。\n如需完整梗概，建议重新上传视频解析。\n\n仍然继续重整格式？`
-      : `当前梗概有 ${nodeCount} 个节拍点（约${charCount}字）。\n\n将按起承转合结构重新整理，约需20秒。\n\n继续？`;
+      ? `当前只有 ${nodeCount} 个节拍点（约${totalChars}字），数据可能不完整。\n\n重整只能重新整理已有内容，无法补充缺失剧情。\n如需完整节拍，建议重新上传视频解析。\n\n仍然继续？`
+      : `当前有 ${nodeCount} 个节拍点（约${totalChars}字）。\n\n将按起承转合结构重新整理，约需20秒。\n\n继续？`;
     if (!confirm(msg)) return;
   }
 
@@ -3734,59 +3873,70 @@ async function reformatOutline() {
 async function _regenOutlineFromRaw(rawText, cfg) {
   const btn = document.querySelector('[onclick="reformatOutline()"]');
   if (btn) { btn.textContent = '重生成中…'; btn.disabled = true; btn.style.opacity = '0.6'; }
-  // 进度提示：每15秒更新一次，让用户知道在运行
+
   let elapsed = 0;
-  const progressMsgs = ['正在分析台词与截帧内容…','梗概生成中，长视频需要耐心等待…','仍在处理中，请勿重复点击…','快完成了，稍等片刻…'];
+  const progressMsgs = ['正在截取视频帧…','分析台词与画面内容…','梗概生成中，请耐心等待…','仍在处理中，请勿重复点击…','快完成了…'];
   const progressTimer = setInterval(() => {
     elapsed++;
-    const msg = progressMsgs[Math.min(elapsed - 1, progressMsgs.length - 1)];
-    toast(msg);
+    toast(progressMsgs[Math.min(elapsed - 1, progressMsgs.length - 1)]);
   }, 15000);
-  toast('正在基于完整台词重新生成节拍，请耐心等待（约1-3分钟）…');
+
+  // 优先使用修正后的台词（subtitleData 是用户编辑后最新版）
+  const textToUse = subtitleData.length > 0
+    ? subtitleData.map(s => s.en).join(' ')
+    : rawText;
+  const sourceDesc = subtitleData.length > 0 ? '修正后台词' : '原始台词';
+  toast(`正在基于${sourceDesc}重新生成节拍，请耐心等待（约1-3分钟）…`);
 
   try {
-    // 长文本分段处理，确保覆盖完整剧情
-    const CHUNK_SIZE = 14000;
-    let inputText = rawText;
-    if (rawText.length > CHUNK_SIZE) {
-      const chunks = [];
-      for (let i = 0; i < rawText.length; i += CHUNK_SIZE) {
-        chunks.push(rawText.slice(i, i + CHUNK_SIZE));
+    // 尝试截帧（需要视频文件在当前 session 中）
+    let scenes = [];
+    const videoSource = videoFile || (inputMode === 'url' ? videoUrl : null) || videoObjectURL;
+    if (videoSource) {
+      toast('正在截取视频帧（每5秒一帧）…');
+      try {
+        scenes = await captureSceneFrames(videoSource, 5);
+      } catch(e) {
+        scenes = []; // 截帧失败不阻断流程
       }
+    }
+
+    const CHUNK_SIZE = 14000;
+    const isLong = textToUse.length > CHUNK_SIZE;
+    let fullText = textToUse;
+
+    if (isLong) {
+      const chunks = [];
+      for (let i = 0; i < textToUse.length; i += CHUNK_SIZE) chunks.push(textToUse.slice(i, i + CHUNK_SIZE));
       const summaries = [];
       for (let i = 0; i < chunks.length; i++) {
+        toast(`分段提炼剧情… (${i+1}/${chunks.length})`);
         const s = await callLLM(`以下是英文短剧台词第${i+1}/${chunks.length}段，用中文概述这段的主要情节（300-600字），按时间顺序列出关键事件和人物行为，不要遗漏重要节点。直接输出纯文本。\n\n台词：\n${chunks[i]}`, cfg.llmKey, cfg.model, 1500);
         summaries.push(`【第${i+1}段】\n${s}`);
       }
-      inputText = summaries.join('\n\n');
+      fullText = summaries.join('\n\n');
     }
 
-    const isChunked = rawText.length > CHUNK_SIZE;
     const wc = outlineWordRange(analysisData._duration || 0);
-    const result = await callLLM(`你是专业影视内容分析师。${isChunked ? '以下是全剧各段剧情摘要（已覆盖完整视频内容）' : '根据以下英文短剧台词'}，写全剧完整剧情梗概，必须覆盖从开头到结尾的所有情节。
+    let result;
 
-输出要求：
-- 总字数控制在${wc.range}
-- 按「起承转合」四幕结构划分，每幕下细分事件节拍，节拍数量以完整覆盖剧情为准
-- 每个节拍点格式：【节拍标题】正文（平均250字，视情节密度可在150-400字之间浮动）
-- 节拍标题直接点明该段核心事件，禁用「场景一」「第X段」等格式
-- 重点写清楚：事件起因→发展→结果的因果链，以及人物情感/动机的转变逻辑
-- 台词极度克制：全文不超过5处直接引语，只保留对情节转折有决定性作用的关键台词
-- 转折节点标注【转折】，高潮节点标注【高潮】
-- 只还原实际出现的情节，不补充原视频之外的剧情
-- 直接输出纯文本，节点间空行，禁止使用 Markdown 语法（禁止 ---、###、** 等符号）
-
-${isChunked ? '剧情摘要' : '台词'}：
-${inputText}`, cfg.llmKey, cfg.model, 8000);
+    if (scenes.length > 0) {
+      toast(`截帧完成（${scenes.length} 帧），结合画面生成节拍…`);
+      result = await _genOutlineWithFrames(wc, isLong, fullText, scenes, cfg.llmKey);
+      if (!result) result = await callLLM(_buildOutlinePrompt(wc, isLong, fullText), cfg.llmKey, cfg.model, 8000);
+    } else {
+      result = await callLLM(_buildOutlinePrompt(wc, isLong, fullText), cfg.llmKey, cfg.model, 8000);
+    }
 
     _applyNewOutline(result);
-    toast('节拍已重新生成','ok');
+    const frameInfo = scenes.length > 0 ? `+${scenes.length}帧画面` : '（纯台词，视频未加载）';
+    toast(`节拍已重新生成 ${frameInfo}`, 'ok');
   } catch(e) {
     toast('生成失败：'+e.message,'err');
   } finally {
     clearInterval(progressTimer);
-    const btn = document.querySelector('[onclick="reformatOutline()"]');
-    if (btn) { btn.textContent = '↺ 重整节拍'; btn.disabled = false; btn.style.opacity = ''; }
+    const btn2 = document.querySelector('[onclick="reformatOutline()"]');
+    if (btn2) { btn2.textContent = '↺ 重整节拍'; btn2.disabled = false; btn2.style.opacity = ''; }
   }
 }
 
@@ -3858,37 +4008,65 @@ function _applyNewOutline(result) {
   analysisData._outlineHistoryIdx = analysisData._outlineHistory.length - 1;
   analysisData.outline = newOutline;
   renderOutline(newOutline);
+
+  // 节拍变化后立即重建 _planSummary（无需 API，确保改编方案始终用最新节拍数据）
+  _rebuildPlanSummary();
+
   saveSession();
   saveToHistory(analysisData);
   // 自动检查策划逻辑是否需要修正
   _scheduleStrategyCheck('outline_reformat');
+
+  // 如果已有策划逻辑，提示用户是否同步更新（1次 LLM 调用）
+  if (analysisData.highlights || analysisData.hooks) {
+    setTimeout(() => {
+      if (confirm('节拍已更新。策划逻辑（核心亮点/悬念布局等）建议同步更新以保持一致。\n\n点「确定」→ 自动重算策划逻辑（约20秒）\n点「取消」→ 保留原策划逻辑')) {
+        _regenerateStrategyFromOutline();
+      } else {
+        // 即使用户选择不更新，_planSummary 已经用新节拍数据重建了
+        toast('策划逻辑未更新，但改编方案将使用最新节拍数据', 'ok');
+      }
+    }, 500);
+  }
 }
 
 function switchOutlineVersion(idx) {
   const history = analysisData._outlineHistory;
   if (!history || !history[idx]) return;
 
-  // 切换前：把当前版本的 DOM 编辑内容同步回历史记录，避免切走后丢失
+  // 切换前：把当前版本的 DOM 编辑内容同步回历史记录
   const curIdx = analysisData._outlineHistoryIdx !== undefined
     ? analysisData._outlineHistoryIdx
     : history.length - 1;
   if (curIdx !== idx && history[curIdx]) {
-    // 从 DOM 读取当前已编辑的节拍内容
     const beats = document.querySelectorAll('#outlineContainer .beat-item');
     if (beats.length) {
-      const editedOutline = Array.from(beats).map(b => ({
+      history[curIdx].outline = Array.from(beats).map(b => ({
         point:   b.querySelector('.beat-title')?.innerText.trim() || '',
         content: b.querySelector('.beat-text')?.innerText.trim()  || '',
       }));
-      history[curIdx].outline = editedOutline;
     }
   }
 
+  // 切换到目标版本
   analysisData._outlineHistoryIdx = idx;
+  // 注意：这里直接赋引用，不深拷贝——这样 syncEditablesToData 的写入和 history[idx] 同步
   analysisData.outline = JSON.parse(JSON.stringify(history[idx].outline));
   renderOutline(analysisData.outline);
-  saveSession();
+
+  // 手动保存：跳过 syncEditablesToData（此时 DOM 是新版本，不需要再读一遍）
+  // 直接序列化当前状态（_outlineHistory 已含编辑内容）
+  try {
+    const activeTab = document.querySelector('.tab-btn.active')?.dataset.tab || 'overview';
+    localStorage.setItem('dl_session', JSON.stringify({
+      subtitleData,
+      analysisData: JSON.parse(JSON.stringify(analysisData)), // 深拷贝确保 _outlineHistory 完整
+      activeTab,
+      savedAt: Date.now(),
+    }));
+  } catch(e) { try { localStorage.removeItem('dl_session'); } catch {} }
   saveToHistory(analysisData);
+
   toast(`已切换到${idx === 0 ? '初始版本' : '第'+(idx+1)+'次整理版本'}`, 'ok');
 }
 
@@ -3913,34 +4091,37 @@ function _scheduleStrategyCheck(reason) {
 async function _doStrategyCheck(reason) {
   const cfg = getConfig();
   if (!cfg.llmKey) return;
-  if (!analysisData.highlights && !analysisData.characterLogic) return; // 策划尚未生成
+  if (!analysisData.highlights && !analysisData.characterLogic && !(analysisData.characters?.length)) return;
 
-  // 以主版本（或当前版本）的节拍内容为基准
-  const primaryIdx = analysisData._outlinePrimaryIdx !== undefined
-    ? analysisData._outlinePrimaryIdx
-    : (analysisData._outlineHistoryIdx !== undefined ? analysisData._outlineHistoryIdx : 0);
-  const history = analysisData._outlineHistory;
-  const baseOutline = (history && history[primaryIdx])
-    ? history[primaryIdx].outline
-    : (analysisData.outline || []);
 
+  // 以主版本节拍为基准（_getPrimaryOutline 统一处理优先级）
+  const baseOutline = _getPrimaryOutline();
   const outlineText = baseOutline.map(b => `【${b.point}】${b.content}`).join('\n').slice(0, 4000);
-  const planText = [analysisData.highlights, analysisData.structureActs, analysisData.characterLogic, analysisData.emotion, analysisData.hooks].filter(Boolean).join('\n').slice(0, 3000);
+  const planText = [analysisData.highlights, analysisData.structureActs, analysisData.characterLogic, analysisData.emotion, analysisData.hooks].filter(Boolean).join('\n').slice(0, 2500);
+  const charText = (analysisData.characters || []).map(c => `【${c.name}】${c.bio}`).join('\n').slice(0, 1500);
 
-  if (!planText.trim()) return;
+  const hasAnything = planText.trim() || charText.trim();
+  if (!hasAnything) return;
 
   try {
-    const result = await callLLM(`你是短剧内容校对助手。以下是用户已修正/重整的剧情节拍（最新版本），请对比策划逻辑内容，检查是否存在因节拍修正而导致的较大误差或不一致。
+    const result = await callLLM(`你是短剧内容校对助手。以下是用户已修正/重整的剧情节拍（最新版本），请同时检查两项内容：
+1. 策划逻辑中是否存在因节拍修正导致的较大误差
+2. 人物小传中是否存在与修正后节拍不符的描述（如情节细节、人物行为、关系变化等）
 
-只报告存在明显误差的地方（不超过3条）。如果没有任何问题，输出：{"issues":[]}
-有问题时输出JSON（不加说明）：
-{"issues":[{"section":"所在策划维度","original":"原文片段（50字内）","suggestion":"建议修改为（50字内）","reason":"简要原因（30字内）"}]}
+输出规则：
+- 没有任何问题：{"issues":[]}
+- 有问题（不超过4条，策划+人物小传合并）：
+{"issues":[{"section":"所在板块（策划逻辑/人物小传·人物名）","original":"原文片段（50字内）","suggestion":"建议修改为（50字内）","reason":"简要原因（30字内）"}]}
+只输出JSON，不加任何说明。
 
 最新剧情节拍：
 ${outlineText}
 
-当前策划逻辑：
-${planText}`, cfg.llmKey, cfg.model, 600);
+策划逻辑：
+${planText}
+
+人物小传：
+${charText || '（暂无）'}`, cfg.llmKey, cfg.model, 700);
 
     let data;
     try { data = JSON.parse(result.replace(/```json|```/g,'').trim()); } catch { return; }
@@ -5040,18 +5221,55 @@ async function applyAmbiguityFixes() {
 
   // 逐条修正
   for (const fix of _pendingFixes) {
-    if (fix.section.includes('剧情概要')) {
-      // 找到最匹配的节拍并修正
-      if (analysisData.outline) {
-        for (let i = 0; i < analysisData.outline.length; i++) {
-          const item = analysisData.outline[i];
-          if (item.content.includes(fix.original.slice(0, 15))) {
-            analysisData.outline[i].content = item.content.replace(fix.original, fix.suggestion);
-            break;
-          }
+    if (fix.section.includes('人物小传')) {
+      // 解析出人物名（section 格式：人物小传·人物名 或 人物小传）
+      const charNameHint = fix.section.replace('人物小传', '').replace(/[·\-\s·：:]+/g,'').trim();
+      const chars = analysisData.characters || [];
+      // 找到匹配人物（按名字或 original 内容）
+      let matched = false;
+      for (let i = 0; i < chars.length; i++) {
+        const c = chars[i];
+        const nameMatch = charNameHint && (c.name.includes(charNameHint) || charNameHint.includes(c.name.split('/')[0]));
+        const contentMatch = c.bio.includes(fix.original.slice(0, 12));
+        if (nameMatch || contentMatch) {
+          analysisData.characters[i].bio = c.bio.replace(fix.original, fix.suggestion);
+          matched = true;
+          break;
         }
-        renderOutline(analysisData.outline);
       }
+      // 重渲染人物小传
+      if (matched) {
+        const cg = document.getElementById('charGrid');
+        if (cg) {
+          const cards = cg.querySelectorAll('.char-card:not(.char-card-add)');
+          analysisData.characters.forEach((c, i) => {
+            if (cards[i]) {
+              const bioEl = cards[i].querySelector('.char-bio');
+              if (bioEl) bioEl.innerText = c.bio;
+            }
+          });
+        }
+      }
+    } else if (fix.section.includes('剧情')) {
+      // 找到最匹配的节拍并修正（写入主版本）
+      const primaryOutline = _getPrimaryOutline();
+      for (let i = 0; i < primaryOutline.length; i++) {
+        const item = primaryOutline[i];
+        if (item.content.includes(fix.original.slice(0, 15))) {
+          primaryOutline[i].content = item.content.replace(fix.original, fix.suggestion);
+          break;
+        }
+      }
+      // 同步回 analysisData.outline 和历史记录主版本
+      analysisData.outline = primaryOutline;
+      const history = analysisData._outlineHistory;
+      if (history) {
+        const pIdx = analysisData._outlinePrimaryIdx !== undefined
+          ? analysisData._outlinePrimaryIdx
+          : (analysisData._outlineHistoryIdx !== undefined ? analysisData._outlineHistoryIdx : history.length - 1);
+        if (history[pIdx]) history[pIdx].outline = JSON.parse(JSON.stringify(primaryOutline));
+      }
+      renderOutline(analysisData.outline);
     } else if (fix.section.includes('策划')) {
       // 修正策划逻辑中的文字
       const fields = ['highlights','structureActs','characterLogic','emotion','rhythm','hooks','highlightScenes'];
