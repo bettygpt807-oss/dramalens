@@ -3867,6 +3867,23 @@ function _applyNewOutline(result) {
 function switchOutlineVersion(idx) {
   const history = analysisData._outlineHistory;
   if (!history || !history[idx]) return;
+
+  // 切换前：把当前版本的 DOM 编辑内容同步回历史记录，避免切走后丢失
+  const curIdx = analysisData._outlineHistoryIdx !== undefined
+    ? analysisData._outlineHistoryIdx
+    : history.length - 1;
+  if (curIdx !== idx && history[curIdx]) {
+    // 从 DOM 读取当前已编辑的节拍内容
+    const beats = document.querySelectorAll('#outlineContainer .beat-item');
+    if (beats.length) {
+      const editedOutline = Array.from(beats).map(b => ({
+        point:   b.querySelector('.beat-title')?.innerText.trim() || '',
+        content: b.querySelector('.beat-text')?.innerText.trim()  || '',
+      }));
+      history[curIdx].outline = editedOutline;
+    }
+  }
+
   analysisData._outlineHistoryIdx = idx;
   analysisData.outline = JSON.parse(JSON.stringify(history[idx].outline));
   renderOutline(analysisData.outline);
