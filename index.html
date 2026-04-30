@@ -1649,7 +1649,20 @@ header {
 .outline-set-primary-btn { font-size:10px;padding:2px 7px;border-radius:8px;border:1px solid var(--border-soft);background:transparent;cursor:pointer;color:var(--text-light);transition:all .15s;white-space:nowrap; }
 .outline-set-primary-btn:hover { background:var(--gold);color:#fff;border-color:var(--gold); }
 .outline-primary-tag { font-size:10px;color:var(--gold);padding:0 6px;white-space:nowrap;font-weight:500; }
-/* 推荐剧名 */
+/* 推荐度评分 */
+.adapt-rating { display:flex;flex-direction:column;gap:5px;padding:10px 12px;background:var(--surface-2);border-radius:8px;margin-bottom:8px;border:1px solid var(--border-soft); }
+.adapt-rating-row { display:flex;align-items:center;gap:8px; }
+.adapt-rating-label { font-size:11px;color:var(--text-light);width:72px;flex-shrink:0; }
+.adapt-rating-bar { flex:1;height:5px;background:var(--surface-3);border-radius:3px;overflow:hidden; }
+.adapt-rating-fill { height:100%;border-radius:3px;transition:width .4s; }
+.adapt-rating-fill.diff  { background:var(--green-main); }
+.adapt-rating-fill.mkt   { background:var(--gold); }
+.adapt-rating-fill.viral { background:#7c6fcd; }
+.adapt-rating-score { font-size:11px;font-family:'DM Mono',monospace;color:var(--ink);width:24px;text-align:right;flex-shrink:0; }
+.adapt-rating-overall { display:flex;align-items:center;justify-content:space-between;padding-top:5px;border-top:1px solid var(--border-soft);margin-top:2px; }
+.adapt-rating-overall-label { font-size:11px;color:var(--text-body);font-weight:600; }
+.adapt-rating-overall-score { font-size:16px;font-weight:700;font-family:'DM Mono',monospace;color:var(--green-main); }
+.adapt-rating-summary { font-size:11px;color:var(--text-light);margin-top:2px;font-style:italic; }
 .adapt-plan-drama-title { font-size:15px;font-weight:700;color:var(--gold);margin-bottom:5px;outline:none;border-radius:3px;letter-spacing:0.01em;line-height:1.4; }
 .adapt-plan-drama-title:focus { background:rgba(184,148,74,0.08); }
 
@@ -2285,6 +2298,13 @@ function loadHistoryItem(id) {
   const record = getHistory().find(h => h.id === id);
   if (!record) { toast('记录不存在', 'err'); return; }
 
+  // 清除当前视频状态——每个历史记录项目对应自己的视频，不能共用
+  if (videoObjectURL) { URL.revokeObjectURL(videoObjectURL); videoObjectURL = ''; }
+  videoFile = null;
+  videoUrl = '';
+  inputMode = 'file';
+  document.getElementById('videoFile').value = '';
+
   subtitleData = record.subtitleData || [];
   analysisData = record.analysisData || {};
 
@@ -2345,11 +2365,16 @@ function syncEditablesToData() {
   }
   const planCards = document.querySelectorAll('#adaptPlansGrid .adapt-plan-card');
   if (planCards.length) {
-    analysisData.adaptPlans = Array.from(planCards).map(c => ({
+    // 获取当前显示的历史版本（保留 rating 字段）
+    const activeBtn = document.querySelector('#adaptPlansHistoryBar .adapt-hist-btn.active');
+    const activeIdx = activeBtn ? parseInt(activeBtn.getAttribute('onclick').match(/\d+/)?.[0] ?? '0') : 0;
+    const existingPlans = analysisData.adaptPlansHistory?.[activeIdx]?.plans || [];
+    analysisData.adaptPlans = Array.from(planCards).map((c, i) => ({
       dramaTitle:  c.querySelector('.adapt-plan-drama-title')?.innerText.trim() || '',
       title:       c.querySelector('.adapt-plan-title')?.innerText.trim()    || '',
       description: c.querySelector('.adapt-plan-body')?.innerText.trim()     || '',
       synopsis:    c.querySelector('.adapt-plan-synopsis')?.innerText.trim() || '',
+      rating:      existingPlans[i]?.rating || null, // 保留评分数据
     }));
   }
   const scriptEl = g('subScriptContent');
@@ -2873,12 +2898,12 @@ async function captureSceneFrames(source, intervalSec = 15) {
 
 function outlineWordRange(durationSec) {
   const min = (durationSec || 0) / 60;
-  if (min <= 10)  return { range: '1500-2500字',  beats: '8-12个节拍',  maxBeats: 12 };
-  if (min <= 25)  return { range: '2000-3500字',  beats: '12-18个节拍', maxBeats: 18 };
-  if (min <= 50)  return { range: '3000-5000字',  beats: '16-22个节拍', maxBeats: 22 };
-  if (min <= 80)  return { range: '4000-5500字',  beats: '20-25个节拍', maxBeats: 25 };
-  if (min <= 120) return { range: '5000-7000字',  beats: '24-32个节拍', maxBeats: 32 };
-  return                 { range: '6000-9000字',  beats: '30-40个节拍', maxBeats: 40 };
+  if (min <= 10)  return { range: '2000-3500字',  beats: '8-12个节拍',  maxBeats: 12 };
+  if (min <= 25)  return { range: '3500-5000字',  beats: '12-18个节拍', maxBeats: 18 };
+  if (min <= 50)  return { range: '4500-6500字',  beats: '16-22个节拍', maxBeats: 22 };
+  if (min <= 80)  return { range: '5500-7500字',  beats: '20-25个节拍', maxBeats: 25 };
+  if (min <= 120) return { range: '7000-9500字',  beats: '24-32个节拍', maxBeats: 32 };
+  return                 { range: '9000-12000字', beats: '30-40个节拍', maxBeats: 40 };
 }
 
 // ── 纯文本节拍生成 prompt（无截帧降级用）──
@@ -2892,7 +2917,7 @@ function _buildOutlinePrompt(wc, isLong, fullText) {
 - 必须按起承转合四幕结构划分，每幕开头单独一行写幕标记：【起】、【承】、【转】、【合】（这四行是幕分隔符，不是节拍标题）
 - 每幕下细分事件节拍，节拍数量：${wc.beats}（均匀分布在四幕中）
 - 每个节拍点格式：【节拍标题】正文（节拍标题3-12字，直接点明该段核心事件）
-- 每个节拍正文控制在 150-220 字，以台词内容为准，重点写清楚因果逻辑（起因→经过→结果），人物关键行为和动机，不要凑字数，不要编造台词中没有的情节；节拍正文末尾用小括号标注实际字数，如（共187字）
+- 每个节拍正文控制在 250-300 字，以台词内容为准，重点写清楚因果逻辑（起因→经过→结果），人物关键行为和动机，不要凑字数，不要编造台词中没有的情节；节拍正文末尾用小括号标注实际字数，如（共187字）
 - 禁止在节拍标题中使用「场景一」「第X段」等格式，禁止使用 Markdown 标题格式（禁止 #、##、### 等）
 - 台词克制：全文不超过5处直接引语，只保留对情节转折有决定性作用的关键台词
 - 转折节点在正文中标注【转折】，高潮节点标注【高潮】
@@ -2932,7 +2957,7 @@ async function _genOutlineWithFrames(wc, isLong, fullText, scenes, key) {
 - 必须按起承转合四幕结构划分，每幕开头单独一行写幕标记：【起】、【承】、【转】、【合】（这四行是幕分隔符，不是节拍标题）
 - 每幕下细分事件节拍，节拍数量：${wc.beats}（均匀分布在四幕中）
 - 每个节拍点格式：【节拍标题】正文（节拍标题3-12字，直接点明该段核心事件）
-- 每个节拍正文控制在 150-220 字，以台词内容为准，重点写清楚因果逻辑（起因→经过→结果），人物关键行为和动机，不要凑字数，不要编造台词中没有的情节；节拍正文末尾用小括号标注实际字数，如（共187字）
+- 每个节拍正文控制在 250-300 字，以台词内容为准，重点写清楚因果逻辑（起因→经过→结果），人物关键行为和动机，不要凑字数，不要编造台词中没有的情节；节拍正文末尾用小括号标注实际字数，如（共187字）
 - 禁止在节拍标题中使用「场景一」「第X段」等格式，禁止使用 Markdown 标题格式（禁止 #、##、### 等）
 - 台词克制：全文不超过5处直接引语，只保留对情节转折有决定性作用的关键台词
 - 转折节点在正文中标注【转折】，高潮节点标注【高潮】
@@ -3218,8 +3243,14 @@ function copyAdaptPlan(btn) {
   const title    = card.querySelector('.adapt-plan-title')?.innerText || '';
   const body     = card.querySelector('.adapt-plan-body')?.innerText || '';
   const synopsis = card.querySelector('.adapt-plan-synopsis')?.innerText || '';
+  // 从数据层取评分（DOM 里没有 contenteditable 评分）
+  const activeBtn = document.querySelector('#adaptPlansHistoryBar .adapt-hist-btn.active');
+  const activeIdx = activeBtn ? parseInt(activeBtn.getAttribute('onclick').match(/\d+/)?.[0] ?? '0') : 0;
+  const cardIdx = Array.from(document.querySelectorAll('#adaptPlansGrid .adapt-plan-card')).indexOf(card);
+  const rating = analysisData.adaptPlansHistory?.[activeIdx]?.plans?.[cardIdx]?.rating;
+  const ratingText = rating ? `\n推荐度：${rating.overall}/5（改编难度${rating.adaptation_difficulty}/5 · 市场契合${rating.market_fit}/5 · 传播潜力${rating.viral_potential}/5）${rating.summary ? ' — ' + rating.summary : ''}` : '';
   const titleLine = dramaTitle ? dramaTitle + '\n' + title : title;
-  const text = titleLine + '\n\n' + body + (synopsis ? '\n\n【故事简介】\n' + synopsis : '');
+  const text = titleLine + ratingText + '\n\n' + body + (synopsis ? '\n\n【故事简介】\n' + synopsis : '');
   navigator.clipboard.writeText(text)
     .then(() => toast('方案已复制','ok'))
     .catch(() => {
@@ -3228,6 +3259,38 @@ function copyAdaptPlan(btn) {
       ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
       toast('方案已复制','ok');
     });
+}
+
+// ── 渲染改编方案推荐度评分条 ──
+function _renderAdaptRating(rating) {
+  if (!rating) return '';
+  const diff   = Math.min(5, Math.max(1, rating.adaptation_difficulty || 0));
+  const mkt    = Math.min(5, Math.max(1, rating.market_fit || 0));
+  const viral  = Math.min(5, Math.max(1, rating.viral_potential || 0));
+  const overall = rating.overall || ((diff*0.6 + mkt*0.2 + viral*0.2)).toFixed(1);
+  const pct = v => Math.round(v / 5 * 100);
+  return `<div class="adapt-rating">
+    <div class="adapt-rating-row">
+      <span class="adapt-rating-label">改编难度×60%</span>
+      <div class="adapt-rating-bar"><div class="adapt-rating-fill diff" style="width:${pct(diff)}%"></div></div>
+      <span class="adapt-rating-score">${diff}/5</span>
+    </div>
+    <div class="adapt-rating-row">
+      <span class="adapt-rating-label">市场契合×20%</span>
+      <div class="adapt-rating-bar"><div class="adapt-rating-fill mkt" style="width:${pct(mkt)}%"></div></div>
+      <span class="adapt-rating-score">${mkt}/5</span>
+    </div>
+    <div class="adapt-rating-row">
+      <span class="adapt-rating-label">传播潜力×20%</span>
+      <div class="adapt-rating-bar"><div class="adapt-rating-fill viral" style="width:${pct(viral)}%"></div></div>
+      <span class="adapt-rating-score">${viral}/5</span>
+    </div>
+    <div class="adapt-rating-overall">
+      <span class="adapt-rating-overall-label">综合推荐度</span>
+      <span class="adapt-rating-overall-score">${overall}<span style="font-size:11px;color:var(--text-light)">/5</span></span>
+    </div>
+    ${rating.summary ? `<div class="adapt-rating-summary">${esc(rating.summary)}</div>` : ''}
+  </div>`;
 }
 
 // ── 渲染改编方案（含历史导航）──
@@ -3259,6 +3322,7 @@ function renderAdaptPlansWithHistory(activeIdx) {
       <div class="adapt-plan-num">方案 ${String(i+1).padStart(2,'0')}</div>
       ${plan.dramaTitle ? `<div class="adapt-plan-drama-title" contenteditable="true" spellcheck="false" title="推荐剧名">🎬 ${esc(plan.dramaTitle)}</div>` : ''}
       <div class="adapt-plan-title" contenteditable="true" spellcheck="false">${esc(plan.title||'')}</div>
+      ${_renderAdaptRating(plan.rating)}
       <div class="adapt-plan-body" contenteditable="true" spellcheck="false">${esc(plan.description||'')}</div>
       <div class="adapt-plan-synopsis-head">故事简介</div>
       <div class="adapt-plan-synopsis" contenteditable="true" spellcheck="false">${esc(plan.synopsis||'')}</div>
@@ -3319,7 +3383,14 @@ async function generateAdaptPlans() {
     "dramaTitle": "推荐剧名（1-2个备选，用「/」分隔，调性要抓马爽感、适合竖屏短剧传播，例如：《替嫁Alpha的复仇新娘》/《他的标记》）",
     "title": "方案标题（含题材风格关键词，20字内）",
     "description": "250字方案说明，必须覆盖以下内容：①新题材/世界观/人物身份设定 ②如何承载原剧核心冲突结构 ③情感爆点和人物关系张力如何迁移 ④节奏逻辑和悬念布局如何保留 ⑤高光情节如何在新题材下对应呈现",
-    "synopsis": "300字故事简介：用新题材语言描述这个改编故事的完整剧情走向，包含主要人物设定、核心冲突、情感弧线和结局方向，读完让人有追看欲望"
+    "synopsis": "故事简介（300-400字）：用新题材语言描述这个改编故事的完整剧情走向，包含主要人物设定、核心冲突、情感弧线和结局方向，读完让人有追看欲望",
+    "rating": {
+      "adaptation_difficulty": 1到5的整数，评估改编难度（1=极难/原剧爆款基因在新题材下严重失真，5=极易/核心冲突结构完美迁移无损耗），占综合推荐度60%权重，请严格区分各方案差异，不要给出相同的分数,
+      "market_fit": 1到5的整数，评估目标市场契合度（1=严重偏离目标市场偏好，5=高度契合市场需求和观众审美），占综合推荐度20%权重,
+      "viral_potential": 1到5的整数，评估传播潜力（1=缺乏话题性和自传播钩子，5=剧名+题材+人物关系具备强话题钩子和刷屏潜力），占综合推荐度20%权重,
+      "overall": 综合推荐度，用公式计算：Math.round((adaptation_difficulty*0.6 + market_fit*0.2 + viral_potential*0.2) * 10) / 10，保留一位小数,
+      "summary": "20字内说明综合推荐理由或主要风险"
+    }
   }
 ]
 
@@ -4009,7 +4080,7 @@ async function _reformatFromExisting(existingText, cfg) {
 - 必须按起承转合四幕结构划分，每幕开头单独一行写幕标记：【起】、【承】、【转】、【合】（这四行是幕分隔符，不是节拍标题）
 - 每幕下细分事件节拍，节拍数量：${wc.beats}（均匀分布在四幕中）
 - 每个节拍点格式：【节拍标题】正文（节拍标题3-12字，直接点明该段核心事件）
-- 每个节拍正文控制在 150-220 字，以台词内容为准，重点写清楚因果逻辑（起因→经过→结果），人物关键行为和动机，不要凑字数，不要编造台词中没有的情节；节拍正文末尾用小括号标注实际字数，如（共187字）
+- 每个节拍正文控制在 250-300 字，以台词内容为准，重点写清楚因果逻辑（起因→经过→结果），人物关键行为和动机，不要凑字数，不要编造台词中没有的情节；节拍正文末尾用小括号标注实际字数，如（共187字）
 - 禁止在节拍标题中使用「场景一」「第X段」等格式，禁止使用 Markdown 标题格式（禁止 #、##、### 等）
 - 台词克制：全文不超过5处直接引语，只保留对情节转折有决定性作用的关键台词
 - 转折节点在正文中标注【转折】，高潮节点标注【高潮】
@@ -4529,6 +4600,10 @@ function exportFullWord() {
       toExport.forEach((plan, i) => {
         if (plan.dramaTitle) body += subH2(`    推荐剧名：${plan.dramaTitle}`);
         body += subH2(`    方案${i+1}：${plan.title||''}`);
+        if (plan.rating) {
+          const r = plan.rating;
+          body += para(`推荐度：${r.overall}/5（改编难度 ${r.adaptation_difficulty}/5×60% · 市场契合 ${r.market_fit}/5×20% · 传播潜力 ${r.viral_potential}/5×20%）${r.summary ? ' — ' + r.summary : ''}`);
+        }
         body += para(plan.description||'');
         if (plan.synopsis) body += para('【故事简介】' + plan.synopsis);
         body += `{\\pard\\par}\n`;
