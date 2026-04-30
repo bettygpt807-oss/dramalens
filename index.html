@@ -2842,8 +2842,8 @@ async function captureSceneFrames(source, intervalSec = 15) {
 
       const times = [];
       for (let t = intervalSec / 2; t < duration; t += intervalSec) times.push(t);
-      // 最多40帧（5秒间隔），确保短剧关键动作不遗漏
-      const capTimes = times.slice(0, 40);
+      // 最多20帧（5秒间隔），视觉模型最大接受16帧，多截几帧留裕量后再均匀采样
+      const capTimes = times.slice(0, 20);
 
       const canvas = document.createElement('canvas');
       canvas.width = 480; canvas.height = 270; // 16:9 缩略图
@@ -2884,16 +2884,16 @@ function _buildOutlinePrompt(wc, isLong, fullText) {
   const contentDesc = isLong ? '剧情摘要' : '台词';
   return `你是专业影视内容分析师。${inputLabel}，请写全剧完整剧情梗概，必须覆盖从开头到结尾的所有情节。
 
-输出要求：
-- 总字数控制在${wc.range}
-- 按「起承转合」四幕结构划分，每幕下细分事件节拍，节拍数量以完整覆盖剧情为准
-- 每个节拍点格式：【节拍标题】正文（平均250字，视情节密度可在150-400字之间浮动）
-- 节拍标题直接点明该段核心事件，禁用「场景一」「第X段」等格式
-- 重点写清楚：事件起因→发展→结果的因果链，以及人物情感/动机的转变逻辑
-- 台词极度克制：全文不超过5处直接引语，只保留对情节转折有决定性作用的关键台词
+输出要求（必须严格遵守）：
+- 总字数必须达到 ${wc.range}，这是硬性要求，不能少于下限
+- 按「起承转合」四幕结构划分，每幕下细分事件节拍，节拍数量：${wc.beats}
+- 每个节拍点格式：【节拍标题】正文
+- 每个节拍正文必须在 200-400 字之间，详细描写事件起因→经过→结果的完整因果链，人物的具体行为、动机、情绪变化，不能只写结论，必须写过程
+- 节拍标题直接点明该段核心事件，禁用「场景一」「第X段」等格式，禁止使用 Markdown 标题格式（禁止 #、##、### 等）
+- 台词克制：全文不超过5处直接引语，只保留对情节转折有决定性作用的关键台词
 - 转折节点标注【转折】，高潮节点标注【高潮】
 - 只还原实际出现的情节，绝对不要补充原视频之外的新剧情
-- 直接输出纯文本，节点间空行，禁止使用 Markdown 语法（禁止 ---、###、** 等符号）
+- 直接输出纯文本，节点间空行，禁止使用任何 Markdown 语法（禁止 ---、###、**、## 等符号）
 
 ${contentDesc}：\n${fullText}`;
 }
@@ -2909,20 +2909,21 @@ async function _genOutlineWithFrames(wc, isLong, fullText, scenes, key) {
 - 结合截图判断场景切换、人物状态、情绪变化，让梗概描述更准确生动
 - 截图信息服务于叙事，不需要逐帧描述画面，只在有助于理解剧情时融入文字
 
-输出要求：
-- 总字数控制在${wc.range}
-- 按「起承转合」四幕结构划分，每幕下细分事件节拍，节拍数量以完整覆盖剧情为准
-- 每个节拍点格式：【节拍标题】正文（平均250字，视情节密度可在150-400字之间浮动）
-- 节拍标题直接点明该段核心事件，禁用「场景一」「第X段」等格式
-- 重点写清楚：事件起因→发展→结果的因果链，以及人物情感/动机的转变逻辑
-- 台词极度克制：全文不超过5处直接引语，只保留对情节转折有决定性作用的关键台词
+输出要求（必须严格遵守）：
+- 总字数必须达到 ${wc.range}，这是硬性要求，不能少于下限
+- 按「起承转合」四幕结构划分，每幕下细分事件节拍，节拍数量：${wc.beats}
+- 每个节拍点格式：【节拍标题】正文
+- 每个节拍正文必须在 200-400 字之间，详细描写事件起因→经过→结果的完整因果链，人物的具体行为、对话动机、情绪变化，不能只写结论，必须写过程
+- 节拍标题直接点明该段核心事件，禁用「场景一」「第X段」等格式，禁止使用 Markdown 标题格式（禁止 #、##、### 等）
+- 台词克制：全文不超过5处直接引语，只保留对情节转折有决定性作用的关键台词
 - 转折节点标注【转折】，高潮节点标注【高潮】
 - 只还原视频中实际发生的情节，绝对不要补充原视频之外的新剧情
-- 直接输出纯文本，节点间空行，禁止使用 Markdown 语法（禁止 ---、###、** 等符号）
+- 直接输出纯文本，节点间空行，禁止使用任何 Markdown 语法（禁止 ---、###、**、## 等符号）
 
 ${contentDesc}：\n${fullText}`;
 
-  const maxFrames = isLong ? 12 : 10;
+  // 均匀抽取帧：短视频最多16帧，长视频最多12帧（帧数越多消耗 token 越多，适度控制）
+  const maxFrames = isLong ? 12 : 16;
   const selectedFrames = scenes.length > maxFrames
     ? scenes.filter((_, i) => i % Math.ceil(scenes.length / maxFrames) === 0).slice(0, maxFrames)
     : scenes;
@@ -2932,7 +2933,7 @@ ${contentDesc}：\n${fullText}`;
   const vResp = await fetch('https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
-    body: JSON.stringify({ model: 'doubao-1-5-vision-pro-32k-250115', max_tokens: 8000, temperature: 0.3, messages: [{ role: 'user', content }] })
+    body: JSON.stringify({ model: 'doubao-1-5-vision-pro-32k-250115', max_tokens: 16000, temperature: 0.3, messages: [{ role: 'user', content }] })
   });
   if (!vResp.ok) return null;
   return (await vResp.json()).choices?.[0]?.message?.content || null;
@@ -2973,19 +2974,31 @@ async function analyzeContent(text, key, model, scenes = [], durationSec = 0) {
   const outlineRaw = r3.replace(/```[\s\S]*?```/g,'').trim();
   const outlineBlocks = outlineRaw.split(/\n\s*\n/).filter(b => b.trim());
   let outline = outlineBlocks.map(block => {
-    const lines = block.trim().split('\n');
-    const pointMatch = lines[0].match(/【([^】]+)】/);
-    const point = pointMatch ? pointMatch[1] : lines[0]
-      .replace(/\*+/g, '')                                          // 剥掉 markdown 加粗
-      .replace(/^\d+[\.、\s]+/, '')                                 // 剥掉序号
-      .replace(/^场景\s*[一二三四五六七八九十百\d]+\s*[：:：\s]+/, '') // 剥掉「场景X：」
-      .replace(/^第\s*[一二三四五六七八九十百\d]+\s*[场幕节集]+\s*[：:：\s]*/, '') // 剥掉「第X场」
-      .replace(/^#+\s*/, '')                                        // 剥掉 markdown 标题 ###
+    const rawLines = block.trim().split('\n');
+    // 找到第一个实际有内容的行作为标题行（跳过空行）
+    const titleLineIdx = rawLines.findIndex(l => l.trim().length > 0);
+    const titleLine = titleLineIdx >= 0 ? rawLines[titleLineIdx] : rawLines[0];
+    const restLines = rawLines.slice(titleLineIdx + 1);
+
+    const pointMatch = titleLine.match(/【([^】]+)】/);
+    const point = pointMatch ? pointMatch[1] : titleLine
+      .replace(/^#+\s*/,'')       // 剥掉任意数量的 # 和空格
+      .replace(/\*+/g, '')
+      .replace(/^\d+[\.、\s]+/, '')
+      .replace(/^场景\s*[一二三四五六七八九十百\d]+\s*[：:：\s]+/, '')
+      .replace(/^第\s*[一二三四五六七八九十百\d]+\s*[场幕节集]+\s*[：:：\s]*/, '')
       .trim()
       .slice(0, 30);
-    const content = lines.join('\n').replace(/^【[^】]+】\s*/,'').trim();
-    return { point, content };
-  }).filter(item => _isValidBeat(item)); // 过滤无效节拍
+
+    // 正文：去掉标题行后剩余行，同时清理每行开头的 #### 等 Markdown 残留
+    const contentRaw = restLines
+      .map(l => l.replace(/^#+\s*/, '').replace(/^\*+\s*/, ''))
+      .join('\n')
+      .replace(/^【[^】]+】\s*/, '')
+      .trim();
+
+    return { point, content: contentRaw };
+  }).filter(item => _isValidBeat(item));
   if (!outline.length) outline = [{ point: '梗概', content: outlineRaw.slice(0, 800) }];
 
   // 梗概摘要：用解析后的节拍数组重建，比截取 outlineRaw 更干净（无噪声/无Markdown残留）
@@ -3115,6 +3128,7 @@ async function _regenerateStrategyFromOutline() {
   const cfg = getConfig();
   if (!cfg.llmKey) return;
   if (!analysisData.outline?.length && !_getPrimaryOutline().length) return;
+  syncEditablesToData(); // 确保最新节拍编辑已写入历史版本
 
   toast('正在基于最新节拍同步更新策划逻辑…');
   const outlineSummary = _getPrimaryOutline()
@@ -3242,6 +3256,7 @@ async function generateAdaptPlans() {
   const cfg = getConfig();
   if (!cfg.llmKey) { toast('请先配置 API Key','err'); return; }
   if (!analysisData._planSummary) { toast('请先完成内容分析','err'); return; }
+  syncEditablesToData(); // 确保 DOM 里的节拍编辑已写入历史版本
 
   const btn = document.getElementById('btnGenAdapt');
   btn.textContent = '生成中…'; btn.disabled = true;
@@ -3471,14 +3486,17 @@ function renderAnalysis() {
     }];
     analysisData._outlineHistoryIdx = 0;
   }
-  // 恢复时：以 _outlineHistoryIdx 指向的历史版本为准（保留用户上次选中并编辑的版本）
+  // 恢复时：优先显示用户设为主版本的版本，其次是上次查看的版本
   if (analysisData._outlineHistory?.length) {
-    const restoreIdx = analysisData._outlineHistoryIdx !== undefined
-      ? analysisData._outlineHistoryIdx
-      : analysisData._outlineHistory.length - 1;
+    const restoreIdx = analysisData._outlinePrimaryIdx !== undefined
+      ? analysisData._outlinePrimaryIdx
+      : (analysisData._outlineHistoryIdx !== undefined
+          ? analysisData._outlineHistoryIdx
+          : analysisData._outlineHistory.length - 1);
     const restoreEntry = analysisData._outlineHistory[restoreIdx];
     if (restoreEntry?.outline?.length) {
       analysisData.outline = JSON.parse(JSON.stringify(restoreEntry.outline));
+      analysisData._outlineHistoryIdx = restoreIdx; // 保持 idx 与展示一致
     }
   }
   renderOutline(d.outline || []);
@@ -3624,6 +3642,7 @@ async function generateScript() {
   const cfg = getConfig();
   if (!cfg.llmKey) { toast('请先配置 API Key','err'); return; }
   if (!subtitleData.length) { toast('请先完成分析','err'); return; }
+  syncEditablesToData(); // 确保节拍/人物编辑已写入
 
   const btn = document.getElementById('btnGenScript');
   btn.textContent = '生成中…'; btn.disabled = true;
@@ -3827,6 +3846,7 @@ function applySectionTranslation(sec, enText) {
 async function reformatOutline() {
   const cfg = getConfig();
   if (!cfg.llmKey) { toast('请先配置 API Key','err'); return; }
+  syncEditablesToData(); // 确保当前版本的 DOM 编辑已持久化
 
   const existingOutline = _getPrimaryOutline();
   const existingText = existingOutline.map(item => `【${item.point}】\n${item.content||''}`).join('\n\n');
@@ -3955,16 +3975,16 @@ async function _reformatFromExisting(existingText, cfg) {
     const wc = outlineWordRange(analysisData._duration || 0);
     const result = await callLLM(`你是专业影视内容分析师。以下是一部短剧的剧情梗概（原始版本），请按起承转合四幕结构重新整理，生成结构清晰的最终版本。
 
-输出要求：
-- 总字数控制在${wc.range}
-- 按「起承转合」四幕结构划分，每幕下细分事件节拍，节拍数量以完整覆盖剧情为准
-- 每个节拍点格式：【节拍标题】正文（平均250字，视情节密度可在150-400字之间浮动）
-- 节拍标题直接点明该段核心事件，禁用「场景一」「第X段」等格式
-- 重点写清楚：事件起因→发展→结果的因果链，以及人物情感/动机的转变逻辑
-- 台词极度克制：全文不超过5处直接引语，只保留对情节转折有决定性作用的关键台词
+输出要求（必须严格遵守）：
+- 总字数必须达到 ${wc.range}，这是硬性要求，不能少于下限
+- 按「起承转合」四幕结构划分，每幕下细分事件节拍，节拍数量：${wc.beats}
+- 每个节拍点格式：【节拍标题】正文
+- 每个节拍正文必须在 200-400 字之间，详细描写事件起因→经过→结果的完整因果链，人物的具体行为、动机、情绪变化，不能只写结论，必须写过程
+- 节拍标题直接点明该段核心事件，禁用「场景一」「第X段」等格式，禁止使用 Markdown 标题格式（禁止 #、##、### 等）
+- 台词克制：全文不超过5处直接引语，只保留对情节转折有决定性作用的关键台词
 - 转折节点标注【转折】，高潮节点标注【高潮】
 - 必须覆盖原梗概中所有重要情节节点，不要遗漏关键事件
-- 直接输出纯文本，节点间空行，禁止使用 Markdown 语法（禁止 ---、###、** 等符号）
+- 直接输出纯文本，节点间空行，禁止使用任何 Markdown 语法（禁止 ---、###、**、## 等符号）
 
 原始梗概：
 ${existingText}`, cfg.llmKey, cfg.model, 8000);
@@ -3984,14 +4004,21 @@ function _applyNewOutline(result) {
   const outlineRaw = result.replace(/```[\s\S]*?```/g,'').trim();
   const blocks = outlineRaw.split(/\n\s*\n/).filter(b=>b.trim());
   const newOutline = blocks.map(block => {
-    const lines = block.trim().split('\n');
-    const m = lines[0].match(/【([^】]+)】/);
-    const point = m ? m[1] : lines[0]
+    const rawLines = block.trim().split('\n');
+    const titleLineIdx = rawLines.findIndex(l => l.trim().length > 0);
+    const titleLine = titleLineIdx >= 0 ? rawLines[titleLineIdx] : rawLines[0];
+    const restLines = rawLines.slice(titleLineIdx + 1);
+    const m = titleLine.match(/【([^】]+)】/);
+    const point = m ? m[1] : titleLine
+      .replace(/^#+\s*/,'')
       .replace(/\*+/g,'')
       .replace(/^\d+[\.、\s]+/,'')
-      .replace(/^#+\s*/,'')  // 剥掉 ### 标题
       .trim().slice(0,30);
-    const content = lines.join('\n').replace(/^【[^】]+】\s*/,'').trim();
+    const content = restLines
+      .map(l => l.replace(/^#+\s*/, '').replace(/^\*+\s*/, ''))
+      .join('\n')
+      .replace(/^【[^】]+】\s*/,'')
+      .trim();
     return { point, content };
   }).filter(item => _isValidBeat(item));
   if (!newOutline.length) { toast('解析结果为空，请重试','err'); return; }
@@ -4360,6 +4387,12 @@ function _isValidBeat(item) {
 function addBeatAfter(idx) {
   syncEditablesToData();
   analysisData.outline.splice(idx + 1, 0, { point: '新节拍', content: '' });
+  // 同步到当前历史版本
+  const history = analysisData._outlineHistory;
+  if (history) {
+    const curIdx = analysisData._outlineHistoryIdx !== undefined ? analysisData._outlineHistoryIdx : history.length - 1;
+    if (history[curIdx]) history[curIdx].outline = JSON.parse(JSON.stringify(analysisData.outline));
+  }
   renderOutline(analysisData.outline);
   saveSession();
   const beats = document.querySelectorAll('#outlineContainer .beat-item');
@@ -4379,6 +4412,12 @@ function deleteBeat(idx) {
   if ((analysisData.outline || []).length <= 1) { toast('至少保留一个节拍', 'err'); return; }
   syncEditablesToData();
   analysisData.outline.splice(idx, 1);
+  // 同步到当前历史版本
+  const history = analysisData._outlineHistory;
+  if (history) {
+    const curIdx = analysisData._outlineHistoryIdx !== undefined ? analysisData._outlineHistoryIdx : history.length - 1;
+    if (history[curIdx]) history[curIdx].outline = JSON.parse(JSON.stringify(analysisData.outline));
+  }
   renderOutline(analysisData.outline);
   saveSession();
 }
@@ -4400,6 +4439,7 @@ function copySection(sec) {
 
 // ── 导出分析报告 Word（不含剧本）──
 function exportFullWord() {
+  syncEditablesToData(); // 确保所有 contenteditable 编辑已写入
   const title = analysisData._title || videoFile?.name?.replace(/\.[^.]+$/,'') || videoUrl || '内容分析';
   const para    = t => `{\\pard\\f0\\fs22\\sl380\\slmult1\\sb80\\sa40 ${rtfEsc(t)}\\par}\n`;
   const heading = t => `{\\pard\\f0\\b\\fs30\\cf1\\sb400\\sa160 ${rtfEsc(t)}\\par}\n`;
@@ -5321,10 +5361,18 @@ function closeShareModal() {
 
 function generateShareUrl() {
   syncEditablesToData();
-  const shareId = 'dl_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  // 只保留展示所需字段，剥掉原始台词和多版本历史（体积大且接收方不需要）
+  const shareAnalysis = { ...analysisData };
+  delete shareAnalysis._rawText;           // 原始转写文本，可达数万字
+  delete shareAnalysis._outlineHistory;    // 所有历史版本，体积大
+  delete shareAnalysis._outlineHistoryIdx;
+  delete shareAnalysis._outlinePrimaryIdx;
+  delete shareAnalysis._script;            // 剧本原文
+  delete shareAnalysis._scriptOriginal;
+
   const payload = {
-    subtitleData: subtitleData.slice(0, 2000), // 限制大小
-    analysisData: { ...analysisData },
+    subtitleData: subtitleData.slice(0, 2000),
+    analysisData: shareAnalysis,
     sharedAt: Date.now(),
     version: 1,
   };
