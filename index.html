@@ -1641,10 +1641,14 @@ header {
   text-align: center; font-weight: 600;
 }
 /* ── 剧情节拍版本历史栏 ── */
-.outline-history-bar { display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;padding:10px 0 8px; }
-.outline-hist-btn { font-size:11px;padding:4px 10px;border-radius:12px;border:1px solid var(--border-soft);background:var(--surface-2);cursor:pointer;color:var(--text-body);transition:all .15s; }
-.outline-hist-btn:hover { border-color:var(--green-light); }
-.outline-hist-btn.active { background:var(--green-main);color:#fff;border-color:var(--green-main); }
+.outline-history-bar { display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;padding:10px 0 8px;align-items:center; }
+.outline-hist-group { display:flex;align-items:center;gap:3px;background:var(--surface-2);border-radius:14px;border:1px solid var(--border-soft);padding:2px 4px 2px 2px; }
+.outline-hist-btn { font-size:11px;padding:4px 10px;border-radius:12px;border:none;background:transparent;cursor:pointer;color:var(--text-body);transition:all .15s; }
+.outline-hist-btn:hover { background:var(--surface-3); }
+.outline-hist-btn.active { background:var(--green-main);color:#fff; }
+.outline-set-primary-btn { font-size:10px;padding:2px 7px;border-radius:8px;border:1px solid var(--border-soft);background:transparent;cursor:pointer;color:var(--text-light);transition:all .15s;white-space:nowrap; }
+.outline-set-primary-btn:hover { background:var(--gold);color:#fff;border-color:var(--gold); }
+.outline-primary-tag { font-size:10px;color:var(--gold);padding:0 6px;white-space:nowrap;font-weight:500; }
 /* 推荐剧名 */
 .adapt-plan-drama-title { font-size:15px;font-weight:700;color:var(--gold);margin-bottom:5px;outline:none;border-radius:3px;letter-spacing:0.01em;line-height:1.4; }
 .adapt-plan-drama-title:focus { background:rgba(184,148,74,0.08); }
@@ -2091,7 +2095,7 @@ header {
                   <div class="adapt-form-item">
                     <label class="adapt-form-label">题材类型</label>
                     <select class="adapt-form-select" id="adaptGenre">
-                      <option value="AI向（魔幻/玄幻/奇幻/科幻/末世/神话/狼人/吸血鬼）">AI向（魔幻/玄幻/奇幻/科幻/末世/神话/狼人/吸血鬼）</option>
+                      <option value="AI向（魔幻/奇幻/末世/神话/狼人/吸血鬼）">AI向（魔幻/奇幻/末世/神话/狼人/吸血鬼）</option>
                       <option value="真人向（霸总/都市/甜宠/虐恋/情感流/复仇）">真人向（霸总/都市/甜宠/虐恋/情感流/复仇）</option>
                     </select>
                   </div>
@@ -2613,7 +2617,7 @@ async function doRunAnalysis() {
     setStep(4,'done'); setProg(70);
 
     setStep(5,'active'); setLabel('截取视频场景帧…');
-    const scenes = await captureSceneFrames(videoFile || videoUrl, 10);
+    const scenes = await captureSceneFrames(videoFile || videoUrl, 5);
     setLabel('内容拆解分析… (约1-2分钟，共3步)');
     const rawText = asr.map(s=>s.text).join(' ');
     analysisData = await analyzeContent(rawText, c.llmKey, c.model, scenes, audio.duration);
@@ -2827,8 +2831,8 @@ async function captureSceneFrames(source, intervalSec = 15) {
 
       const times = [];
       for (let t = intervalSec / 2; t < duration; t += intervalSec) times.push(t);
-      // 最多20帧，避免过多
-      const capTimes = times.slice(0, 20);
+      // 最多40帧（5秒间隔），确保短剧关键动作不遗漏
+      const capTimes = times.slice(0, 40);
 
       const canvas = document.createElement('canvas');
       canvas.width = 480; canvas.height = 270; // 16:9 缩略图
@@ -3227,7 +3231,12 @@ function renderSubs() {
     // 区分历史记录加载（有字幕但无视频源）和初次空状态
     const fromHistory = subtitleData.length > 0 && !videoFile && !videoUrl;
     placeholder.innerHTML = fromHistory
-      ? `<span style="font-size:24px">📂</span><span style="font-size:12px;color:var(--text-light);text-align:center;line-height:1.6">历史记录不保存视频文件<br>如需回看，请重新上传该视频</span>`
+      ? `<span style="font-size:24px">📂</span>
+         <span style="font-size:12px;color:var(--text-light);text-align:center;line-height:1.6">历史记录不保存视频文件<br>上传视频即可同步回看</span>
+         <label style="margin-top:8px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;background:var(--green-main);color:#fff;font-size:12px;padding:7px 16px;border-radius:8px;font-family:'Noto Sans SC',sans-serif">
+           <input type="file" accept="video/*" style="display:none" onchange="loadVideoForCurrentSession(event)">
+           ⬆ 上传视频
+         </label>`
       : `<span style="font-size:28px">🎬</span><span style="font-size:12px">视频加载中…</span>`;
   }
 
@@ -3724,8 +3733,16 @@ async function reformatOutline() {
 
 async function _regenOutlineFromRaw(rawText, cfg) {
   const btn = document.querySelector('[onclick="reformatOutline()"]');
-  if (btn) { btn.textContent = '重生成中…'; btn.disabled = true; }
-  toast('基于完整台词重新生成梗概，请稍候…');
+  if (btn) { btn.textContent = '重生成中…'; btn.disabled = true; btn.style.opacity = '0.6'; }
+  // 进度提示：每15秒更新一次，让用户知道在运行
+  let elapsed = 0;
+  const progressMsgs = ['正在分析台词与截帧内容…','梗概生成中，长视频需要耐心等待…','仍在处理中，请勿重复点击…','快完成了，稍等片刻…'];
+  const progressTimer = setInterval(() => {
+    elapsed++;
+    const msg = progressMsgs[Math.min(elapsed - 1, progressMsgs.length - 1)];
+    toast(msg);
+  }, 15000);
+  toast('正在基于完整台词重新生成节拍，请耐心等待（约1-3分钟）…');
 
   try {
     // 长文本分段处理，确保覆盖完整剧情
@@ -3763,19 +3780,26 @@ ${isChunked ? '剧情摘要' : '台词'}：
 ${inputText}`, cfg.llmKey, cfg.model, 8000);
 
     _applyNewOutline(result);
-    toast('基于完整台词的节拍已重新生成','ok');
+    toast('节拍已重新生成','ok');
   } catch(e) {
     toast('生成失败：'+e.message,'err');
   } finally {
+    clearInterval(progressTimer);
     const btn = document.querySelector('[onclick="reformatOutline()"]');
-    if (btn) { btn.textContent = '↺ 重整节拍'; btn.disabled = false; }
+    if (btn) { btn.textContent = '↺ 重整节拍'; btn.disabled = false; btn.style.opacity = ''; }
   }
 }
 
 async function _reformatFromExisting(existingText, cfg) {
   const btn = document.querySelector('[onclick="reformatOutline()"]');
-  if (btn) { btn.textContent = '整理中…'; btn.disabled = true; }
-  toast('正在重新整理节拍结构…');
+  if (btn) { btn.textContent = '整理中…'; btn.disabled = true; btn.style.opacity = '0.6'; }
+  let elapsed2 = 0;
+  const progressMsgs2 = ['正在重整节拍结构…','仍在处理中，请勿重复点击…','快完成了…'];
+  const progressTimer2 = setInterval(() => {
+    elapsed2++;
+    toast(progressMsgs2[Math.min(elapsed2-1, progressMsgs2.length-1)]);
+  }, 20000);
+  toast('正在重整节拍结构，请耐心等待…');
 
   try {
     const wc = outlineWordRange(analysisData._duration || 0);
@@ -3800,8 +3824,9 @@ ${existingText}`, cfg.llmKey, cfg.model, 8000);
   } catch(e) {
     toast('整理失败：'+e.message,'err');
   } finally {
+    clearInterval(progressTimer2);
     const btn = document.querySelector('[onclick="reformatOutline()"]');
-    if (btn) { btn.textContent = '↺ 重整节拍'; btn.disabled = false; }
+    if (btn) { btn.textContent = '↺ 重整节拍'; btn.disabled = false; btn.style.opacity = ''; }
   }
 }
 
@@ -3835,6 +3860,8 @@ function _applyNewOutline(result) {
   renderOutline(newOutline);
   saveSession();
   saveToHistory(analysisData);
+  // 自动检查策划逻辑是否需要修正
+  _scheduleStrategyCheck('outline_reformat');
 }
 
 function switchOutlineVersion(idx) {
@@ -3846,6 +3873,65 @@ function switchOutlineVersion(idx) {
   saveSession();
   saveToHistory(analysisData);
   toast(`已切换到${idx === 0 ? '初始版本' : '第'+(idx+1)+'次整理版本'}`, 'ok');
+}
+
+function setPrimaryOutlineVersion(idx) {
+  const history = analysisData._outlineHistory;
+  if (!history || !history[idx]) return;
+  analysisData._outlinePrimaryIdx = idx;
+  // 主版本同时也切换为当前显示版本
+  switchOutlineVersion(idx);
+  toast('✓ 已设为主版本，后续策划逻辑修正将以此版本为准', 'ok');
+  // 立即触发策划校验
+  _scheduleStrategyCheck('primary_set');
+}
+
+// 策划逻辑自动校验（outline 变动后触发，防抖1.5秒）
+let _strategyCheckTimer = null;
+function _scheduleStrategyCheck(reason) {
+  clearTimeout(_strategyCheckTimer);
+  _strategyCheckTimer = setTimeout(() => _doStrategyCheck(reason), 1500);
+}
+
+async function _doStrategyCheck(reason) {
+  const cfg = getConfig();
+  if (!cfg.llmKey) return;
+  if (!analysisData.highlights && !analysisData.characterLogic) return; // 策划尚未生成
+
+  // 以主版本（或当前版本）的节拍内容为基准
+  const primaryIdx = analysisData._outlinePrimaryIdx !== undefined
+    ? analysisData._outlinePrimaryIdx
+    : (analysisData._outlineHistoryIdx !== undefined ? analysisData._outlineHistoryIdx : 0);
+  const history = analysisData._outlineHistory;
+  const baseOutline = (history && history[primaryIdx])
+    ? history[primaryIdx].outline
+    : (analysisData.outline || []);
+
+  const outlineText = baseOutline.map(b => `【${b.point}】${b.content}`).join('\n').slice(0, 4000);
+  const planText = [analysisData.highlights, analysisData.structureActs, analysisData.characterLogic, analysisData.emotion, analysisData.hooks].filter(Boolean).join('\n').slice(0, 3000);
+
+  if (!planText.trim()) return;
+
+  try {
+    const result = await callLLM(`你是短剧内容校对助手。以下是用户已修正/重整的剧情节拍（最新版本），请对比策划逻辑内容，检查是否存在因节拍修正而导致的较大误差或不一致。
+
+只报告存在明显误差的地方（不超过3条）。如果没有任何问题，输出：{"issues":[]}
+有问题时输出JSON（不加说明）：
+{"issues":[{"section":"所在策划维度","original":"原文片段（50字内）","suggestion":"建议修改为（50字内）","reason":"简要原因（30字内）"}]}
+
+最新剧情节拍：
+${outlineText}
+
+当前策划逻辑：
+${planText}`, cfg.llmKey, cfg.model, 600);
+
+    let data;
+    try { data = JSON.parse(result.replace(/```json|```/g,'').trim()); } catch { return; }
+    if (!data.issues?.length) return;
+
+    _pendingFixes = data.issues;
+    _showAmbiguityModal(data.issues);
+  } catch {}
 }
 
 // ── 复制板块 ──
@@ -3863,11 +3949,28 @@ function detectAct(text) {
   for (let i = 0; i < ACT_DEFS.length; i++) {
     const def = ACT_DEFS[i];
     if (new RegExp(`【(${def.keys.join('|')})】`).test(t)) return i;
-    if (new RegExp(`^(${def.keys.join('|')})[：:「]`).test(t)) return i;
+    if (new RegExp(`^(${def.keys.join('|')})[：:「\(（]`).test(t)) return i;
     // 匹配裸幕标记（如 point 存储为 "起"/"第一幕" 而非 【起】）
     if (def.keys.some(k => t === k)) return i;
+    // 匹配 "第X幕：承" 或 "第二幕" 等变体
+    if (def.keys.some(k => t.includes(k) && (t.includes('第') || t.includes('幕') || t.includes('、')))) return i;
   }
-  return -1; // 没检测到幕标记
+  return -1;
+}
+
+// 渲染时确保4幕顺序正确，防止结构乱序（承/合被包在错误幕内）
+function _ensureActOrder(groups) {
+  // 去掉重复 actIdx（只保留每个幕的第一次出现，后续同幕继续合并）
+  const merged = [];
+  groups.forEach(g => {
+    const last = merged[merged.length - 1];
+    if (last && last.actIdx === g.actIdx) {
+      last.items.push(...g.items);
+    } else {
+      merged.push({ actIdx: g.actIdx, items: [...g.items] });
+    }
+  });
+  return merged;
 }
 
 function renderOutline(items) {
@@ -3880,11 +3983,16 @@ function renderOutline(items) {
   if (outlineHistory.length > 1) {
     const bar = document.createElement('div');
     bar.className = 'outline-history-bar';
+    const primaryIdx = analysisData._outlinePrimaryIdx !== undefined ? analysisData._outlinePrimaryIdx : 0;
     bar.innerHTML = outlineHistory.map((entry, i) => {
       const d = new Date(entry.savedAt);
       const label = i === 0 ? '初始版本' : `第${i+1}次整理 ${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
       const isActive = i === (analysisData._outlineHistoryIdx !== undefined ? analysisData._outlineHistoryIdx : outlineHistory.length - 1);
-      return `<button class="outline-hist-btn${isActive ? ' active' : ''}" onclick="switchOutlineVersion(${i})">${esc(label)}</button>`;
+      const isPrimary = i === primaryIdx;
+      return `<div class="outline-hist-group">
+        <button class="outline-hist-btn${isActive ? ' active' : ''}" onclick="switchOutlineVersion(${i})">${isPrimary ? '⭐ ' : ''}${esc(label)}</button>
+        ${!isPrimary ? `<button class="outline-set-primary-btn" onclick="setPrimaryOutlineVersion(${i})" title="设为主版本（策划修正基准）">设为主版本</button>` : `<span class="outline-primary-tag">主版本</span>`}
+      </div>`;
     }).join('');
     container.appendChild(bar);
   }
@@ -3905,6 +4013,8 @@ function renderOutline(items) {
       if (!curGroup) { curGroup = { actIdx: 0, items: [] }; groups.push(curGroup); }
       curGroup.items.push(item);
     });
+    // 合并相邻同幕组，保持正确4幕结构
+    groups = _ensureActOrder(groups);
   } else {
     // 均匀切4幕
     const n = items.length;
@@ -3956,7 +4066,10 @@ function renderOutline(items) {
       if (!ptText && !ctText) return;
       beatIndex++;
       // 清理标题里的幕标记
-      const rawPoint = (item.point || '').replace(/【(起|承|转|合|开篇|发展|转折|结局|第[一二三四]幕|[一二三四]、[起承转合])】/g,'').trim();
+      const rawPoint = (item.point || '')
+        .replace(/【(起|承|转|合|开篇|发展|转折|结局|第[一二三四]幕|[一二三四]、[起承转合])】/g,'')
+        .replace(/^节拍\s*[：:·\-]*\s*/,'')  // 去掉开头的"节拍"前缀
+        .trim();
       // 处理正文里的【转折】【高潮】标签
       const rawContent = esc(item.content || '')
         .replace(/【转折】/g, '<span class="beat-tag zhuan">转折</span>')
@@ -3980,8 +4093,22 @@ function renderOutline(items) {
   });
 }
 
+// 历史记录模式下：仅加载视频到播放器，不重新解析
+function loadVideoForCurrentSession(e) {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  videoFile = file;
+  if (videoObjectURL) URL.revokeObjectURL(videoObjectURL);
+  videoObjectURL = URL.createObjectURL(file);
+  const player = document.getElementById('subVideoPlayer');
+  const placeholder = document.getElementById('subVideoPlaceholder');
+  player.src = videoObjectURL;
+  player.style.display = 'block';
+  placeholder.style.display = 'none';
+  toast('视频已加载，可与字幕同步回看', 'ok');
+}
+
 function addCharCard(btn) {
-  const cg = document.getElementById('charGrid');
   const addCard = btn.closest('.char-card-add');
   const newCard = document.createElement('div');
   newCard.className = 'char-card';
@@ -4018,7 +4145,8 @@ function _isValidBeat(item) {
     // 即使 point 是噪声，如果 content 有实质内容，仍保留（用 content 首行当标题）
     if (ct.length > 10) {
       const firstLine = ct.split('\n')[0].replace(/^【[^】]+】\s*/, '').trim().slice(0, 30);
-      item.point = firstLine || '节拍';
+      // 不能用 '节拍' 做标题，取 content 首行有意义的文字
+      item.point = firstLine && firstLine.length > 2 ? firstLine : ct.slice(0, 20).replace(/\n/g, ' ').trim();
       item.content = ct.split('\n').slice(firstLine ? 1 : 0).join('\n').trim() || ct;
       return true;
     }
@@ -4624,8 +4752,7 @@ function frSearch() {
     </div>`;
   }).join('');
   panel.style.display = 'flex';
-  // 让字幕列重新布局
-  document.getElementById('subList').style.display = 'flex';
+  // 不重置 subList display — 它由 renderSubs 管理
 }
 
 function frScrollToItem(dataIdx) {
