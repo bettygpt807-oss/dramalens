@@ -1640,6 +1640,53 @@ header {
   padding: 0 4px; border-radius: 6px; min-width: 16px;
   text-align: center; font-weight: 600;
 }
+/* ── 剧情节拍版本历史栏 ── */
+.outline-history-bar { display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;padding:10px 0 8px; }
+.outline-hist-btn { font-size:11px;padding:4px 10px;border-radius:12px;border:1px solid var(--border-soft);background:var(--surface-2);cursor:pointer;color:var(--text-body);transition:all .15s; }
+.outline-hist-btn:hover { border-color:var(--green-light); }
+.outline-hist-btn.active { background:var(--green-main);color:#fff;border-color:var(--green-main); }
+/* 推荐剧名 */
+.adapt-plan-drama-title { font-size:15px;font-weight:700;color:var(--gold);margin-bottom:5px;outline:none;border-radius:3px;letter-spacing:0.01em;line-height:1.4; }
+.adapt-plan-drama-title:focus { background:rgba(184,148,74,0.08); }
+
+.find-replace-bar { display:flex;flex-direction:column;gap:5px; }
+.fr-row { display:flex;gap:6px;align-items:center; }
+.fr-input { flex:1;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-family:'DM Mono',monospace;font-size:11px;color:var(--ink);outline:none;transition:border-color .2s; }
+.fr-input:focus { border-color:var(--green-main);background:white; }
+.fr-input::placeholder { color:var(--text-ghost); }
+.fr-btn-search { height:28px;padding:0 12px;background:var(--green-main);color:white;border:none;border-radius:6px;font-size:11px;font-family:'Noto Sans SC',sans-serif;cursor:pointer;white-space:nowrap;transition:background .15s; }
+.fr-btn-search:hover { background:var(--green-dark); }
+.fr-btn-do { height:28px;padding:0 12px;background:var(--gold);color:white;border:none;border-radius:6px;font-size:11px;font-family:'Noto Sans SC',sans-serif;cursor:pointer;white-space:nowrap;transition:background .15s; }
+.fr-btn-do:hover { background:#9a7a3a; }
+.fr-results-panel { background:var(--surface);border-bottom:1px solid var(--border-soft);flex-shrink:0;display:flex;flex-direction:column;max-height:320px;box-shadow:var(--shadow-md); }
+.fr-results-header { display:flex;align-items:center;gap:10px;padding:8px 12px 6px;border-bottom:1px solid var(--border-soft);flex-shrink:0; }
+.fr-results-title { font-size:12px;font-weight:600;color:var(--ink); }
+.fr-check-all { font-size:11px;color:var(--text-body);display:flex;align-items:center;gap:4px;cursor:pointer; }
+.fr-hint { font-size:10px;color:var(--text-ghost);flex:1; }
+.fr-close-btn { background:none;border:none;color:var(--text-ghost);cursor:pointer;font-size:14px;padding:0;transition:color .15s; }
+.fr-close-btn:hover { color:var(--red); }
+.fr-results-list { flex:1;overflow-y:auto;padding:4px 8px; }
+.fr-results-list::-webkit-scrollbar { width:4px; }
+.fr-results-list::-webkit-scrollbar-thumb { background:var(--border);border-radius:2px; }
+.fr-result-item { display:flex;align-items:flex-start;gap:8px;padding:6px 6px;border-radius:6px;cursor:pointer;transition:background .12s; }
+.fr-result-item:hover { background:var(--surface-3); }
+.fr-result-item input[type=checkbox] { margin-top:3px;flex-shrink:0;cursor:pointer; }
+.fr-result-tc { font-family:'DM Mono',monospace;font-size:10px;color:var(--text-ghost);white-space:nowrap;flex-shrink:0;padding-top:2px; }
+.fr-result-text { font-size:12px;color:var(--text-body);line-height:1.5; }
+.fr-result-text mark { background:rgba(184,148,74,0.25);color:var(--ink);border-radius:2px;padding:0 1px; }
+.fr-replace-zone { padding:8px 10px;border-top:1px solid var(--border-soft);display:flex;gap:8px;flex-shrink:0; }
+.fr-replace-input { flex:1; }
+.sub-en-edit,.sub-zh-edit { outline:none;border-radius:3px;transition:background .12s;display:inline-block;width:100%;word-break:break-word;white-space:pre-wrap; }
+.sub-en-edit:focus { background:rgba(30,92,58,0.06);box-shadow:0 0 0 2px rgba(30,92,58,0.1); }
+.sub-zh-edit:focus { background:rgba(30,92,58,0.04);box-shadow:0 0 0 2px rgba(30,92,58,0.08); }
+.sub-item.editing { background:var(--green-ghost);border-radius:8px; }
+.ambiguity-item { background:var(--surface-2);border:1px solid var(--border-soft);border-radius:8px;padding:12px 14px; }
+.ambiguity-item-title { font-size:12px;font-weight:600;color:var(--green-main);margin-bottom:6px; }
+.ambiguity-item-text { font-size:12.5px;line-height:1.7;color:var(--text-body); }
+.ambiguity-item-orig { font-size:11px;color:var(--text-light);margin-top:6px;background:rgba(192,57,43,0.06);border-radius:4px;padding:4px 8px; }
+.ambiguity-item-fix { font-size:11px;color:var(--green-main);margin-top:4px;background:var(--green-ghost);border-radius:4px;padding:4px 8px; }
+#shareModal.open { display:flex !important; }
+#ambiguityModal.open { display:flex !important; }
 </style>
 <!-- lamejs: 浏览器端 MP3 编码 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.0/lame.min.js"></script>
@@ -1721,7 +1768,7 @@ header {
     Drama<span>Lens</span>
   </div>
   <div class="header-divider"></div>
-  <div class="header-tagline">视频剧情智能解析</div>
+  <div class="header-tagline">智能拉片拆解</div>
   <div class="header-right">
     <div class="status-chip">
       <div class="status-dot" id="statusDot"></div>
@@ -1730,6 +1777,7 @@ header {
     <button class="vocab-toggle-btn" id="vocabToggleBtn" onclick="toggleVocabPanel()" title="生词本">
       ☆ 生词本 <span class="vocab-badge-dot" id="vocabBadge">0</span>
     </button>
+    <button class="btn-hdr" id="btnShare" onclick="openShareModal()" style="display:none">🔗 分享拆解</button>
     <button class="btn-hdr" onclick="openSettings()">⚙ API 配置</button>
   </div>
 </header>
@@ -1822,7 +1870,7 @@ header {
       <div class="w-features">
         <div class="w-feature-tag"><span class="tag-dot"></span>双语字幕时间轴</div>
         <div class="w-feature-tag"><span class="tag-dot"></span>剧本还原推演</div>
-        <div class="w-feature-tag"><span class="tag-dot"></span>剧情梗概节拍序列</div>
+        <div class="w-feature-tag"><span class="tag-dot"></span>剧情节拍序列</div>
         <div class="w-feature-tag"><span class="tag-dot"></span>人物小传与关系图</div>
         <div class="w-feature-tag"><span class="tag-dot"></span>策划逻辑拆解</div>
         <div class="w-feature-tag"><span class="tag-dot"></span>差异化改编方案</div>
@@ -1884,10 +1932,29 @@ header {
           </div>
           <!-- 分隔条1 -->
           <div class="sub-resize-handle" id="subResize1"></div>
-          <!-- 中：字幕列（含搜索框）-->
+          <!-- 中：字幕列（含查找替换）-->
           <div class="sub-list-col">
-            <div class="sub-list-header">
-              <input type="text" class="sub-search-inline" id="subSearch" placeholder="🔍 搜索台词…">
+            <div class="sub-list-header" id="subListHeader">
+              <div class="find-replace-bar" id="findReplaceBar">
+                <div class="fr-row">
+                  <input type="text" class="fr-input" id="frFind" placeholder="🔍 查找词语并替换…" oninput="frPreview()">
+                  <button class="fr-btn-search" onclick="frSearch()" title="查找">查找</button>
+                </div>
+              </div>
+            </div>
+            <!-- 查找结果弹层 -->
+            <div class="fr-results-panel" id="frResultsPanel" style="display:none">
+              <div class="fr-results-header">
+                <span class="fr-results-title" id="frResultsTitle">找到 0 处</span>
+                <label class="fr-check-all"><input type="checkbox" id="frCheckAll" checked onchange="frToggleAll(this.checked)"> 全选</label>
+                <span class="fr-hint">取消勾选不需要替换的项</span>
+                <button class="fr-close-btn" onclick="frClosePanel()">✕</button>
+              </div>
+              <div class="fr-results-list" id="frResultsList"></div>
+              <div class="fr-replace-zone">
+                <input type="text" class="fr-input fr-replace-input" id="frReplaceMain" placeholder="替换为…">
+                <button class="fr-btn-do" id="frBtnDo" onclick="frExecuteReplace()">✓ 执行替换并自动修正翻译</button>
+              </div>
             </div>
             <div class="sub-list" id="subList"></div>
           </div>
@@ -1943,9 +2010,9 @@ header {
             <div id="relationGraph" style="width:100%;overflow:hidden;"></div>
           </div>
 
-          <!-- 行4：剧情梗概节拍（全宽单列，起承转合分幕展示） -->
+          <!-- 行4：剧情节拍（全宽单列，起承转合分幕展示） -->
           <div>
-            <div class="a-head" style="margin-bottom:16px"><div class="a-num">04</div><div class="a-title">剧情梗概节拍</div><div class="a-line"></div></div>
+            <div class="a-head" style="margin-bottom:16px"><div class="a-num">04</div><div class="a-title">剧情节拍</div><div class="a-line"></div></div>
             <div id="outlineContainer" style="display:flex;flex-direction:column;gap:0"></div>
           </div>
 
@@ -2080,6 +2147,53 @@ header {
   </div>
   <div class="vocab-list" id="vocabList"></div>
   <button class="vocab-export-btn" onclick="exportVocab()">⬇ 导出生词本（TXT）</button>
+</div>
+
+<!-- 分享模态框 -->
+<div id="shareModal" style="display:none;position:fixed;inset:0;background:rgba(15,29,20,0.55);z-index:500;align-items:center;justify-content:center;backdrop-filter:blur(6px)">
+  <div style="width:520px;background:var(--surface);border-radius:16px;box-shadow:var(--shadow-lg);border:1px solid var(--border);overflow:hidden">
+    <div class="modal-header">
+      <span style="font-size:16px">🔗</span>
+      <span class="modal-title">分享拆解页面</span>
+      <button class="modal-close" onclick="closeShareModal()">✕</button>
+    </div>
+    <div style="padding:24px 28px;display:flex;flex-direction:column;gap:16px">
+      <div style="font-size:13px;color:var(--text-body);line-height:1.7;background:var(--green-ghost);border:1px solid var(--border-soft);border-radius:10px;padding:12px 14px">
+        📎 生成的链接包含当前页面的<strong>全部内容</strong>（双语字幕、剧情概要、策划改编），收到链接的人无需配置 API 即可查看。<br>
+        <span style="color:var(--text-light);font-size:12px">如需重新上传视频分析，需自行配置 API Key。</span>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text-ghost);margin-bottom:6px;font-weight:500">分享链接</div>
+        <div style="display:flex;gap:8px">
+          <input type="text" id="shareUrlInput" readonly style="flex:1;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:11px;font-family:'DM Mono',monospace;color:var(--ink);outline:none" placeholder="点击「生成链接」">
+          <button class="btn-save" onclick="copyShareUrl()" style="white-space:nowrap;padding:0 16px">复制链接</button>
+        </div>
+      </div>
+      <button class="btn-save" onclick="generateShareUrl()" style="width:100%">🔗 生成分享链接</button>
+      <div id="shareNote" style="font-size:11.5px;color:var(--text-light);line-height:1.6;display:none"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 台词修正歧义弹窗 -->
+<div id="ambiguityModal" style="display:none;position:fixed;inset:0;background:rgba(15,29,20,0.55);z-index:600;align-items:center;justify-content:center;backdrop-filter:blur(6px)">
+  <div style="width:580px;max-height:80vh;overflow-y:auto;background:var(--surface);border-radius:16px;box-shadow:var(--shadow-lg);border:1px solid var(--border)">
+    <div class="modal-header" style="position:sticky;top:0;background:var(--surface);z-index:1;border-radius:16px 16px 0 0">
+      <span style="font-size:16px">⚠️</span>
+      <span class="modal-title">台词修正影响检测</span>
+      <button class="modal-close" onclick="closeAmbiguityModal()">✕</button>
+    </div>
+    <div style="padding:24px 28px;display:flex;flex-direction:column;gap:16px">
+      <div style="font-size:13px;color:var(--text-body);line-height:1.7">
+        系统检测到以下内容可能受台词修正影响，存在潜在歧义，请确认是否需要自动修正：
+      </div>
+      <div id="ambiguityList" style="display:flex;flex-direction:column;gap:10px;max-height:40vh;overflow-y:auto"></div>
+      <div style="display:flex;gap:10px;padding-top:8px;border-top:1px solid var(--border-soft)">
+        <button class="btn-save" onclick="applyAmbiguityFixes()" style="flex:1">✓ 确认修正</button>
+        <button class="btn-save" onclick="closeAmbiguityModal()" style="background:var(--surface-2);color:var(--text-body);border:1px solid var(--border);flex:1">暂不修正</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -2217,6 +2331,7 @@ function syncEditablesToData() {
   const planCards = document.querySelectorAll('#adaptPlansGrid .adapt-plan-card');
   if (planCards.length) {
     analysisData.adaptPlans = Array.from(planCards).map(c => ({
+      dramaTitle:  c.querySelector('.adapt-plan-drama-title')?.innerText.trim() || '',
       title:       c.querySelector('.adapt-plan-title')?.innerText.trim()    || '',
       description: c.querySelector('.adapt-plan-body')?.innerText.trim()     || '',
       synopsis:    c.querySelector('.adapt-plan-synopsis')?.innerText.trim() || '',
@@ -2406,7 +2521,7 @@ function updateTabActions() {
       : '';
   } else if (tab === 'overview') {
     container.innerHTML = `
-      <button class="btn-sm" onclick="reformatOutline()" title="用新的起承转合结构重新整理梗概，无需重新解析视频">↺ 重整梗概</button>
+      <button class="btn-sm" onclick="reformatOutline()" title="用新的起承转合结构重新整理节拍，无需重新解析视频">↺ 重整节拍</button>
       <button class="btn-sm btn-export" onclick="copySection('overview')">⎘ 复制</button>
       <button class="btn-sm btn-export" id="btnExportAll" onclick="exportFullWord()" style="display:none">⬇ 导出报告</button>`;
     if (Object.keys(analysisData).length) document.getElementById('btnExportAll').style.display = '';
@@ -2436,12 +2551,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
   });
 });
 
-document.getElementById('subSearch').addEventListener('input', e => {
-  const q = e.target.value.toLowerCase();
-  document.querySelectorAll('.sub-item').forEach(el => {
-    el.style.display = !q || el.textContent.toLowerCase().includes(q) ? '' : 'none';
-  });
-});
+// subSearch removed, replaced by find-replace
 
 // ── SURVEY ──
 function isSurveyDone() { return localStorage.getItem('dl_survey_done') === '1'; }
@@ -2796,7 +2906,7 @@ async function analyzeContent(text, key, model, scenes = [], durationSec = 0) {
 - 台词极度克制：全文不超过5处直接引语，只保留对情节转折有决定性作用的关键台词
 - 转折节点标注【转折】，高潮节点标注【高潮】
 - 只还原视频中实际发生的情节，绝对不要补充原视频之外的新剧情
-- 直接输出纯文本，节点间空行
+- 直接输出纯文本，节点间空行，禁止使用 Markdown 语法（禁止 ---、###、** 等符号）
 
 台词：\n${fullText}`;
     const selectedFrames = scenes.length > 8 ? scenes.filter((_, i) => i % Math.ceil(scenes.length / 8) === 0).slice(0, 8) : scenes;
@@ -2822,7 +2932,7 @@ async function analyzeContent(text, key, model, scenes = [], durationSec = 0) {
 - 台词极度克制：全文不超过5处直接引语，只保留对情节转折有决定性作用的关键台词
 - 转折节点标注【转折】，高潮节点标注【高潮】
 - 只还原实际出现的情节，绝对不要补充原视频之外的新剧情
-- 直接输出纯文本，不要JSON，节点间空行
+- 直接输出纯文本，不要JSON，节点间空行，禁止使用 Markdown 语法（禁止 ---、###、** 等符号）
 
 ${text.length > CHUNK_SIZE ? '剧情摘要' : '台词'}：
 ${fullText}`, key, model, 8000);
@@ -2837,11 +2947,12 @@ ${fullText}`, key, model, 8000);
       .replace(/^\d+[\.、\s]+/, '')                                 // 剥掉序号
       .replace(/^场景\s*[一二三四五六七八九十百\d]+\s*[：:：\s]+/, '') // 剥掉「场景X：」
       .replace(/^第\s*[一二三四五六七八九十百\d]+\s*[场幕节集]+\s*[：:：\s]*/, '') // 剥掉「第X场」
+      .replace(/^#+\s*/, '')                                        // 剥掉 markdown 标题 ###
       .trim()
       .slice(0, 30);
     const content = lines.join('\n').replace(/^【[^】]+】\s*/,'').trim();
     return { point, content };
-  });
+  }).filter(item => _isValidBeat(item)); // 过滤无效节拍
   if (!outline.length) outline = [{ point: '梗概', content: outlineRaw.slice(0, 800) }];
 
   // 梗概摘要（供后续两步使用，取前8000字确保长视频后半段剧情也被覆盖）
@@ -2933,10 +3044,12 @@ ${fullText}`, key, model, 8000);
 // ── 复制单个改编方案 ──
 function copyAdaptPlan(btn) {
   const card = btn.closest('.adapt-plan-card');
+  const dramaTitle = card.querySelector('.adapt-plan-drama-title')?.innerText || '';
   const title    = card.querySelector('.adapt-plan-title')?.innerText || '';
   const body     = card.querySelector('.adapt-plan-body')?.innerText || '';
   const synopsis = card.querySelector('.adapt-plan-synopsis')?.innerText || '';
-  const text = title + '\n\n' + body + (synopsis ? '\n\n【故事简介】\n' + synopsis : '');
+  const titleLine = dramaTitle ? dramaTitle + '\n' + title : title;
+  const text = titleLine + '\n\n' + body + (synopsis ? '\n\n【故事简介】\n' + synopsis : '');
   navigator.clipboard.writeText(text)
     .then(() => toast('方案已复制','ok'))
     .catch(() => {
@@ -2974,6 +3087,7 @@ function renderAdaptPlansWithHistory(activeIdx) {
     card.className = 'adapt-plan-card' + (checked ? ' selected' : '');
     card.innerHTML = `<button class="adapt-plan-check${checked ? ' checked' : ''}" onclick="toggleAdaptPlanSelect(this,${activeIdx},${i})" title="勾选导出">${checked ? '✓' : ''}</button>
       <div class="adapt-plan-num">方案 ${String(i+1).padStart(2,'0')}</div>
+      ${plan.dramaTitle ? `<div class="adapt-plan-drama-title" contenteditable="true" spellcheck="false" title="推荐剧名">🎬 ${esc(plan.dramaTitle)}</div>` : ''}
       <div class="adapt-plan-title" contenteditable="true" spellcheck="false">${esc(plan.title||'')}</div>
       <div class="adapt-plan-body" contenteditable="true" spellcheck="false">${esc(plan.description||'')}</div>
       <div class="adapt-plan-synopsis-head">故事简介</div>
@@ -3024,10 +3138,15 @@ async function generateAdaptPlans() {
   const marketGuide = marketGuideMap[marketKey];
 
   try {
-    const r = await callLLM(`你是资深短剧改编策划。基于原剧策划逻辑的全部维度，为用户生成3-5个差异化改编方案。只输出JSON，不加任何说明：
+    const customSection = custom
+      ? `\n【用户自定义需求 — 最高优先级，必须100%落实，每个方案都要体现】\n${custom}\n`
+      : '';
+
+    const r = await callLLM(`你是资深短剧改编策划。基于原剧策划逻辑的全部维度，为用户生成3-5个差异化改编方案。只输出JSON数组，不加任何说明：
 [
   {
-    "title": "方案标题（含题材风格关键词）",
+    "dramaTitle": "推荐剧名（1-2个备选，用「/」分隔，调性要抓马爽感、适合竖屏短剧传播，例如：《替嫁Alpha的复仇新娘》/《他的标记》）",
+    "title": "方案标题（含题材风格关键词，20字内）",
     "description": "250字方案说明，必须覆盖以下内容：①新题材/世界观/人物身份设定 ②如何承载原剧核心冲突结构 ③情感爆点和人物关系张力如何迁移 ④节奏逻辑和悬念布局如何保留 ⑤高光情节如何在新题材下对应呈现",
     "synopsis": "300字故事简介：用新题材语言描述这个改编故事的完整剧情走向，包含主要人物设定、核心冲突、情感弧线和结局方向，读完让人有追看欲望"
   }
@@ -3039,14 +3158,22 @@ async function generateAdaptPlans() {
 - 每个方案题材彼此不同，不能出现与原剧相同的世界观设定
 - 方案说明中必须明确说明：用什么新设定来承载原来的每一个核心策划要素
 
-【目标市场硬约束 - 必须严格遵守】${marketGuide}
-用户其他需求：受众偏好【${type}】，题材类型【${genre}】，体量规划【${volume}】${custom ? `\n用户特定改编需求（必须优先满足）：${custom}` : ''}
+推荐剧名命名规则（必须严格遵守）：
+- 风格：抓马爽感强、一眼看出题材与冲突、适合竖屏短剧传播
+- 结构参考：《身份/关系+冲突动词/状态》《[称谓]的[戏剧性处境]》《[反差身份]真相》
+- 禁止：平铺直叙的人名、过于文艺或模糊的标题
+- 根据每个方案的具体题材和人物关系定制，不能套模板
 
-原剧完整策划逻辑（每一条都是爆款基因，改编方案必须逐一对应保留）：
+【目标市场硬约束 - 必须严格遵守】${marketGuide}
+基础参数：受众偏好【${type}】，题材类型【${genre}】，体量规划【${volume}】
+${customSection}
+⚠ 注意：用户自定义需求权重最高，所有方案都必须围绕用户需求展开，而非单纯从原剧逻辑推演。
+
+原剧完整策划逻辑（爆款基因，改编时保留核心，外壳服从用户需求）：
 ${analysisData._planSummary}
 
-原剧剧情梗概（完整参考——重点参照情节节拍的顺序和节奏结构；具体剧情细节了解即可，改编时用新题材语言重新表达）：
-${fullOutline}`, cfg.llmKey, cfg.model, 5000);
+原剧剧情梗概（参考节奏结构，具体设定根据用户需求调整）：
+${fullOutline}`, cfg.llmKey, cfg.model, 5500);
 
     let plans; try { plans = JSON.parse(r.replace(/```json|```/g,'').trim()); } catch { plans = []; }
     analysisData.adaptPlans = plans;
@@ -3109,11 +3236,7 @@ function renderSubs() {
     const d = document.createElement('div'); d.className = 'sub-item';
     d.dataset.idx = idx;
     // 英文台词拆成可悬浮单词 span
-    const enHtml = item.en.replace(/([a-zA-Z''-]+)/g, (w) => {
-      const clean = w.replace(/^['-]+|['-]+$/g,'');
-      if (!clean || clean.length < 2) return esc(w);
-      return `<span class="word-span" data-word="${clean.toLowerCase()}" data-sentence="${esc(item.en)}">${esc(w)}</span>`;
-    }).replace(/([^a-zA-Z'']+)/g, t => esc(t).replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>'));
+    const enHtml = buildEnHtml(item.en, item.en);
     d.innerHTML = `<div class="sub-tc">${fmtTC(item.tc)}</div>
       <div class="sub-texts"><div class="sub-en">${enHtml}</div><div class="sub-zh">${esc(item.zh)}</div></div>`;
     d.addEventListener('click', () => {
@@ -3132,6 +3255,7 @@ function renderSubs() {
       // 3. 剧本面板同步定位到包含该台词的段落
       syncScriptToDialogue(item.en);
     });
+    d.addEventListener('dblclick', e => { e.stopPropagation(); makeSubItemEditable(d, idx); });
     list.appendChild(d);
   });
 
@@ -3169,6 +3293,10 @@ function renderSubs() {
   document.getElementById('subEmpty').style.display = 'none';
   document.getElementById('subView').style.display = 'flex';
   bindSyncScroll();
+  enableSubItemEditing();
+  // 显示分享按钮
+  const shareBtn = document.getElementById('btnShare');
+  if (shareBtn) shareBtn.style.display = '';
 }
 
 function renderAnalysis() {
@@ -3202,7 +3330,15 @@ function renderAnalysis() {
   cg.appendChild(addCard);
   // 人物关系图
   renderRelationGraph(d.relations || [], d.characters || []);
-  // 剧情梗概
+  // 剧情节拍
+  // 如果是全新分析（无历史），初始化版本历史
+  if (!analysisData._outlineHistory && (d.outline || []).length) {
+    analysisData._outlineHistory = [{
+      savedAt: Date.now(),
+      outline: JSON.parse(JSON.stringify(d.outline))
+    }];
+    analysisData._outlineHistoryIdx = 0;
+  }
   renderOutline(d.outline || []);
   document.getElementById('overviewEmpty').style.display = 'none';
   document.getElementById('overviewView').style.display = 'flex';
@@ -3545,7 +3681,7 @@ function applySectionTranslation(sec, enText) {
   }
 }
 
-// ── 重整梗概（基于已有数据，无需重新解析）──
+// ── 重整节拍（基于已有数据，无需重新解析）──
 async function reformatOutline() {
   const cfg = getConfig();
   if (!cfg.llmKey) { toast('请先配置 API Key','err'); return; }
@@ -3578,7 +3714,7 @@ async function reformatOutline() {
     // 无原始台词，告知用户限制
     const charCount = totalChars;
     const msg = nodeCount < 8
-      ? `当前梗概只有 ${nodeCount} 个节拍点（约${charCount}字），数据可能不完整。\n\n重整梗概只能重新整理已有内容，无法补充缺失的剧情。\n如需完整梗概，建议重新上传视频解析。\n\n仍然继续重整格式？`
+      ? `当前梗概只有 ${nodeCount} 个节拍点（约${charCount}字），数据可能不完整。\n\n重整节拍只能重新整理已有内容，无法补充缺失的剧情。\n如需完整梗概，建议重新上传视频解析。\n\n仍然继续重整格式？`
       : `当前梗概有 ${nodeCount} 个节拍点（约${charCount}字）。\n\n将按起承转合结构重新整理，约需20秒。\n\n继续？`;
     if (!confirm(msg)) return;
   }
@@ -3621,25 +3757,25 @@ async function _regenOutlineFromRaw(rawText, cfg) {
 - 台词极度克制：全文不超过5处直接引语，只保留对情节转折有决定性作用的关键台词
 - 转折节点标注【转折】，高潮节点标注【高潮】
 - 只还原实际出现的情节，不补充原视频之外的剧情
-- 直接输出纯文本，节点间空行
+- 直接输出纯文本，节点间空行，禁止使用 Markdown 语法（禁止 ---、###、** 等符号）
 
 ${isChunked ? '剧情摘要' : '台词'}：
 ${inputText}`, cfg.llmKey, cfg.model, 8000);
 
     _applyNewOutline(result);
-    toast('基于完整台词的梗概已重新生成','ok');
+    toast('基于完整台词的节拍已重新生成','ok');
   } catch(e) {
     toast('生成失败：'+e.message,'err');
   } finally {
     const btn = document.querySelector('[onclick="reformatOutline()"]');
-    if (btn) { btn.textContent = '↺ 重整梗概'; btn.disabled = false; }
+    if (btn) { btn.textContent = '↺ 重整节拍'; btn.disabled = false; }
   }
 }
 
 async function _reformatFromExisting(existingText, cfg) {
   const btn = document.querySelector('[onclick="reformatOutline()"]');
   if (btn) { btn.textContent = '整理中…'; btn.disabled = true; }
-  toast('正在重新整理梗概结构…');
+  toast('正在重新整理节拍结构…');
 
   try {
     const wc = outlineWordRange(analysisData._duration || 0);
@@ -3654,18 +3790,18 @@ async function _reformatFromExisting(existingText, cfg) {
 - 台词极度克制：全文不超过5处直接引语，只保留对情节转折有决定性作用的关键台词
 - 转折节点标注【转折】，高潮节点标注【高潮】
 - 必须覆盖原梗概中所有重要情节节点，不要遗漏关键事件
-- 直接输出纯文本，节点间空行
+- 直接输出纯文本，节点间空行，禁止使用 Markdown 语法（禁止 ---、###、** 等符号）
 
 原始梗概：
 ${existingText}`, cfg.llmKey, cfg.model, 8000);
 
     _applyNewOutline(result);
-    toast('梗概已按起承转合结构重新整理','ok');
+    toast('节拍已按起承转合结构重新整理','ok');
   } catch(e) {
     toast('整理失败：'+e.message,'err');
   } finally {
     const btn = document.querySelector('[onclick="reformatOutline()"]');
-    if (btn) { btn.textContent = '↺ 重整梗概'; btn.disabled = false; }
+    if (btn) { btn.textContent = '↺ 重整节拍'; btn.disabled = false; }
   }
 }
 
@@ -3675,28 +3811,41 @@ function _applyNewOutline(result) {
   const newOutline = blocks.map(block => {
     const lines = block.trim().split('\n');
     const m = lines[0].match(/【([^】]+)】/);
-    const point = m ? m[1] : lines[0].replace(/\*+/g,'').replace(/^\d+[\.、\s]+/,'').trim().slice(0,30);
+    const point = m ? m[1] : lines[0]
+      .replace(/\*+/g,'')
+      .replace(/^\d+[\.、\s]+/,'')
+      .replace(/^#+\s*/,'')  // 剥掉 ### 标题
+      .trim().slice(0,30);
     const content = lines.join('\n').replace(/^【[^】]+】\s*/,'').trim();
     return { point, content };
-  });
+  }).filter(item => _isValidBeat(item));
   if (!newOutline.length) { toast('解析结果为空，请重试','err'); return; }
-  if (analysisData.outline?.length) {
-    analysisData._outlineBackup = JSON.parse(JSON.stringify(analysisData.outline));
+
+  // 初始化历史记录：第一次整理时把原始版本存入
+  if (!analysisData._outlineHistory) {
+    analysisData._outlineHistory = [{
+      savedAt: Date.now() - 1000,
+      outline: JSON.parse(JSON.stringify(analysisData.outline || []))
+    }];
   }
+  // 追加新版本
+  analysisData._outlineHistory.push({ savedAt: Date.now(), outline: newOutline });
+  analysisData._outlineHistoryIdx = analysisData._outlineHistory.length - 1;
   analysisData.outline = newOutline;
   renderOutline(newOutline);
   saveSession();
   saveToHistory(analysisData);
 }
 
-function restoreOutlineBackup() {
-  if (!analysisData._outlineBackup?.length) return;
-  analysisData.outline = analysisData._outlineBackup;
-  delete analysisData._outlineBackup;
+function switchOutlineVersion(idx) {
+  const history = analysisData._outlineHistory;
+  if (!history || !history[idx]) return;
+  analysisData._outlineHistoryIdx = idx;
+  analysisData.outline = JSON.parse(JSON.stringify(history[idx].outline));
   renderOutline(analysisData.outline);
   saveSession();
   saveToHistory(analysisData);
-  toast('已恢复上一版本梗概', 'ok');
+  toast(`已切换到${idx === 0 ? '初始版本' : '第'+(idx+1)+'次整理版本'}`, 'ok');
 }
 
 // ── 复制板块 ──
@@ -3726,11 +3875,18 @@ function renderOutline(items) {
   if (!container) return;
   container.innerHTML = '';
 
-  if (analysisData._outlineBackup?.length) {
-    const restoreBar = document.createElement('div');
-    restoreBar.className = 'outline-restore-bar';
-    restoreBar.innerHTML = `<span>梗概已重新整理</span><button onclick="restoreOutlineBackup()">↩ 恢复上一版本</button>`;
-    container.appendChild(restoreBar);
+  // 版本历史导航栏（类似改编方案的 historyBar）
+  const outlineHistory = analysisData._outlineHistory || [];
+  if (outlineHistory.length > 1) {
+    const bar = document.createElement('div');
+    bar.className = 'outline-history-bar';
+    bar.innerHTML = outlineHistory.map((entry, i) => {
+      const d = new Date(entry.savedAt);
+      const label = i === 0 ? '初始版本' : `第${i+1}次整理 ${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+      const isActive = i === (analysisData._outlineHistoryIdx !== undefined ? analysisData._outlineHistoryIdx : outlineHistory.length - 1);
+      return `<button class="outline-hist-btn${isActive ? ' active' : ''}" onclick="switchOutlineVersion(${i})">${esc(label)}</button>`;
+    }).join('');
+    container.appendChild(bar);
   }
 
   // 判断是否有幕标记
@@ -3792,6 +3948,12 @@ function renderOutline(items) {
       // 跳过纯幕标记条目（如 point="起"/"第一幕"，是结构分隔符而非真实节拍）
       const pointClean = (item.point || '').replace(/[\s　【】]/g, '');
       if (ACT_DEFS.some(d => d.keys.includes(pointClean)) && !(item.content || '').trim()) return;
+      // 兜底：过滤 Markdown 噪声节拍（--- / ### 等）
+      if (!_isValidBeat(item)) return;
+      // 过滤 point 和 content 都没有实质文字内容的空白节拍
+      const ptText = (item.point || '').replace(/[\s\-=#*]/g, '');
+      const ctText = (item.content || '').replace(/[\s\-=#*]/g, '');
+      if (!ptText && !ctText) return;
       beatIndex++;
       // 清理标题里的幕标记
       const rawPoint = (item.point || '').replace(/【(起|承|转|合|开篇|发展|转折|结局|第[一二三四]幕|[一二三四]、[起承转合])】/g,'').trim();
@@ -3832,6 +3994,41 @@ function addCharCard(btn) {
   range.selectNodeContents(nameEl);
   sel.removeAllRanges();
   sel.addRange(range);
+}
+
+// ── 节拍有效性校验（过滤 Markdown 噪声、空行、分隔符等）──
+function _isValidBeat(item) {
+  const pt = (item.point || '').trim();
+  const ct = (item.content || '').trim();
+
+  // point 和 content 都为空 → 无效
+  if (!pt && !ct) return false;
+
+  // point 是纯 Markdown 分隔符或噪声
+  const noisePatterns = [
+    /^-{2,}$/,           // --- 或 ----
+    /^={2,}$/,           // === 或 ====
+    /^\*{2,}$/,          // *** 或 ****
+    /^#{1,6}(\s|$)/,     // ### 第二幕·承 等 Markdown 标题
+    /^第[一二三四]幕$/,   // 纯幕标记（无内容）
+    /^(起|承|转|合)$/,   // 单字幕标记
+    /^\s*$/,             // 纯空白
+  ];
+  if (noisePatterns.some(re => re.test(pt))) {
+    // 即使 point 是噪声，如果 content 有实质内容，仍保留（用 content 首行当标题）
+    if (ct.length > 10) {
+      const firstLine = ct.split('\n')[0].replace(/^【[^】]+】\s*/, '').trim().slice(0, 30);
+      item.point = firstLine || '节拍';
+      item.content = ct.split('\n').slice(firstLine ? 1 : 0).join('\n').trim() || ct;
+      return true;
+    }
+    return false;
+  }
+
+  // content 全是 Markdown 分隔符 / 空白 且 point 也没有意义
+  if (!ct && pt.length < 3) return false;
+
+  return true;
 }
 
 function addBeatAfter(idx) {
@@ -3895,7 +4092,7 @@ function exportFullWord() {
     body += subH2('  '+( card.querySelector('.char-name')?.innerText||''));
     body += para(card.querySelector('.char-bio')?.innerText||'');
   });
-  body += subH('剧情梗概');
+  body += subH('剧情节拍');
   document.querySelectorAll('#outlineContainer .beat-item').forEach((item, i) => {
     const pt = item.querySelector('.beat-title')?.innerText||'';
     const content = item.querySelector('.beat-text')?.innerText||'';
@@ -3933,6 +4130,7 @@ function exportFullWord() {
       const timeStr = `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
       body += subH(`  第${gi+1}次生成（${timeStr}）`);
       toExport.forEach((plan, i) => {
+        if (plan.dramaTitle) body += subH2(`    推荐剧名：${plan.dramaTitle}`);
         body += subH2(`    方案${i+1}：${plan.title||''}`);
         body += para(plan.description||'');
         if (plan.synopsis) body += para('【故事简介】' + plan.synopsis);
@@ -3943,6 +4141,8 @@ function exportFullWord() {
     });
   } else {
     document.querySelectorAll('#adaptPlansGrid .adapt-plan-card').forEach((card,i) => {
+      const dt = card.querySelector('.adapt-plan-drama-title')?.innerText||'';
+      if (dt) body += subH2(`  推荐剧名：${dt}`);
       body += subH(`  方案${i+1}：${card.querySelector('.adapt-plan-title')?.innerText||''}`);
       body += para(card.querySelector('.adapt-plan-body')?.innerText||'');
       const synopsis = card.querySelector('.adapt-plan-synopsis')?.innerText||'';
@@ -4383,6 +4583,508 @@ document.addEventListener('click', e => {
 });
 
 function toast(msg,type=''){const t=document.getElementById('toast');t.textContent=msg;t.className='toast show '+type;setTimeout(()=>t.className='toast',3000);}
+
+// ══════════════════════════════════════════════════════
+// 功能1：查找替换
+// ══════════════════════════════════════════════════════
+let _frMatches = []; // [{idx, en, zh, tc}]
+
+function frPreview() {
+  const q = document.getElementById('frFind').value.trim();
+  if (!q) { frClosePanel(); return; }
+}
+
+function frSearch() {
+  const q = document.getElementById('frFind').value.trim().toLowerCase();
+  if (!q) { toast('请输入要查找的词语', 'err'); return; }
+  _frMatches = subtitleData
+    .map((item, idx) => ({ idx, en: item.en, zh: item.zh, tc: item.tc }))
+    .filter(item => item.en.toLowerCase().includes(q));
+
+  const panel = document.getElementById('frResultsPanel');
+  const list = document.getElementById('frResultsList');
+  const title = document.getElementById('frResultsTitle');
+  document.getElementById('frCheckAll').checked = true;
+
+  title.textContent = `找到 ${_frMatches.length} 处`;
+
+  if (!_frMatches.length) {
+    list.innerHTML = `<div style="padding:16px;color:var(--text-ghost);font-size:12px;text-align:center">未找到「${esc(q)}」</div>`;
+    panel.style.display = 'flex';
+    return;
+  }
+
+  const re = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'gi');
+  list.innerHTML = _frMatches.map((item, i) => {
+    const highlighted = esc(item.en).replace(new RegExp(esc(q).replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'gi'), m => `<mark>${m}</mark>`);
+    return `<div class="fr-result-item" onclick="frScrollToItem(${item.idx})">
+      <input type="checkbox" class="fr-check" data-match-idx="${i}" checked>
+      <span class="fr-result-tc">${fmtTC(item.tc)}</span>
+      <span class="fr-result-text">${highlighted}</span>
+    </div>`;
+  }).join('');
+  panel.style.display = 'flex';
+  // 让字幕列重新布局
+  document.getElementById('subList').style.display = 'flex';
+}
+
+function frScrollToItem(dataIdx) {
+  const el = document.querySelector(`.sub-item[data-idx="${dataIdx}"]`);
+  if (!el) return;
+  const subList = document.getElementById('subList');
+  const rect = el.getBoundingClientRect();
+  const listRect = subList.getBoundingClientRect();
+  const target = subList.scrollTop + (rect.top - listRect.top) - listRect.height / 2 + rect.height / 2;
+  subList.scrollTo({ top: Math.max(0, target), behavior: 'smooth' });
+  document.querySelectorAll('.sub-item').forEach(e => e.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function frToggleAll(checked) {
+  document.querySelectorAll('.fr-check').forEach(cb => cb.checked = checked);
+}
+
+function frClosePanel() {
+  document.getElementById('frResultsPanel').style.display = 'none';
+  _frMatches = [];
+}
+
+async function frExecuteReplace() {
+  const q = document.getElementById('frFind').value.trim();
+  const r = document.getElementById('frReplaceMain').value.trim();
+  if (!q) { toast('请先执行查找', 'err'); return; }
+  if (r === '') { if (!confirm('替换内容为空，将删除查找到的词语，确认吗？')) return; }
+
+  const checkboxes = document.querySelectorAll('.fr-check');
+  const selectedIdxs = new Set();
+  checkboxes.forEach((cb, i) => { if (cb.checked && _frMatches[i]) selectedIdxs.add(_frMatches[i].idx); });
+
+  if (!selectedIdxs.size) { toast('请至少勾选一项', 'err'); return; }
+
+  const re = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'gi');
+  const affected = [];
+  selectedIdxs.forEach(idx => {
+    const old = subtitleData[idx].en;
+    subtitleData[idx].en = old.replace(re, r);
+    affected.push({ idx, oldEn: old, newEn: subtitleData[idx].en, tc: subtitleData[idx].tc });
+  });
+
+  toast(`已替换 ${selectedIdxs.size} 处，正在自动修正翻译…`);
+  frClosePanel();
+  renderSubs();
+
+  // 自动修正受影响行的中文翻译
+  const cfg = getConfig();
+  if (cfg.llmKey && affected.length) {
+    try {
+      const lines = affected.map((a,i) => `${i+1}. ${a.newEn}`).join('\n');
+      const result = await callLLM(`将以下英文台词翻译成中文，保持口语化，每行对应输出一行中文，不要序号，不加任何说明：\n${lines}`, cfg.llmKey, cfg.model, 1500);
+      const translations = result.trim().split('\n').filter(Boolean);
+      affected.forEach((a, i) => {
+        if (translations[i]) subtitleData[a.idx].zh = translations[i].replace(/^\d+[.、\s]+/, '').trim();
+      });
+      renderSubs();
+      saveSession();
+      saveToHistory(analysisData);
+      toast(`替换完成，${selectedIdxs.size} 条翻译已自动修正`, 'ok');
+      // 检测歧义
+      _checkAmbiguity(q, r, affected);
+    } catch(e) {
+      renderSubs();
+      toast('翻译修正失败：' + e.message, 'err');
+    }
+  } else {
+    saveSession();
+    toast(`已替换 ${selectedIdxs.size} 处`, 'ok');
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// 功能2：字幕行内编辑（点击进入编辑态，失焦保存并触发翻译修正）
+// ══════════════════════════════════════════════════════
+let _editTimer = null;
+
+function enableSubItemEditing() {
+  // 事件委托，监听 subList 内的双击
+  const subList = document.getElementById('subList');
+  if (!subList || subList._editBound) return;
+  subList._editBound = true;
+
+  subList.addEventListener('dblclick', e => {
+    const item = e.target.closest('.sub-item');
+    if (!item) return;
+    const idx = parseInt(item.dataset.idx);
+    if (isNaN(idx)) return;
+    e.stopPropagation();
+    makeSubItemEditable(item, idx);
+  });
+}
+
+function makeSubItemEditable(item, idx) {
+  if (item.classList.contains('editing')) return;
+  item.classList.add('editing');
+
+  const enEl = item.querySelector('.sub-en');
+  const zhEl = item.querySelector('.sub-zh');
+  if (!enEl || !zhEl) return;
+
+  // 将原先的 innerHTML（含 word-span）替换为可编辑纯文本
+  const origEnText = subtitleData[idx].en;
+  const origZhText = subtitleData[idx].zh;
+
+  enEl.innerHTML = `<span class="sub-en-edit" contenteditable="true" spellcheck="false">${esc(origEnText)}</span>`;
+  zhEl.innerHTML = `<span class="sub-zh-edit" contenteditable="true" spellcheck="false">${esc(origZhText)}</span>`;
+
+  const enEdit = enEl.querySelector('.sub-en-edit');
+  const zhEdit = zhEl.querySelector('.sub-zh-edit');
+
+  const finish = async (changedField) => {
+    if (!item.classList.contains('editing')) return;
+    item.classList.remove('editing');
+
+    const newEn = enEdit.innerText.trim();
+    const newZh = zhEdit.innerText.trim();
+    const oldEn = subtitleData[idx].en;
+    const oldZh = subtitleData[idx].zh;
+
+    subtitleData[idx].en = newEn;
+    subtitleData[idx].zh = newZh;
+
+    // 重新渲染该行（含 word-span）
+    const d = item;
+    d.innerHTML = `<div class="sub-tc">${fmtTC(subtitleData[idx].tc)}</div>
+      <div class="sub-texts"><div class="sub-en">${buildEnHtml(newEn, newEn)}</div><div class="sub-zh">${esc(newZh)}</div></div>`;
+    d.addEventListener('click', () => {
+      const player = document.getElementById('subVideoPlayer');
+      if (player.src) { player.currentTime = subtitleData[idx].tc; player.play(); }
+      document.querySelectorAll('.sub-item').forEach(el => el.classList.remove('active'));
+      d.classList.add('active');
+    });
+    d.addEventListener('dblclick', e => { e.stopPropagation(); makeSubItemEditable(d, idx); });
+
+    if (changedField === 'en' && newEn !== oldEn) {
+      // 英文变了→自动修正中文翻译
+      const cfg = getConfig();
+      if (cfg.llmKey) {
+        try {
+          const result = await callLLM(`将以下英文台词翻译成中文，保持口语化，直接输出中文，不加任何说明：\n${newEn}`, cfg.llmKey, cfg.model, 300);
+          subtitleData[idx].zh = result.trim();
+          d.querySelector('.sub-zh').textContent = subtitleData[idx].zh;
+          toast('翻译已自动修正', 'ok');
+        } catch {}
+      }
+      // 检测歧义（仅字幕区后半段）
+      if (idx > subtitleData.length * 0.4) {
+        _checkAmbiguity(oldEn, newEn, [{ idx, oldEn, newEn: newEn, tc: subtitleData[idx].tc }]);
+      }
+    } else if (changedField === 'zh' && newZh !== oldZh) {
+      // 中文直接改→检测歧义
+      if (idx > subtitleData.length * 0.4) {
+        _checkAmbiguity(oldZh, newZh, [{ idx, oldEn: newEn, newEn: newEn, tc: subtitleData[idx].tc }]);
+      }
+    }
+    saveSession();
+    saveToHistory(analysisData);
+  };
+
+  enEdit.addEventListener('blur', () => finish('en'));
+  zhEdit.addEventListener('blur', () => finish('zh'));
+
+  enEdit.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { enEdit.innerText = subtitleData[idx].en; enEdit.blur(); }
+  });
+  zhEdit.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { zhEdit.innerText = subtitleData[idx].zh; zhEdit.blur(); }
+  });
+
+  enEdit.focus();
+  // 光标到末尾
+  const range = document.createRange();
+  range.selectNodeContents(enEdit);
+  range.collapse(false);
+  const sel = window.getSelection();
+  sel.removeAllRanges(); sel.addRange(range);
+}
+
+function buildEnHtml(enText, sentence) {
+  return enText.replace(/([a-zA-Z''-]+)/g, (w) => {
+    const clean = w.replace(/^['-]+|['-]+$/g,'');
+    if (!clean || clean.length < 2) return esc(w);
+    return `<span class="word-span" data-word="${clean.toLowerCase()}" data-sentence="${esc(sentence)}">${esc(w)}</span>`;
+  }).replace(/([^a-zA-Z'']+)/g, t => esc(t).replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>'));
+}
+
+// ══════════════════════════════════════════════════════
+// 功能3：台词修正后歧义检测
+// ══════════════════════════════════════════════════════
+let _pendingFixes = [];
+let _ambiguityCheckTimer = null;
+
+async function _checkAmbiguity(oldText, newText, affected) {
+  if (!analysisData.outline?.length && !analysisData.highlights) return;
+  const cfg = getConfig();
+  if (!cfg.llmKey) return;
+  // 防抖：500ms后才执行，避免批量替换时多次触发
+  clearTimeout(_ambiguityCheckTimer);
+  _ambiguityCheckTimer = setTimeout(async () => {
+    await _doCheckAmbiguity(oldText, newText, affected);
+  }, 800);
+}
+
+async function _doCheckAmbiguity(oldText, newText, affected) {
+  const cfg = getConfig();
+  if (!cfg.llmKey) return;
+
+  // 提取受影响的时间轴上下文
+  const affectedTimes = affected.map(a => fmtTC(a.tc)).join('、');
+
+  // 从剧情概要和策划改编中检索
+  const outlineText = (analysisData.outline || []).map(b => `【${b.point}】${b.content}`).join('\n').slice(0, 3000);
+  const planText = [
+    analysisData.highlights, analysisData.structureActs,
+    analysisData.characterLogic, analysisData.emotion,
+    analysisData.hooks
+  ].filter(Boolean).join('\n').slice(0, 2000);
+
+  const prompt = `你是短剧内容校对助手。用户将台词中的「${oldText}」替换成「${newText}」（出现在时间轴 ${affectedTimes}）。
+
+请检查以下剧情概要和策划内容中，是否存在因为这个台词替换而产生歧义或不一致的地方。
+- 只报告存在明显歧义或重大不一致的段落
+- 如果没有任何影响，直接输出 JSON: {"issues":[]}
+- 如果有影响，输出以下JSON格式（不超过3条）：
+{"issues":[{"section":"所在板块（剧情概要/策划逻辑）","original":"原文片段（50字内）","suggestion":"建议修改为（50字内）","reason":"简要原因（30字内）"}]}
+
+只输出JSON，不加任何说明。
+
+剧情概要：
+${outlineText}
+
+策划逻辑：
+${planText}`;
+
+  try {
+    const result = await callLLM(prompt, cfg.llmKey, cfg.model, 800);
+    let data;
+    try { data = JSON.parse(result.replace(/```json|```/g,'').trim()); } catch { return; }
+    if (!data.issues?.length) return;
+
+    _pendingFixes = data.issues;
+    _showAmbiguityModal(data.issues);
+  } catch {}
+}
+
+function _showAmbiguityModal(issues) {
+  const list = document.getElementById('ambiguityList');
+  list.innerHTML = issues.map((issue, i) => `
+    <div class="ambiguity-item">
+      <div class="ambiguity-item-title">${esc(issue.section)}</div>
+      <div class="ambiguity-item-text">${esc(issue.reason)}</div>
+      <div class="ambiguity-item-orig">原文：${esc(issue.original)}</div>
+      <div class="ambiguity-item-fix">建议：${esc(issue.suggestion)}</div>
+    </div>
+  `).join('');
+  document.getElementById('ambiguityModal').classList.add('open');
+  document.getElementById('ambiguityModal').style.display = 'flex';
+}
+
+async function applyAmbiguityFixes() {
+  if (!_pendingFixes.length) { closeAmbiguityModal(); return; }
+  const cfg = getConfig();
+  if (!cfg.llmKey) { closeAmbiguityModal(); return; }
+  closeAmbiguityModal();
+  toast('正在自动修正相关内容…');
+
+  // 逐条修正
+  for (const fix of _pendingFixes) {
+    if (fix.section.includes('剧情概要')) {
+      // 找到最匹配的节拍并修正
+      if (analysisData.outline) {
+        for (let i = 0; i < analysisData.outline.length; i++) {
+          const item = analysisData.outline[i];
+          if (item.content.includes(fix.original.slice(0, 15))) {
+            analysisData.outline[i].content = item.content.replace(fix.original, fix.suggestion);
+            break;
+          }
+        }
+        renderOutline(analysisData.outline);
+      }
+    } else if (fix.section.includes('策划')) {
+      // 修正策划逻辑中的文字
+      const fields = ['highlights','structureActs','characterLogic','emotion','rhythm','hooks','highlightScenes'];
+      for (const field of fields) {
+        if (analysisData[field]?.includes(fix.original.slice(0, 10))) {
+          analysisData[field] = analysisData[field].replace(fix.original, fix.suggestion);
+        }
+      }
+      // 重渲染策划
+      const toP = t => (t||'').split('\n').filter(Boolean).map(p=>`<p>${esc(p)}</p>`).join('');
+      const g = id => document.getElementById(id);
+      if (g('highlightsText')) g('highlightsText').innerHTML = toP(analysisData.highlights);
+      if (g('charLogicText'))  g('charLogicText').innerHTML  = toP(analysisData.characterLogic);
+      if (g('emotionText'))    g('emotionText').innerHTML    = toP(analysisData.emotion);
+      if (g('rhythmText'))     g('rhythmText').innerHTML     = toP(analysisData.rhythm);
+      if (g('hookText'))       g('hookText').innerHTML       = toP(analysisData.hooks);
+      if (g('highlightScenesText')) g('highlightScenesText').innerHTML = toP(analysisData.highlightScenes);
+    }
+  }
+
+  saveSession();
+  saveToHistory(analysisData);
+  _pendingFixes = [];
+  toast('歧义已自动修正', 'ok');
+}
+
+function closeAmbiguityModal() {
+  document.getElementById('ambiguityModal').classList.remove('open');
+  document.getElementById('ambiguityModal').style.display = 'none';
+  _pendingFixes = [];
+}
+
+// ══════════════════════════════════════════════════════
+// 功能4：分享链接
+// ══════════════════════════════════════════════════════
+const SHARE_KEY = 'dl_share_';
+
+function openShareModal() {
+  document.getElementById('shareModal').classList.add('open');
+  document.getElementById('shareModal').style.display = 'flex';
+  document.getElementById('shareUrlInput').value = '';
+  document.getElementById('shareNote').style.display = 'none';
+}
+
+function closeShareModal() {
+  document.getElementById('shareModal').classList.remove('open');
+  document.getElementById('shareModal').style.display = 'none';
+}
+
+function generateShareUrl() {
+  syncEditablesToData();
+  const shareId = 'dl_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const payload = {
+    subtitleData: subtitleData.slice(0, 2000), // 限制大小
+    analysisData: { ...analysisData },
+    sharedAt: Date.now(),
+    version: 1,
+  };
+  // 编码数据到 URL hash（纯前端，无需服务器）
+  try {
+    const json = JSON.stringify(payload);
+    const compressed = btoa(unescape(encodeURIComponent(json)));
+    const url = `${location.href.split('#')[0]}#share=${compressed}`;
+    if (url.length > 2000000) {
+      // 超大时只保留分析数据，不含字幕
+      const lite = { analysisData: { ...analysisData }, sharedAt: Date.now(), version: 1, liteMode: true };
+      const liteJson = JSON.stringify(lite);
+      const liteCompressed = btoa(unescape(encodeURIComponent(liteJson)));
+      const liteUrl = `${location.href.split('#')[0]}#share=${liteCompressed}`;
+      document.getElementById('shareUrlInput').value = liteUrl;
+      const note = document.getElementById('shareNote');
+      note.textContent = '⚠ 内容较多，字幕数据已省略，分享链接仅包含剧情概要和策划改编内容。';
+      note.style.display = 'block';
+    } else {
+      document.getElementById('shareUrlInput').value = url;
+      const note = document.getElementById('shareNote');
+      note.textContent = `✓ 链接已生成，包含 ${subtitleData.length} 条字幕及全部分析内容。收到链接的人无需 API 即可查看。`;
+      note.style.display = 'block';
+    }
+  } catch(e) {
+    toast('链接生成失败：' + e.message, 'err');
+  }
+}
+
+function copyShareUrl() {
+  const url = document.getElementById('shareUrlInput').value;
+  if (!url) { toast('请先生成链接', 'err'); return; }
+  navigator.clipboard.writeText(url)
+    .then(() => toast('链接已复制', 'ok'))
+    .catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = url; ta.style.cssText = 'position:fixed;opacity:0';
+      document.body.appendChild(ta); ta.select();
+      document.execCommand('copy'); document.body.removeChild(ta);
+      toast('链接已复制', 'ok');
+    });
+}
+
+function _loadShareFromHash() {
+  const hash = location.hash;
+  if (!hash.startsWith('#share=')) return false;
+  const encoded = hash.slice(7);
+  if (!encoded) return false;
+  try {
+    const json = decodeURIComponent(escape(atob(encoded)));
+    const payload = JSON.parse(json);
+    if (!payload.analysisData) return false;
+    subtitleData = payload.subtitleData || [];
+    analysisData = payload.analysisData || {};
+    // 只读模式标记
+    analysisData._sharedView = true;
+
+    document.getElementById('welcomeScreen').style.display = 'none';
+    document.getElementById('tabsBar').classList.add('show');
+    if (subtitleData.length) renderSubs();
+    if (analysisData.logline || analysisData.highlights) renderAnalysis();
+
+    // 隐藏分析功能，显示提示
+    document.getElementById('btnAnalyze').disabled = true;
+    document.getElementById('btnAnalyze').textContent = '⬆ 上传视频需配置 API';
+    document.getElementById('btnAnalyze').onclick = () => openSettings();
+    document.getElementById('btnAnalyze').disabled = false;
+
+    // 切到字幕 tab
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    const tab = subtitleData.length ? 'subtitles' : 'overview';
+    document.getElementById('pane-' + tab)?.classList.add('active');
+    document.querySelector(`.tab-btn[data-tab="${tab}"]`)?.classList.add('active');
+    updateTabActions();
+    setStatus('active', '已加载分享内容');
+
+    // 顶部提示条
+    const banner = document.createElement('div');
+    banner.style.cssText = 'position:fixed;top:56px;left:0;right:0;z-index:200;background:var(--gold);color:#fff;font-size:12px;padding:7px 20px;text-align:center;display:flex;align-items:center;justify-content:center;gap:12px;';
+    banner.innerHTML = `📎 你正在查看他人分享的拆解内容。如需重新分析视频，请先 <button onclick="openSettings()" style="background:rgba(255,255,255,0.25);border:none;color:#fff;padding:3px 10px;border-radius:4px;cursor:pointer;font-size:11px">配置 API Key</button>`;
+    document.body.appendChild(banner);
+    document.querySelector('.app').style.marginTop = '36px';
+    document.querySelector('header').style.top = '0';
+
+    return true;
+  } catch(e) {
+    console.error('分享链接解析失败', e);
+    return false;
+  }
+}
+
+// 覆盖 renderSubs 以支持双击编辑
+const _origRenderSubs = renderSubs;
+// 在 renderSubs 完成后绑定编辑
+const _patchRenderSubs = () => {
+  const origFn = window.renderSubs;
+  window.renderSubs = function() {
+    origFn.call(this);
+    enableSubItemEditing();
+    // 显示分享按钮
+    if (subtitleData.length || analysisData.logline) {
+      const shareBtn = document.getElementById('btnShare');
+      if (shareBtn) shareBtn.style.display = '';
+    }
+  };
+};
+
+// 初始化时检查分享 hash
+document.addEventListener('DOMContentLoaded', () => {
+  _patchRenderSubs();
+  if (location.hash.startsWith('#share=')) {
+    _loadShareFromHash();
+  }
+});
+
+// 点击 shareModal overlay 关闭
+document.getElementById('shareModal').addEventListener('click', e => {
+  if (e.target === document.getElementById('shareModal')) closeShareModal();
+});
+document.getElementById('ambiguityModal').addEventListener('click', e => {
+  if (e.target === document.getElementById('ambiguityModal')) closeAmbiguityModal();
+});
+
 </script>
-</body>
-</html>
