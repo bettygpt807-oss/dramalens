@@ -1702,7 +1702,6 @@ header {
 .ambiguity-item-text { font-size:12.5px;line-height:1.7;color:var(--text-body); }
 .ambiguity-item-orig { font-size:11px;color:var(--text-light);margin-top:6px;background:rgba(192,57,43,0.06);border-radius:4px;padding:4px 8px; }
 .ambiguity-item-fix { font-size:11px;color:var(--green-main);margin-top:4px;background:var(--green-ghost);border-radius:4px;padding:4px 8px; }
-#shareModal.open { display:flex !important; }
 #ambiguityModal.open { display:flex !important; }
 </style>
 <!-- lamejs: 浏览器端 MP3 编码 -->
@@ -1796,7 +1795,6 @@ header {
     <button class="vocab-toggle-btn" id="vocabToggleBtn" onclick="toggleVocabPanel()" title="生词本">
       ☆ 生词本 <span class="vocab-badge-dot" id="vocabBadge">0</span>
     </button>
-    <button class="btn-hdr" id="btnShare" onclick="openShareModal()" style="display:none">🔗 分享拆解</button>
     <button class="btn-hdr" onclick="openSettings()">⚙ API 配置</button>
   </div>
 </header>
@@ -2166,32 +2164,6 @@ header {
   </div>
   <div class="vocab-list" id="vocabList"></div>
   <button class="vocab-export-btn" onclick="exportVocab()">⬇ 导出生词本（TXT）</button>
-</div>
-
-<!-- 分享模态框 -->
-<div id="shareModal" style="display:none;position:fixed;inset:0;background:rgba(15,29,20,0.55);z-index:500;align-items:center;justify-content:center;backdrop-filter:blur(6px)">
-  <div style="width:520px;background:var(--surface);border-radius:16px;box-shadow:var(--shadow-lg);border:1px solid var(--border);overflow:hidden">
-    <div class="modal-header">
-      <span style="font-size:16px">🔗</span>
-      <span class="modal-title">分享当前项目拆解</span>
-      <button class="modal-close" onclick="closeShareModal()">✕</button>
-    </div>
-    <div style="padding:24px 28px;display:flex;flex-direction:column;gap:16px">
-      <div style="font-size:13px;color:var(--text-body);line-height:1.7;background:var(--green-ghost);border:1px solid var(--border-soft);border-radius:10px;padding:12px 14px">
-        📎 生成<strong>当前项目</strong>的分享短链接，包含剧情概要、策划改编全部内容。<br>
-        <span style="color:var(--text-light);font-size:12px">⚠ 短链接仅在<strong>同一设备/浏览器</strong>有效（存储于本地），跨设备分享请导出 DOCX/PDF。</span>
-      </div>
-      <div>
-        <div style="font-size:11px;color:var(--text-ghost);margin-bottom:6px;font-weight:500">分享链接（短链）</div>
-        <div style="display:flex;gap:8px">
-          <input type="text" id="shareUrlInput" readonly style="flex:1;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:12px;font-family:'DM Mono',monospace;color:var(--ink);outline:none" placeholder="点击「生成链接」">
-          <button class="btn-save" onclick="copyShareUrl()" style="white-space:nowrap;padding:0 16px">复制</button>
-        </div>
-      </div>
-      <button class="btn-save" onclick="generateShareUrl()" style="width:100%">🔗 生成分享链接</button>
-      <div id="shareNote" style="font-size:11.5px;color:var(--text-light);line-height:1.6;display:none"></div>
-    </div>
-  </div>
 </div>
 
 <!-- 台词修正歧义弹窗 -->
@@ -2566,13 +2538,11 @@ function updateTabActions() {
     container.innerHTML = `
       <button class="btn-sm" onclick="reformatOutline()" title="用新的起承转合结构重新整理节拍，无需重新解析视频">↺ 重整节拍</button>
       <button class="btn-sm btn-export" onclick="copySection('overview')">⎘ 复制</button>
-      ${hasData ? `<button class="btn-sm btn-export" onclick="openShareModal()" title="生成当前项目分享链接">🔗 分享</button>` : ''}
       ${hasData ? `<button class="btn-sm btn-export" onclick="exportFullReport('docx')" title="导出 Word 文档">⬇ DOCX</button>
       <button class="btn-sm btn-export" onclick="exportFullReport('pdf')" title="导出 PDF">⬇ PDF</button>` : ''}`;
   } else if (tab === 'planning') {
     container.innerHTML = `
       <button class="btn-sm btn-export" onclick="copySection('planning')">⎘ 复制</button>
-      ${hasData ? `<button class="btn-sm btn-export" onclick="openShareModal()" title="生成当前项目分享链接">🔗 分享</button>` : ''}
       ${hasData ? `<button class="btn-sm btn-export" onclick="exportFullReport('docx')" title="导出 Word 文档">⬇ DOCX</button>
       <button class="btn-sm btn-export" onclick="exportFullReport('pdf')" title="导出 PDF">⬇ PDF</button>` : ''}`;
   } else {
@@ -3563,9 +3533,6 @@ function renderSubs() {
   document.getElementById('subView').style.display = 'flex';
   bindSyncScroll();
   enableSubItemEditing();
-  // 显示分享按钮
-  const shareBtn = document.getElementById('btnShare');
-  if (shareBtn) shareBtn.style.display = '';
 }
 
 function renderAnalysis() {
@@ -5669,200 +5636,21 @@ function closeAmbiguityModal() {
   _pendingFixes = [];
 }
 
-// ══════════════════════════════════════════════════════
-// 功能4：分享链接
-// ══════════════════════════════════════════════════════
-const SHARE_KEY = 'dl_share_';
-
-function openShareModal() {
-  document.getElementById('shareModal').classList.add('open');
-  document.getElementById('shareModal').style.display = 'flex';
-  document.getElementById('shareUrlInput').value = '';
-  document.getElementById('shareNote').style.display = 'none';
-}
-
-function closeShareModal() {
-  document.getElementById('shareModal').classList.remove('open');
-  document.getElementById('shareModal').style.display = 'none';
-}
-
-function generateShareUrl() {
-  syncEditablesToData();
-  // 只保留展示所需字段，剥掉原始台词和多版本历史（体积大且接收方不需要）
-  const shareAnalysis = { ...analysisData };
-  delete shareAnalysis._rawText;
-  delete shareAnalysis._outlineHistory;
-  delete shareAnalysis._outlineHistoryIdx;
-  delete shareAnalysis._outlinePrimaryIdx;
-  delete shareAnalysis._script;
-  delete shareAnalysis._scriptOriginal;
-
-  const payload = {
-    subtitleData: subtitleData.slice(0, 800), // 只取前800条字幕，大幅压缩体积
-    analysisData: shareAnalysis,
-    sharedAt: Date.now(),
-    version: 1,
-  };
-
-  // 生成短码：6位随机ID，存储到 localStorage
-  const shortCode = Math.random().toString(36).slice(2, 8).toUpperCase();
-  const storeKey = SHARE_KEY + shortCode;
-
-  try {
-    const json = JSON.stringify(payload);
-    localStorage.setItem(storeKey, json);
-
-    // 短链接：只用6位码，极短
-    const baseUrl = location.href.split('#')[0].split('?')[0];
-    const shortUrl = `${baseUrl}?s=${shortCode}`;
-    document.getElementById('shareUrlInput').value = shortUrl;
-
-    const note = document.getElementById('shareNote');
-    note.textContent = `✓ 短链接已生成（${shortCode}），接收方在同一设备/浏览器打开可查看全部内容。如需跨设备分享，请使用「复制完整数据」。`;
-    note.style.display = 'block';
-
-    // 同时提供完整数据备选（仅在提示中说明，不自动生成超长 URL）
-  } catch(e) {
-    // localStorage 满时降级到简化版 URL hash（只含分析数据摘要）
-    try {
-      const lite = {
-        analysisData: {
-          logline: shareAnalysis.logline,
-          characters: shareAnalysis.characters,
-          highlights: shareAnalysis.highlights,
-          outline: (shareAnalysis.outline||[]).slice(0, 8),
-        },
-        sharedAt: Date.now(), version: 1, liteMode: true
-      };
-      const compressed = btoa(unescape(encodeURIComponent(JSON.stringify(lite))));
-      const liteUrl = `${location.href.split('#')[0]}#share=${compressed}`;
-      document.getElementById('shareUrlInput').value = liteUrl;
-      const note = document.getElementById('shareNote');
-      note.textContent = '⚠ 存储空间不足，已生成精简版链接（仅含核心分析内容）。';
-      note.style.display = 'block';
-    } catch(e2) {
-      toast('链接生成失败：' + e2.message, 'err');
-    }
-  }
-}
-
-function copyShareUrl() {
-  const url = document.getElementById('shareUrlInput').value;
-  if (!url) { toast('请先生成链接', 'err'); return; }
-  navigator.clipboard.writeText(url)
-    .then(() => toast('链接已复制', 'ok'))
-    .catch(() => {
-      const ta = document.createElement('textarea');
-      ta.value = url; ta.style.cssText = 'position:fixed;opacity:0';
-      document.body.appendChild(ta); ta.select();
-      document.execCommand('copy'); document.body.removeChild(ta);
-      toast('链接已复制', 'ok');
-    });
-}
-
-function _loadShareFromUrl() {
-  // 优先支持短码模式 ?s=XXXXXX
-  const searchParams = new URLSearchParams(location.search);
-  const shortCode = searchParams.get('s');
-  if (shortCode) {
-    const storeKey = SHARE_KEY + shortCode.toUpperCase();
-    try {
-      const stored = localStorage.getItem(storeKey);
-      if (!stored) {
-        // 短码不存在（可能在不同设备打开）
-        const banner = document.createElement('div');
-        banner.style.cssText = 'position:fixed;top:56px;left:0;right:0;z-index:200;background:var(--red);color:#fff;font-size:12px;padding:7px 20px;text-align:center';
-        banner.textContent = '⚠ 分享链接仅在同一设备/浏览器有效，当前设备未找到对应内容。请请求发送方提供完整数据。';
-        document.body.appendChild(banner);
-        return false;
-      }
-      const payload = JSON.parse(stored);
-      if (!payload.analysisData) return false;
-      subtitleData = payload.subtitleData || [];
-      analysisData = payload.analysisData || {};
-      analysisData._sharedView = true;
-      _renderSharedView();
-      return true;
-    } catch(e) {
-      console.error('短码解析失败', e);
-    }
-  }
-
-  // 兼容旧版 hash 模式
-  const hash = location.hash;
-  if (!hash.startsWith('#share=')) return false;
-  const encoded = hash.slice(7);
-  if (!encoded) return false;
-  try {
-    const json = decodeURIComponent(escape(atob(encoded)));
-    const payload = JSON.parse(json);
-    if (!payload.analysisData) return false;
-    subtitleData = payload.subtitleData || [];
-    analysisData = payload.analysisData || {};
-    analysisData._sharedView = true;
-    _renderSharedView();
-    return true;
-  } catch(e) {
-    console.error('分享链接解析失败', e);
-    return false;
-  }
-}
-
-function _renderSharedView() {
-    document.getElementById('welcomeScreen').style.display = 'none';
-    document.getElementById('tabsBar').classList.add('show');
-    if (subtitleData.length) renderSubs();
-    if (analysisData.logline || analysisData.highlights) renderAnalysis();
-
-    document.getElementById('btnAnalyze').disabled = true;
-    document.getElementById('btnAnalyze').textContent = '⬆ 上传视频需配置 API';
-    document.getElementById('btnAnalyze').onclick = () => openSettings();
-    document.getElementById('btnAnalyze').disabled = false;
-
-    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    const tab = subtitleData.length ? 'subtitles' : 'overview';
-    document.getElementById('pane-' + tab)?.classList.add('active');
-    document.querySelector(`.tab-btn[data-tab="${tab}"]`)?.classList.add('active');
-    updateTabActions();
-    setStatus('active', '已加载分享内容');
-
-    const banner = document.createElement('div');
-    banner.style.cssText = 'position:fixed;top:56px;left:0;right:0;z-index:200;background:var(--gold);color:#fff;font-size:12px;padding:7px 20px;text-align:center;display:flex;align-items:center;justify-content:center;gap:12px;';
-    banner.innerHTML = `📎 你正在查看他人分享的拆解内容。如需重新分析视频，请先 <button onclick="openSettings()" style="background:rgba(255,255,255,0.25);border:none;color:#fff;padding:3px 10px;border-radius:4px;cursor:pointer;font-size:11px">配置 API Key</button>`;
-    document.body.appendChild(banner);
-    document.querySelector('.app').style.marginTop = '36px';
-    document.querySelector('header').style.top = '0';
-}
-
 // 覆盖 renderSubs 以支持双击编辑
 const _origRenderSubs = renderSubs;
-// 在 renderSubs 完成后绑定编辑
 const _patchRenderSubs = () => {
   const origFn = window.renderSubs;
   window.renderSubs = function() {
     origFn.call(this);
     enableSubItemEditing();
-    // 显示分享按钮
-    if (subtitleData.length || analysisData.logline) {
-      const shareBtn = document.getElementById('btnShare');
-      if (shareBtn) shareBtn.style.display = '';
-    }
   };
 };
 
-// 初始化时检查分享参数
+// 初始化
 document.addEventListener('DOMContentLoaded', () => {
   _patchRenderSubs();
-  if (location.search.includes('?s=') || location.hash.startsWith('#share=')) {
-    _loadShareFromUrl();
-  }
 });
 
-// 点击 shareModal overlay 关闭
-document.getElementById('shareModal').addEventListener('click', e => {
-  if (e.target === document.getElementById('shareModal')) closeShareModal();
-});
 document.getElementById('ambiguityModal').addEventListener('click', e => {
   if (e.target === document.getElementById('ambiguityModal')) closeAmbiguityModal();
 });
