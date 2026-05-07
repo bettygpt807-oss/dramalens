@@ -1707,6 +1707,8 @@ header {
 </style>
 <!-- lamejs: 浏览器端 MP3 编码 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.0/lame.min.js"></script>
+<!-- docx.js: 浏览器端生成真实 .docx 文件 -->
+<script src="https://unpkg.com/docx@8.5.0/build/index.js"></script>
 </head>
 <body>
 
@@ -2171,19 +2173,19 @@ header {
   <div style="width:520px;background:var(--surface);border-radius:16px;box-shadow:var(--shadow-lg);border:1px solid var(--border);overflow:hidden">
     <div class="modal-header">
       <span style="font-size:16px">🔗</span>
-      <span class="modal-title">分享拆解页面</span>
+      <span class="modal-title">分享当前项目拆解</span>
       <button class="modal-close" onclick="closeShareModal()">✕</button>
     </div>
     <div style="padding:24px 28px;display:flex;flex-direction:column;gap:16px">
       <div style="font-size:13px;color:var(--text-body);line-height:1.7;background:var(--green-ghost);border:1px solid var(--border-soft);border-radius:10px;padding:12px 14px">
-        📎 生成的链接包含当前页面的<strong>全部内容</strong>（双语字幕、剧情概要、策划改编），收到链接的人无需配置 API 即可查看。<br>
-        <span style="color:var(--text-light);font-size:12px">如需重新上传视频分析，需自行配置 API Key。</span>
+        📎 生成<strong>当前项目</strong>的分享短链接，包含剧情概要、策划改编全部内容。<br>
+        <span style="color:var(--text-light);font-size:12px">⚠ 短链接仅在<strong>同一设备/浏览器</strong>有效（存储于本地），跨设备分享请导出 DOCX/PDF。</span>
       </div>
       <div>
-        <div style="font-size:11px;color:var(--text-ghost);margin-bottom:6px;font-weight:500">分享链接</div>
+        <div style="font-size:11px;color:var(--text-ghost);margin-bottom:6px;font-weight:500">分享链接（短链）</div>
         <div style="display:flex;gap:8px">
-          <input type="text" id="shareUrlInput" readonly style="flex:1;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:11px;font-family:'DM Mono',monospace;color:var(--ink);outline:none" placeholder="点击「生成链接」">
-          <button class="btn-save" onclick="copyShareUrl()" style="white-space:nowrap;padding:0 16px">复制链接</button>
+          <input type="text" id="shareUrlInput" readonly style="flex:1;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:12px;font-family:'DM Mono',monospace;color:var(--ink);outline:none" placeholder="点击「生成链接」">
+          <button class="btn-save" onclick="copyShareUrl()" style="white-space:nowrap;padding:0 16px">复制</button>
         </div>
       </div>
       <button class="btn-save" onclick="generateShareUrl()" style="width:100%">🔗 生成分享链接</button>
@@ -2552,8 +2554,9 @@ function updateTabActions() {
   const container = document.getElementById('tabActions');
   if (!container) return;
 
+  const hasData = Object.keys(analysisData).length > 0;
+
   if (tab === 'subtitles') {
-    // 双语字幕 tab：只有导出剧本（剧本生成后才显示）
     const scriptGenerated = document.getElementById('subScriptContent')?.style.display !== 'none'
       && document.getElementById('subScriptContent')?.innerText?.trim().length > 0;
     container.innerHTML = scriptGenerated
@@ -2563,13 +2566,15 @@ function updateTabActions() {
     container.innerHTML = `
       <button class="btn-sm" onclick="reformatOutline()" title="用新的起承转合结构重新整理节拍，无需重新解析视频">↺ 重整节拍</button>
       <button class="btn-sm btn-export" onclick="copySection('overview')">⎘ 复制</button>
-      <button class="btn-sm btn-export" id="btnExportAll" onclick="exportFullWord()" style="display:none">⬇ 导出报告</button>`;
-    if (Object.keys(analysisData).length) document.getElementById('btnExportAll').style.display = '';
+      ${hasData ? `<button class="btn-sm btn-export" onclick="openShareModal()" title="生成当前项目分享链接">🔗 分享</button>` : ''}
+      ${hasData ? `<button class="btn-sm btn-export" onclick="exportFullReport('docx')" title="导出 Word 文档">⬇ DOCX</button>
+      <button class="btn-sm btn-export" onclick="exportFullReport('pdf')" title="导出 PDF">⬇ PDF</button>` : ''}`;
   } else if (tab === 'planning') {
     container.innerHTML = `
       <button class="btn-sm btn-export" onclick="copySection('planning')">⎘ 复制</button>
-      <button class="btn-sm btn-export btn-export-report" onclick="exportFullWord()" style="display:none">⬇ 导出报告</button>`;
-    if (Object.keys(analysisData).length) container.querySelector('.btn-export-report').style.display = '';
+      ${hasData ? `<button class="btn-sm btn-export" onclick="openShareModal()" title="生成当前项目分享链接">🔗 分享</button>` : ''}
+      ${hasData ? `<button class="btn-sm btn-export" onclick="exportFullReport('docx')" title="导出 Word 文档">⬇ DOCX</button>
+      <button class="btn-sm btn-export" onclick="exportFullReport('pdf')" title="导出 PDF">⬇ PDF</button>` : ''}`;
   } else {
     container.innerHTML = '';
   }
@@ -2897,13 +2902,9 @@ async function captureSceneFrames(source, intervalSec = 15) {
 }
 
 function outlineWordRange(durationSec) {
-  const min = (durationSec || 0) / 60;
-  if (min <= 10)  return { range: '2000-3500字',  beats: '8-12个节拍',  maxBeats: 12 };
-  if (min <= 25)  return { range: '3500-5000字',  beats: '12-18个节拍', maxBeats: 18 };
-  if (min <= 50)  return { range: '4500-6500字',  beats: '16-22个节拍', maxBeats: 22 };
-  if (min <= 80)  return { range: '5500-7500字',  beats: '20-25个节拍', maxBeats: 25 };
-  if (min <= 120) return { range: '7000-9500字',  beats: '24-32个节拍', maxBeats: 32 };
-  return                 { range: '9000-12000字', beats: '30-40个节拍', maxBeats: 40 };
+  // 固定 10-15 个节拍，每条 250-300 字，节拍总量 2500-4500 字
+  // 主要使用场景：60-100 分钟长片
+  return { range: '2500-4500字', beats: '10-15个节拍', maxBeats: 15, beatWords: '250-300' };
 }
 
 // ── 纯文本节拍生成 prompt（无截帧降级用）──
@@ -2913,11 +2914,12 @@ function _buildOutlinePrompt(wc, isLong, fullText) {
   return `你是专业影视内容分析师。${inputLabel}，请写全剧完整剧情梗概，必须覆盖从开头到结尾的所有情节。
 
 输出要求（必须严格遵守）：
-- 总字数必须达到 ${wc.range}，这是硬性要求，不能少于下限
+- 节拍总字数目标：${wc.range}（这是节拍部分的硬性字数区间，不能少于下限，不能超过上限）
 - 必须按起承转合四幕结构划分，每幕开头单独一行写幕标记：【起】、【承】、【转】、【合】（这四行是幕分隔符，不是节拍标题）
 - 每幕下细分事件节拍，节拍数量：${wc.beats}（均匀分布在四幕中）
 - 每个节拍点格式：【节拍标题】正文（节拍标题3-12字，直接点明该段核心事件）
-- 每个节拍正文控制在 250-300 字，以台词内容为准，重点写清楚因果逻辑（起因→经过→结果），人物关键行为和动机，不要凑字数，不要编造台词中没有的情节；节拍正文末尾用小括号标注实际字数，如（共187字）
+- 每个节拍正文严格控制在 250-300 字，以台词内容为准，重点写清楚因果逻辑（起因→经过→结果），人物关键行为和动机，精准不冗余；节拍正文末尾用小括号标注实际字数，如（共273字）
+- 字数纪律：每条节拍必须在 250-300 字区间内，写完估算一次，不足 250 字补充细节，超过 300 字删减重复叙述；全部节拍合计目标 ${wc.range}
 - 禁止在节拍标题中使用「场景一」「第X段」等格式，禁止使用 Markdown 标题格式（禁止 #、##、### 等）
 - 台词克制：全文不超过5处直接引语，只保留对情节转折有决定性作用的关键台词
 - 转折节点在正文中标注【转折】，高潮节点标注【高潮】
@@ -3073,8 +3075,8 @@ async function analyzeContent(text, key, model, scenes = [], durationSec = 0) {
   setLabel('提取人物与关系…');
   const r_chars = await callLLM(`根据以下中文剧情梗概，提取主要人物和一句话简介。只输出JSON，不加任何说明：
 {
-  "logline": "一句话简介，不超过100字，点明题材+主要冲突+情感核心",
-  "characters": [{"name":"中英名（如：艾薇/Avery）","bio":"100-200字中文小传：该人物在剧中的实际角色定位、性格特点、核心动机、与其他人物的关系、情感弧线"}],
+  "logline": "一句话简介，30-50字，一句话点明题材+主要冲突+情感核心，不要超过50字",
+  "characters": [{"name":"中英名（如：艾薇/Avery）","bio":"100-150字中文小传：角色定位、性格特点、核心动机、情感弧线，严格控制在150字以内，不要水词"}],
   "relations": [{"from":"人物A的准确名字","to":"人物B的准确名字","label":"两人之间的具体关系，如：命定伴侣/暗恋/情敌/多年霸凌/陌生强势Alpha"}]
 }
 
@@ -3116,15 +3118,15 @@ async function analyzeContent(text, key, model, scenes = [], durationSec = 0) {
   setLabel('拆解策划逻辑…');
   const r_plan = await callLLM(`你是资深短剧策划。根据以下中文剧情梗概，深度拆解策划逻辑，只输出JSON，不加任何说明：
 {
-  "highlights": "核心亮点200字：最吸引观众的核心卖点是什么",
-  "structure_acts": "三幕结构150字：开篇/发展/高潮/结局各阶段如何布局",
-  "character_logic": "人物逻辑150字：人物行为动机是否自洽，核心人物弧线",
-  "emotion": "情感逻辑150字：情绪弧线如何设计，共鸣点在哪里",
-  "rhythm": "节奏逻辑150字：张弛节奏、反转密度、信息释放节拍",
-  "hooks": "悬念布局150字：关键卡点和悬念钩子分布在哪里，如何制造追看欲",
-  "highlight_scenes": "高光情节150字：最具爆点的3-5个情节场景",
+  "highlights": "核心亮点150-200字：最吸引观众的核心卖点是什么，控制在200字以内",
+  "structure_acts": "结构逻辑120-150字：开篇/发展/高潮/结局各阶段如何布局，控制在150字以内",
+  "character_logic": "人物逻辑120-150字：人物行为动机是否自洽，核心人物弧线，控制在150字以内",
+  "emotion": "情感逻辑120-150字：情绪弧线如何设计，共鸣点在哪里，控制在150字以内",
+  "rhythm": "节奏逻辑120-150字：张弛节奏、反转密度、信息释放节拍，控制在150字以内",
+  "hooks": "悬念布局120-150字：关键卡点和悬念钩子分布在哪里，如何制造追看欲，控制在150字以内",
+  "highlight_scenes": "高光情节120-150字：最具爆点的3-5个情节场景，控制在150字以内",
 }
-每个字段直接输出分析内容，不要重复字段名称作为开头。
+每个字段直接输出分析内容，不要重复字段名称作为开头。6个维度合计控制在800-1000字以内。
 剧情梗概：\n${outlineSummary}`, key, model, 3000);
   let plan; try { plan = JSON.parse(r_plan.replace(/```json|```/g,'').trim()); } catch { plan = {}; }
 
@@ -3200,15 +3202,15 @@ async function _regenerateStrategyFromOutline() {
   try {
     const r = await callLLM(`你是资深短剧策划。根据以下中文剧情梗概，深度拆解策划逻辑，只输出JSON，不加任何说明：
 {
-  "highlights": "核心亮点200字：最吸引观众的核心卖点是什么",
-  "structure_acts": "三幕结构150字：开篇/发展/高潮/结局各阶段如何布局",
-  "character_logic": "人物逻辑150字：人物行为动机是否自洽，核心人物弧线",
-  "emotion": "情感逻辑150字：情绪弧线如何设计，共鸣点在哪里",
-  "rhythm": "节奏逻辑150字：张弛节奏、反转密度、信息释放节拍",
-  "hooks": "悬念布局150字：关键卡点和悬念钩子分布在哪里，如何制造追看欲",
-  "highlight_scenes": "高光情节150字：最具爆点的3-5个情节场景"
+  "highlights": "核心亮点150-200字：最吸引观众的核心卖点是什么，控制在200字以内",
+  "structure_acts": "结构逻辑120-150字：开篇/发展/高潮/结局各阶段如何布局，控制在150字以内",
+  "character_logic": "人物逻辑120-150字：人物行为动机是否自洽，核心人物弧线，控制在150字以内",
+  "emotion": "情感逻辑120-150字：情绪弧线如何设计，共鸣点在哪里，控制在150字以内",
+  "rhythm": "节奏逻辑120-150字：张弛节奏、反转密度、信息释放节拍，控制在150字以内",
+  "hooks": "悬念布局120-150字：关键卡点和悬念钩子分布在哪里，如何制造追看欲，控制在150字以内",
+  "highlight_scenes": "高光情节120-150字：最具爆点的3-5个情节场景，控制在150字以内"
 }
-每个字段直接输出分析内容，不要重复字段名称作为开头。
+每个字段直接输出分析内容，不要重复字段名称作为开头。6个维度合计控制在800-1000字以内。
 剧情梗概：\n${outlineSummary}`, cfg.llmKey, cfg.model, 3000);
 
     let plan; try { plan = JSON.parse(r.replace(/```json|```/g,'').trim()); } catch { return; }
@@ -3385,13 +3387,13 @@ async function generateAdaptPlans() {
       ? `\n【用户自定义需求 — 最高优先级，必须100%落实，每个方案都要体现】\n${custom}\n`
       : '';
 
-    const r = await callLLM(`你是资深短剧改编策划。基于原剧策划逻辑的全部维度，为用户生成3-5个差异化改编方案。只输出JSON数组，不加任何说明：
+    const r = await callLLM(`你是资深短剧改编策划。基于原剧策划逻辑的全部维度，为用户生成3个差异化改编方案（固定3个，不多不少）。只输出JSON数组，不加任何说明：
 [
   {
     "dramaTitle": "推荐剧名（1-2个备选，用「/」分隔，调性要抓马爽感、适合竖屏短剧传播，例如：《替嫁Alpha的复仇新娘》/《他的标记》）",
     "title": "方案标题（含题材风格关键词，20字内）",
-    "description": "250字方案说明，必须覆盖以下内容：①新题材/世界观/人物身份设定 ②如何承载原剧核心冲突结构 ③情感爆点和人物关系张力如何迁移 ④节奏逻辑和悬念布局如何保留 ⑤高光情节如何在新题材下对应呈现",
-    "synopsis": "故事简介（300-400字）：用新题材语言描述这个改编故事的完整剧情走向，包含主要人物设定、核心冲突、情感弧线和结局方向，读完让人有追看欲望",
+    "description": "180-250字方案说明，覆盖：①新题材/世界观/人物身份设定 ②如何承载原剧核心冲突结构 ③情感爆点如何迁移 ④高光情节如何对应呈现，精炼不冗余，严格控制在250字以内",
+    "synopsis": "故事简介（220-300字）：用新题材语言描述完整剧情走向，含人物设定、核心冲突、情感弧线、结局方向，有追看感，严格控制在300字以内",
     "rating": {
       "adaptation_difficulty": 1到5的整数，评估改编难度（1=极难/原剧爆款基因在新题材下严重失真，5=极易/核心冲突结构完美迁移无损耗），占综合推荐度60%权重，请严格区分各方案差异，不要给出相同的分数,
       "market_fit": 1到5的整数，评估目标市场契合度（1=严重偏离目标市场偏好，5=高度契合市场需求和观众审美），占综合推荐度20%权重,
@@ -3402,11 +3404,23 @@ async function generateAdaptPlans() {
   }
 ]
 
-改编铁律：
-- 题材/背景/世界观/人物身份【必须换新】——这是外壳
-- 核心冲突结构/情感爆点/节奏逻辑/悬念布局/高光情节【必须保留】——这是爆款基因
-- 每个方案题材彼此不同，不能出现与原剧相同的世界观设定
-- 方案说明中必须明确说明：用什么新设定来承载原来的每一个核心策划要素
+字数纪律：3个方案合计 description+synopsis 总字数控制在 1500-2000 字以内，平均每方案 500-650 字，精炼优先。
+
+改编铁律（版权安全三层结构）：
+【外壳层 — 必须全换，确保零版权风险】
+- 题材/背景/世界观/人物身份/地名/组织名称【必须全部替换为新设定】
+- 不得出现任何与原剧雷同的专有名词、角色名、场景名
+- 新方案读起来应像一部独立原创剧，而非原剧的改头换面版
+【骨架层 — 保留核心，不保留具体情节】
+- 保留：冲突结构类型（如"身份反差型冲突"）、情感弧线节奏（如"先拒后恋"节拍规律）
+- 保留：悬念布局逻辑（卡点位置、信息释放顺序的设计原则）
+- 禁止：复制具体情节事件，只移植事件背后的"戏剧功能"
+【基因层 — 核心爆款逻辑，换皮不换魂】
+- 核心受众情感需求（如"权力反转爽感""命运捉弄共鸣"）必须完整保留
+- 原剧让观众上瘾的"情绪触发机制"（节奏感、反转密度）在新方案中必须重现
+- 每个方案在说明中须明确标注：哪些是新创设定，哪些是移植的戏剧功能
+
+每个方案题材彼此不同，不能出现与原剧相同的世界观设定
 
 推荐剧名命名规则（必须严格遵守）：
 - 风格：抓马爽感强、一眼看出题材与冲突、适合竖屏短剧传播
@@ -4547,9 +4561,180 @@ function copySection(sec) {
     });
 }
 
-// ── 导出分析报告 Word（不含剧本）──
-function exportFullWord() {
-  syncEditablesToData(); // 确保所有 contenteditable 编辑已写入
+// ── 导出分析报告（DOCX 或 PDF）──
+async function exportFullReport(format = 'docx') {
+  syncEditablesToData();
+  const title = analysisData._title || videoFile?.name?.replace(/\.[^.]+$/,'') || videoUrl || '内容分析';
+
+  // 如果 docx 库还没加载，降级到 RTF
+  if (format === 'docx' && typeof docx === 'undefined') {
+    toast('DOCX 库加载中，请稍后重试或使用 PDF 导出', 'err');
+    return;
+  }
+
+  if (format === 'pdf') {
+    _exportAsPdf(title);
+    return;
+  }
+
+  try {
+    const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle, TableOfContents } = docx;
+
+    const GREEN = '1E5C3A';
+    const GOLD  = 'B8944A';
+
+    const h1 = (text) => new Paragraph({
+      text,
+      heading: HeadingLevel.HEADING_1,
+      spacing: { before: 400, after: 160 },
+      run: { color: GREEN, bold: true },
+    });
+    const h2 = (text) => new Paragraph({
+      text,
+      heading: HeadingLevel.HEADING_2,
+      spacing: { before: 240, after: 80 },
+      run: { color: GREEN },
+    });
+    const h3 = (text) => new Paragraph({
+      text,
+      heading: HeadingLevel.HEADING_3,
+      spacing: { before: 180, after: 60 },
+    });
+    const body = (text) => new Paragraph({
+      children: [new TextRun({ text: text || '', size: 22, color: '2C3E35' })],
+      spacing: { before: 60, after: 40, line: 380, lineRule: 'auto' },
+    });
+    const divider = () => new Paragraph({
+      border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: 'D0DDD5', space: 6 } },
+      spacing: { before: 200, after: 200 },
+    });
+
+    const children = [];
+
+    // 封面标题
+    children.push(new Paragraph({
+      children: [new TextRun({ text: title, bold: true, size: 52, color: GREEN })],
+      alignment: AlignmentType.CENTER,
+      spacing: { before: 600, after: 120 },
+    }));
+    children.push(new Paragraph({
+      children: [new TextRun({ text: 'DramaLens · 剧情拆解报告', size: 22, color: '9DB5A5' })],
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 600 },
+    }));
+
+    // ── 一、剧情概要 ──
+    children.push(h1('一、剧情概要'));
+
+    children.push(h2('01 一句话简介'));
+    children.push(body(document.getElementById('loglineText').innerText || ''));
+
+    children.push(h2('02 人物小传'));
+    document.querySelectorAll('#charGrid .char-card:not(.char-card-add)').forEach(card => {
+      children.push(h3('  ' + (card.querySelector('.char-name')?.innerText || '')));
+      children.push(body(card.querySelector('.char-bio')?.innerText || ''));
+    });
+
+    children.push(h2('03 剧情节拍'));
+    document.querySelectorAll('#outlineContainer .beat-item').forEach((item, i) => {
+      const pt = item.querySelector('.beat-title')?.innerText || '';
+      const content = item.querySelector('.beat-text')?.innerText || '';
+      children.push(h3(`  ${String(i+1).padStart(2,'0')}.  ${pt}`));
+      children.push(body(content));
+    });
+
+    children.push(divider());
+
+    // ── 二、策划逻辑 ──
+    children.push(h1('二、策划逻辑'));
+    const planSections = [
+      ['01 核心亮点', 'highlightsText'],
+      ['02 结构逻辑', 'logicGrid'],
+      ['03 人物逻辑', 'charLogicText'],
+      ['04 情感逻辑', 'emotionText'],
+      ['05 节奏逻辑', 'rhythmText'],
+      ['06 悬念布局', 'hookText'],
+      ['07 高光情节', 'highlightScenesText'],
+    ];
+    planSections.forEach(([label, id]) => {
+      children.push(h2(label));
+      const text = document.getElementById(id)?.innerText || '';
+      text.split('\n').filter(Boolean).forEach(p => children.push(body(p)));
+    });
+
+    children.push(divider());
+
+    // ── 三、改编方案 ──
+    children.push(h1('三、改编方案（版权安全改编）'));
+    const plansHistory = analysisData.adaptPlansHistory;
+    if (plansHistory?.length) {
+      const hasAnySelected = plansHistory.some(e => e.plans?.some(p => p.selected));
+      plansHistory.forEach((entry, gi) => {
+        const toExport = entry.plans?.filter(p => !hasAnySelected || p.selected) || [];
+        if (!toExport.length) return;
+        const d = new Date(entry.generatedAt);
+        const timeStr = `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+        children.push(h2(`  第${gi+1}次生成（${timeStr}）`));
+        toExport.forEach((plan, i) => {
+          if (plan.dramaTitle) children.push(h3(`    推荐剧名：${plan.dramaTitle}`));
+          children.push(h3(`    方案${i+1}：${plan.title || ''}`));
+          if (plan.rating) {
+            const r = plan.rating;
+            children.push(body(`推荐度：${r.overall}/5（改编难度 ${r.adaptation_difficulty}/5 · 市场契合 ${r.market_fit}/5 · 传播潜力 ${r.viral_potential}/5）${r.summary ? ' — ' + r.summary : ''}`));
+          }
+          (plan.description || '').split('\n').filter(Boolean).forEach(p => children.push(body(p)));
+          if (plan.synopsis) {
+            children.push(new Paragraph({ children: [new TextRun({ text: '故事简介', bold: true, size: 22, color: GREEN })], spacing: { before: 120, after: 40 } }));
+            plan.synopsis.split('\n').filter(Boolean).forEach(p => children.push(body(p)));
+          }
+          children.push(new Paragraph({ spacing: { after: 120 } }));
+        });
+      });
+    } else {
+      document.querySelectorAll('#adaptPlansGrid .adapt-plan-card').forEach((card, i) => {
+        const dt = card.querySelector('.adapt-plan-drama-title')?.innerText || '';
+        if (dt) children.push(h3(`  推荐剧名：${dt}`));
+        children.push(h2(`  方案${i+1}：${card.querySelector('.adapt-plan-title')?.innerText || ''}`));
+        (card.querySelector('.adapt-plan-body')?.innerText || '').split('\n').filter(Boolean).forEach(p => children.push(body(p)));
+        const synopsis = card.querySelector('.adapt-plan-synopsis')?.innerText || '';
+        if (synopsis) {
+          children.push(new Paragraph({ children: [new TextRun({ text: '故事简介', bold: true, size: 22, color: GREEN })], spacing: { before: 120, after: 40 } }));
+          synopsis.split('\n').filter(Boolean).forEach(p => children.push(body(p)));
+        }
+        children.push(new Paragraph({ spacing: { after: 120 } }));
+      });
+    }
+
+    const doc = new Document({
+      creator: 'DramaLens',
+      title: title + ' · 内容分析报告',
+      description: 'AI 智能剧情拆解报告',
+      styles: {
+        default: {
+          heading1: { run: { color: GREEN, bold: true, size: 32 }, paragraph: { spacing: { before: 400, after: 160 } } },
+          heading2: { run: { color: GREEN, bold: true, size: 26 }, paragraph: { spacing: { before: 240, after: 80 } } },
+          heading3: { run: { color: '4A7A5A', bold: true, size: 22 }, paragraph: { spacing: { before: 180, after: 60 } } },
+        }
+      },
+      sections: [{ children }],
+    });
+
+    const blob = await Packer.toBlob(doc);
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${title}_内容分析报告.docx`;
+    a.click();
+    toast('DOCX 报告已下载', 'ok');
+  } catch(e) {
+    console.error('DOCX 生成失败', e);
+    // 降级到 RTF
+    exportFullWord_RTF();
+  }
+}
+
+// 旧版 RTF 导出（作为降级备案）
+function exportFullWord_RTF() {
+  syncEditablesToData();
   const title = analysisData._title || videoFile?.name?.replace(/\.[^.]+$/,'') || videoUrl || '内容分析';
   const para    = t => `{\\pard\\f0\\fs22\\sl380\\slmult1\\sb80\\sa40 ${rtfEsc(t)}\\par}\n`;
   const heading = t => `{\\pard\\f0\\b\\fs30\\cf1\\sb400\\sa160 ${rtfEsc(t)}\\par}\n`;
@@ -4557,8 +4742,6 @@ function exportFullWord() {
   const subH2   = t => `{\\pard\\f0\\b\\fs22\\sb180\\sa60 ${rtfEsc(t)}\\par}\n`;
   const divider = () => `{\\pard\\sb240\\sa240\\brdrb\\brdrs\\brdrw8\\brsp60\\brdrcf3 \\par}\n`;
   let body = '';
-
-  // 剧情概要
   const d = analysisData;
   body += heading('一、剧情概要');
   body += subH('一句话简介');
@@ -4576,64 +4759,94 @@ function exportFullWord() {
     body += para(content);
   });
   body += divider();
-
-  // 策划逻辑
   body += heading('二、策划逻辑');
-  const planSections = [
-    ['核心亮点','highlightsText'],['人物逻辑','charLogicText'],
-    ['情感逻辑','emotionText'],['节奏逻辑','rhythmText'],
-    ['悬念布局','hookText'],['高光情节','highlightScenesText'],
-  ];
+  const planSections = [['核心亮点','highlightsText'],['人物逻辑','charLogicText'],['情感逻辑','emotionText'],['节奏逻辑','rhythmText'],['悬念布局','hookText'],['高光情节','highlightScenesText']];
   body += subH('结构逻辑');
   body += para(document.getElementById('logicGrid').innerText||'');
-  planSections.forEach(([label, id]) => {
-    body += subH(label);
-    body += para(document.getElementById(id).innerText||'');
-  });
+  planSections.forEach(([label, id]) => { body += subH(label); body += para(document.getElementById(id).innerText||''); });
   body += divider();
-
-  // 改编方案
   body += heading('三、改编方案');
-  const plansHistory = analysisData.adaptPlansHistory;
-  if (plansHistory?.length) {
-    // 判断是否有任何勾选
-    const hasAnySelected = plansHistory.some(e => e.plans?.some(p => p.selected));
-    let exportCount = 0;
-    plansHistory.forEach((entry, gi) => {
-      const toExport = entry.plans?.filter(p => !hasAnySelected || p.selected) || [];
-      if (!toExport.length) return;
-      const d = new Date(entry.generatedAt);
-      const timeStr = `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-      body += subH(`  第${gi+1}次生成（${timeStr}）`);
-      toExport.forEach((plan, i) => {
-        if (plan.dramaTitle) body += subH2(`    推荐剧名：${plan.dramaTitle}`);
-        body += subH2(`    方案${i+1}：${plan.title||''}`);
-        if (plan.rating) {
-          const r = plan.rating;
-          body += para(`推荐度：${r.overall}/5（改编难度 ${r.adaptation_difficulty}/5×60% · 市场契合 ${r.market_fit}/5×20% · 传播潜力 ${r.viral_potential}/5×20%）${r.summary ? ' — ' + r.summary : ''}`);
-        }
-        body += para(plan.description||'');
-        if (plan.synopsis) body += para('【故事简介】' + plan.synopsis);
-        body += `{\\pard\\par}\n`;
-        exportCount++;
-      });
-      if (gi < plansHistory.length - 1) body += `{\\pard\\sb120\\sa120\\par}\n`;
-    });
-  } else {
-    document.querySelectorAll('#adaptPlansGrid .adapt-plan-card').forEach((card,i) => {
-      const dt = card.querySelector('.adapt-plan-drama-title')?.innerText||'';
-      if (dt) body += subH2(`  推荐剧名：${dt}`);
-      body += subH(`  方案${i+1}：${card.querySelector('.adapt-plan-title')?.innerText||''}`);
-      body += para(card.querySelector('.adapt-plan-body')?.innerText||'');
-      const synopsis = card.querySelector('.adapt-plan-synopsis')?.innerText||'';
-      if (synopsis) { body += subH2('  故事简介'); body += para(synopsis); }
-      body += `{\\pard\\par}\n`;
-    });
-  }
-
+  document.querySelectorAll('#adaptPlansGrid .adapt-plan-card').forEach((card,i) => {
+    const dt = card.querySelector('.adapt-plan-drama-title')?.innerText||'';
+    if (dt) body += subH2(`  推荐剧名：${dt}`);
+    body += subH(`  方案${i+1}：${card.querySelector('.adapt-plan-title')?.innerText||''}`);
+    body += para(card.querySelector('.adapt-plan-body')?.innerText||'');
+    const synopsis = card.querySelector('.adapt-plan-synopsis')?.innerText||'';
+    if (synopsis) { body += subH2('  故事简介'); body += para(synopsis); }
+    body += `{\\pard\\par}\n`;
+  });
   dlRtf(`${title}_内容分析报告.doc`, makeRtf(body, title+' · 内容分析报告'));
-  toast('分析报告已下载','ok');
+  toast('报告已下载（RTF格式）','ok');
 }
+
+// PDF 导出（使用浏览器打印）
+function _exportAsPdf(title) {
+  syncEditablesToData();
+  const d = analysisData;
+  const esc2 = t => String(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  let html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+<title>${esc2(title)} · 内容分析报告</title>
+<style>
+  body { font-family: 'Noto Serif SC', 'PingFang SC', STSong, serif; color: #2C3E35; max-width: 800px; margin: 0 auto; padding: 40px 48px; font-size: 13pt; line-height: 1.9; }
+  h1 { color: #1E5C3A; font-size: 22pt; border-bottom: 2px solid #B8944A; padding-bottom: 8px; margin-top: 40px; }
+  h2 { color: #1E5C3A; font-size: 15pt; margin-top: 28px; }
+  h3 { color: #2A6B45; font-size: 13pt; margin-top: 18px; }
+  p { margin: 6px 0; }
+  .cover { text-align:center; padding: 60px 0 40px; }
+  .cover-title { font-size: 28pt; color: #1E5C3A; font-weight: bold; }
+  .cover-sub { color: #9DB5A5; font-size: 12pt; margin-top: 8px; }
+  .rating { background: #F0F7F3; border-radius: 6px; padding: 8px 12px; font-size: 11pt; color: #4A6055; margin: 6px 0; }
+  @media print { body { padding: 20px; } h1 { page-break-before: always; } h1:first-of-type { page-break-before: avoid; } }
+</style></head><body>
+<div class="cover">
+  <div class="cover-title">${esc2(title)}</div>
+  <div class="cover-sub">DramaLens · AI 剧情拆解报告 · ${new Date().toLocaleDateString('zh-CN')}</div>
+</div>
+<h1>一、剧情概要</h1>
+<h2>一句话简介</h2>
+<p>${esc2(document.getElementById('loglineText').innerText||'')}</p>
+<h2>人物小传</h2>`;
+
+  document.querySelectorAll('#charGrid .char-card:not(.char-card-add)').forEach(card => {
+    html += `<h3>${esc2(card.querySelector('.char-name')?.innerText||'')}</h3>`;
+    html += `<p>${esc2(card.querySelector('.char-bio')?.innerText||'')}</p>`;
+  });
+
+  html += `<h2>剧情节拍</h2>`;
+  document.querySelectorAll('#outlineContainer .beat-item').forEach((item, i) => {
+    const pt = item.querySelector('.beat-title')?.innerText||'';
+    const content = item.querySelector('.beat-text')?.innerText||'';
+    html += `<h3>${String(i+1).padStart(2,'0')}. ${esc2(pt)}</h3><p>${esc2(content)}</p>`;
+  });
+
+  html += `<h1>二、策划逻辑</h1>`;
+  const ps = [['核心亮点','highlightsText'],['结构逻辑','logicGrid'],['人物逻辑','charLogicText'],['情感逻辑','emotionText'],['节奏逻辑','rhythmText'],['悬念布局','hookText'],['高光情节','highlightScenesText']];
+  ps.forEach(([label, id]) => {
+    html += `<h2>${label}</h2><p>${esc2(document.getElementById(id)?.innerText||'')}</p>`;
+  });
+
+  html += `<h1>三、改编方案</h1>`;
+  document.querySelectorAll('#adaptPlansGrid .adapt-plan-card').forEach((card, i) => {
+    const dt = card.querySelector('.adapt-plan-drama-title')?.innerText||'';
+    if (dt) html += `<p><strong>推荐剧名：${esc2(dt)}</strong></p>`;
+    html += `<h2>方案${i+1}：${esc2(card.querySelector('.adapt-plan-title')?.innerText||'')}</h2>`;
+    html += `<p>${esc2(card.querySelector('.adapt-plan-body')?.innerText||'').replace(/\n/g,'<br>')}</p>`;
+    const synopsis = card.querySelector('.adapt-plan-synopsis')?.innerText||'';
+    if (synopsis) html += `<h3>故事简介</h3><p>${esc2(synopsis).replace(/\n/g,'<br>')}</p>`;
+  });
+
+  html += `</body></html>`;
+
+  const win = window.open('', '_blank');
+  win.document.write(html);
+  win.document.close();
+  setTimeout(() => { win.print(); }, 800);
+  toast('PDF 打印窗口已打开，选择「另存为 PDF」即可', 'ok');
+}
+
+// 保持旧函数名兼容（避免其他地方调用报错）
+function exportFullWord() { exportFullReport('docx'); }
 
 // ── RTF UTILS ──
 function rtfEsc(t){return String(t||'').replace(/\\/g,'\\\\').replace(/\{/g,'\\{').replace(/\}/g,'\\}').replace(/[\u0080-\uffff]/g,c=>`\\u${c.charCodeAt(0)}?`);}
@@ -5477,42 +5690,59 @@ function generateShareUrl() {
   syncEditablesToData();
   // 只保留展示所需字段，剥掉原始台词和多版本历史（体积大且接收方不需要）
   const shareAnalysis = { ...analysisData };
-  delete shareAnalysis._rawText;           // 原始转写文本，可达数万字
-  delete shareAnalysis._outlineHistory;    // 所有历史版本，体积大
+  delete shareAnalysis._rawText;
+  delete shareAnalysis._outlineHistory;
   delete shareAnalysis._outlineHistoryIdx;
   delete shareAnalysis._outlinePrimaryIdx;
-  delete shareAnalysis._script;            // 剧本原文
+  delete shareAnalysis._script;
   delete shareAnalysis._scriptOriginal;
 
   const payload = {
-    subtitleData: subtitleData.slice(0, 2000),
+    subtitleData: subtitleData.slice(0, 800), // 只取前800条字幕，大幅压缩体积
     analysisData: shareAnalysis,
     sharedAt: Date.now(),
     version: 1,
   };
-  // 编码数据到 URL hash（纯前端，无需服务器）
+
+  // 生成短码：6位随机ID，存储到 localStorage
+  const shortCode = Math.random().toString(36).slice(2, 8).toUpperCase();
+  const storeKey = SHARE_KEY + shortCode;
+
   try {
     const json = JSON.stringify(payload);
-    const compressed = btoa(unescape(encodeURIComponent(json)));
-    const url = `${location.href.split('#')[0]}#share=${compressed}`;
-    if (url.length > 2000000) {
-      // 超大时只保留分析数据，不含字幕
-      const lite = { analysisData: { ...analysisData }, sharedAt: Date.now(), version: 1, liteMode: true };
-      const liteJson = JSON.stringify(lite);
-      const liteCompressed = btoa(unescape(encodeURIComponent(liteJson)));
-      const liteUrl = `${location.href.split('#')[0]}#share=${liteCompressed}`;
+    localStorage.setItem(storeKey, json);
+
+    // 短链接：只用6位码，极短
+    const baseUrl = location.href.split('#')[0].split('?')[0];
+    const shortUrl = `${baseUrl}?s=${shortCode}`;
+    document.getElementById('shareUrlInput').value = shortUrl;
+
+    const note = document.getElementById('shareNote');
+    note.textContent = `✓ 短链接已生成（${shortCode}），接收方在同一设备/浏览器打开可查看全部内容。如需跨设备分享，请使用「复制完整数据」。`;
+    note.style.display = 'block';
+
+    // 同时提供完整数据备选（仅在提示中说明，不自动生成超长 URL）
+  } catch(e) {
+    // localStorage 满时降级到简化版 URL hash（只含分析数据摘要）
+    try {
+      const lite = {
+        analysisData: {
+          logline: shareAnalysis.logline,
+          characters: shareAnalysis.characters,
+          highlights: shareAnalysis.highlights,
+          outline: (shareAnalysis.outline||[]).slice(0, 8),
+        },
+        sharedAt: Date.now(), version: 1, liteMode: true
+      };
+      const compressed = btoa(unescape(encodeURIComponent(JSON.stringify(lite))));
+      const liteUrl = `${location.href.split('#')[0]}#share=${compressed}`;
       document.getElementById('shareUrlInput').value = liteUrl;
       const note = document.getElementById('shareNote');
-      note.textContent = '⚠ 内容较多，字幕数据已省略，分享链接仅包含剧情概要和策划改编内容。';
+      note.textContent = '⚠ 存储空间不足，已生成精简版链接（仅含核心分析内容）。';
       note.style.display = 'block';
-    } else {
-      document.getElementById('shareUrlInput').value = url;
-      const note = document.getElementById('shareNote');
-      note.textContent = `✓ 链接已生成，包含 ${subtitleData.length} 条字幕及全部分析内容。收到链接的人无需 API 即可查看。`;
-      note.style.display = 'block';
+    } catch(e2) {
+      toast('链接生成失败：' + e2.message, 'err');
     }
-  } catch(e) {
-    toast('链接生成失败：' + e.message, 'err');
   }
 }
 
@@ -5530,7 +5760,35 @@ function copyShareUrl() {
     });
 }
 
-function _loadShareFromHash() {
+function _loadShareFromUrl() {
+  // 优先支持短码模式 ?s=XXXXXX
+  const searchParams = new URLSearchParams(location.search);
+  const shortCode = searchParams.get('s');
+  if (shortCode) {
+    const storeKey = SHARE_KEY + shortCode.toUpperCase();
+    try {
+      const stored = localStorage.getItem(storeKey);
+      if (!stored) {
+        // 短码不存在（可能在不同设备打开）
+        const banner = document.createElement('div');
+        banner.style.cssText = 'position:fixed;top:56px;left:0;right:0;z-index:200;background:var(--red);color:#fff;font-size:12px;padding:7px 20px;text-align:center';
+        banner.textContent = '⚠ 分享链接仅在同一设备/浏览器有效，当前设备未找到对应内容。请请求发送方提供完整数据。';
+        document.body.appendChild(banner);
+        return false;
+      }
+      const payload = JSON.parse(stored);
+      if (!payload.analysisData) return false;
+      subtitleData = payload.subtitleData || [];
+      analysisData = payload.analysisData || {};
+      analysisData._sharedView = true;
+      _renderSharedView();
+      return true;
+    } catch(e) {
+      console.error('短码解析失败', e);
+    }
+  }
+
+  // 兼容旧版 hash 模式
   const hash = location.hash;
   if (!hash.startsWith('#share=')) return false;
   const encoded = hash.slice(7);
@@ -5541,21 +5799,26 @@ function _loadShareFromHash() {
     if (!payload.analysisData) return false;
     subtitleData = payload.subtitleData || [];
     analysisData = payload.analysisData || {};
-    // 只读模式标记
     analysisData._sharedView = true;
+    _renderSharedView();
+    return true;
+  } catch(e) {
+    console.error('分享链接解析失败', e);
+    return false;
+  }
+}
 
+function _renderSharedView() {
     document.getElementById('welcomeScreen').style.display = 'none';
     document.getElementById('tabsBar').classList.add('show');
     if (subtitleData.length) renderSubs();
     if (analysisData.logline || analysisData.highlights) renderAnalysis();
 
-    // 隐藏分析功能，显示提示
     document.getElementById('btnAnalyze').disabled = true;
     document.getElementById('btnAnalyze').textContent = '⬆ 上传视频需配置 API';
     document.getElementById('btnAnalyze').onclick = () => openSettings();
     document.getElementById('btnAnalyze').disabled = false;
 
-    // 切到字幕 tab
     document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     const tab = subtitleData.length ? 'subtitles' : 'overview';
@@ -5564,19 +5827,12 @@ function _loadShareFromHash() {
     updateTabActions();
     setStatus('active', '已加载分享内容');
 
-    // 顶部提示条
     const banner = document.createElement('div');
     banner.style.cssText = 'position:fixed;top:56px;left:0;right:0;z-index:200;background:var(--gold);color:#fff;font-size:12px;padding:7px 20px;text-align:center;display:flex;align-items:center;justify-content:center;gap:12px;';
     banner.innerHTML = `📎 你正在查看他人分享的拆解内容。如需重新分析视频，请先 <button onclick="openSettings()" style="background:rgba(255,255,255,0.25);border:none;color:#fff;padding:3px 10px;border-radius:4px;cursor:pointer;font-size:11px">配置 API Key</button>`;
     document.body.appendChild(banner);
     document.querySelector('.app').style.marginTop = '36px';
     document.querySelector('header').style.top = '0';
-
-    return true;
-  } catch(e) {
-    console.error('分享链接解析失败', e);
-    return false;
-  }
 }
 
 // 覆盖 renderSubs 以支持双击编辑
@@ -5595,11 +5851,11 @@ const _patchRenderSubs = () => {
   };
 };
 
-// 初始化时检查分享 hash
+// 初始化时检查分享参数
 document.addEventListener('DOMContentLoaded', () => {
   _patchRenderSubs();
-  if (location.hash.startsWith('#share=')) {
-    _loadShareFromHash();
+  if (location.search.includes('?s=') || location.hash.startsWith('#share=')) {
+    _loadShareFromUrl();
   }
 });
 
